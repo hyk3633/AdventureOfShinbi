@@ -74,7 +74,7 @@ void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	bIsAiming = PlayerCharacter->GetIsAiming();
 
-	CombatType = PlayerCharacter->GetCombatState();
+	WeaponType = PlayerCharacter->GetCombatState();
 
 	FRotator AimRotation = PlayerCharacter->GetBaseAimRotation();
 	CharacterRotation = PlayerCharacter->GetActorRotation();

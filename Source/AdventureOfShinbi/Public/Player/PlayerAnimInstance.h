@@ -57,7 +57,7 @@ private:
 	bool bIsAiming = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	EWeaponType CombatType = EWeaponType::EWT_MAX;
+	EWeaponType WeaponType = EWeaponType::EWT_MAX;
 
 	FRotator CharacterRotation;
 

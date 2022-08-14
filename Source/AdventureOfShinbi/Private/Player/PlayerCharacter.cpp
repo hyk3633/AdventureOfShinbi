@@ -39,7 +39,7 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
+	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
 
 }
 
@@ -55,7 +55,7 @@ void APlayerCharacter::PostInitializeComponents()
 
 void APlayerCharacter::MoveForward(float Value)
 {
-	if (bIsAnimationPlaying && CombatType == EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -70,7 +70,7 @@ void APlayerCharacter::MoveForward(float Value)
 
 void APlayerCharacter::MoveRight(float Value)
 {
-	if (bIsAnimationPlaying && CombatType == EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -119,7 +119,7 @@ void APlayerCharacter::RunningButtonReleased()
 
 void APlayerCharacter::CrouchButtonPressed()
 {
-	if (bIsAnimationPlaying || CombatType != EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying || WeaponType != EWeaponType::EWT_MAX) return;
 
 	if (bIsCrouched)
 	{
@@ -145,22 +145,22 @@ void APlayerCharacter::EquipButtonPressed()
 	switch (OverlappingWeapon->GetWeaponType())
 	{
 	case EWeaponType::EWT_Gun:
-		SocketName = FName("RightHandGunSocket");
+		SocketName = FName("GunSocket");
 		break;
 
 	case EWeaponType::EWT_Bow:
 		break;
 
 	case EWeaponType::EWT_MeleeOneHand:
-		SocketName = FName("RightHandMeleeOneHandSocket");
+		SocketName = FName("OneHandSocket");
 		break;
 
 	case EWeaponType::EWT_MeleeTwoHand:
-		SocketName = FName("RightHandMeleeTwoHandSocket");
+		SocketName = FName("TwoHandSocket");
 		break;
 
 	case EWeaponType::EWT_Glave:
-		SocketName = FName("LeftHandGlaveSocket");
+		SocketName = FName("GlaveSocket");
 		break;
 	}
 	const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(SocketName);
@@ -169,14 +169,14 @@ void APlayerCharacter::EquipButtonPressed()
 		HandSocket->AttachActor(OverlappingWeapon, GetMesh());
 	}
 
-	CombatType = OverlappingWeapon->GetWeaponType();
+	WeaponType = OverlappingWeapon->GetWeaponType();
 
 	CombatComp->SetEquippedWeapon(OverlappingWeapon);
 }
 
 void APlayerCharacter::AttackButtonePressed()
 {
-	if (CombatComp && CombatType != EWeaponType::EWT_MAX)
+	if (CombatComp && WeaponType != EWeaponType::EWT_MAX)
 	{
 		CombatComp->Attack();
 	}
@@ -189,7 +189,7 @@ void APlayerCharacter::AttackButtoneReleassed()
 
 void APlayerCharacter::AimButtonPressed()
 {
-	if (CombatType == EWeaponType::EWT_Gun)
+	if (WeaponType == EWeaponType::EWT_Gun)
 	{
 		bIsAiming = true;
 	}
@@ -197,7 +197,7 @@ void APlayerCharacter::AimButtonPressed()
 
 void APlayerCharacter::AimButtonReleased()
 {
-	if (CombatType == EWeaponType::EWT_Gun)
+	if (WeaponType == EWeaponType::EWT_Gun)
 	{
 		bIsAiming = false;
 	}

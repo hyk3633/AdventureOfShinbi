@@ -83,7 +83,7 @@ private:
 	AWeapon* OverlappingWeapon;
 
 	UPROPERTY(VisibleAnywhere)
-	EWeaponType CombatType = EWeaponType::EWT_MAX;
+	EWeaponType WeaponType = EWeaponType::EWT_MAX;
 
 	UPROPERTY(VisibleAnywhere)
 	ECharacterState CharacterState = ECharacterState::ECS_Nothing;
@@ -98,6 +98,6 @@ public:
 	FORCEINLINE bool GetIsAnimationPlaying() const { return bIsAnimationPlaying; }
 	FORCEINLINE bool GetIsMoving() const { return bIsMoving; }
 	FORCEINLINE bool GetIsAiming() const { return bIsAiming; }
-	FORCEINLINE EWeaponType GetCombatState() const { return CombatType; }
+	FORCEINLINE EWeaponType GetCombatState() const { return WeaponType; }
 
 };

@@ -66,7 +66,7 @@ void UCombatComponent::MeleeOneHandAttack()
 	AnimInstance->Montage_Play(MeleeOneHandAttackMontage);
 	if (Character->GetCharacterMovement()->IsFalling())
 	{
-		AnimInstance->Montage_JumpToSection(FName("MeleeOneHandAir"));
+		AnimInstance->Montage_JumpToSection(FName("OneHandAir"));
 	}
 	else
 	{
@@ -75,11 +75,11 @@ void UCombatComponent::MeleeOneHandAttack()
 			RandomMontageNum = UKismetMathLibrary::RandomInteger(2);
 			if (RandomMontageNum == 0)
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandC2"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandC2"));
 			}
 			else
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandD"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandD"));
 			}
 			MeleeAttackComboCount++;
 		}
@@ -87,11 +87,11 @@ void UCombatComponent::MeleeOneHandAttack()
 		{
 			if (RandomMontageNum == 0)
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandD"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandD"));
 			}
 			else
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandC2"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandC2"));
 			}
 			MeleeAttackComboCount++;
 		}
@@ -99,11 +99,11 @@ void UCombatComponent::MeleeOneHandAttack()
 		{
 			if (RandomMontageNum == 0)
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandC"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandC"));
 			}
 			else
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandB"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandB"));
 			}
 			MeleeAttackComboCount++;
 		}
@@ -111,11 +111,11 @@ void UCombatComponent::MeleeOneHandAttack()
 		{
 			if (RandomMontageNum == 0)
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandB"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandB"));
 			}
 			else
 			{
-				AnimInstance->Montage_JumpToSection(FName("MeleeOneHandC"));
+				AnimInstance->Montage_JumpToSection(FName("OneHandC"));
 			}
 			ResetCombo();
 		}
@@ -133,6 +133,10 @@ void UCombatComponent::MeleeTwoHandAttack()
 	if (Character->GetCharacterMovement()->IsFalling())
 	{
 		//AnimInstance->Montage_JumpToSection(FName("MeleeOneHandAir"));
+	}
+	else
+	{
+		AnimInstance->Montage_JumpToSection(FName("TwoHandA"));
 	}
 }
 
@@ -159,7 +163,7 @@ void UCombatComponent::GlaveAttack()
 	}
 	else
 	{
-
+		AnimInstance->Montage_JumpToSection(FName("GlaveB"));
 	}
 }
 
