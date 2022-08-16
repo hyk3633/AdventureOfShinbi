@@ -28,13 +28,18 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void MeleeOneHandAttack();
+	// 공격 몽타주 재생
 
-	void MeleeTwoHandAttack();
+	void PlayMontageOneHandAttack();
 
-	void GunFire();
+	void PlayMontageTwoHandAttack();
 
-	void GlaveAttack();
+	void PlayMontageGunFire();
+
+	void PlayMontageGlaveAttack();
+
+	// 원거리 무기 타입에 따른 처리 함수
+	void RangedWeaponFire();
 
 	void ResetCombo();
 

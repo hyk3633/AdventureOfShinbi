@@ -7,6 +7,8 @@
 #include "Player/PlayerCharacter.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Weapons/RangedWeapon.h"
+#include "Weapons/RangedHitScanWeapon.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -42,22 +44,23 @@ void UCombatComponent::Attack()
 		case EWeaponType::EWT_MeleeOneHand:
 			Character->GetWorldTimerManager().ClearTimer(ComboTimer);
 			Character->GetWorldTimerManager().SetTimer(ComboTimer, this, &UCombatComponent::ResetCombo, ComboTime);
-			MeleeOneHandAttack();
+			PlayMontageOneHandAttack();
 			break;
 		case EWeaponType::EWT_MeleeTwoHand:
-			MeleeTwoHandAttack();
+			PlayMontageTwoHandAttack();
 			break;
 		case EWeaponType::EWT_Gun:
-			GunFire();
+			PlayMontageGunFire();
+			RangedWeaponFire();
 			break;
 		case EWeaponType::EWT_Glave:
-			GlaveAttack();
+			PlayMontageGlaveAttack();
 			break;
 		}
 	}
 }
 
-void UCombatComponent::MeleeOneHandAttack()
+void UCombatComponent::PlayMontageOneHandAttack()
 {
 	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 
@@ -123,7 +126,7 @@ void UCombatComponent::MeleeOneHandAttack()
 
 }
 
-void UCombatComponent::MeleeTwoHandAttack()
+void UCombatComponent::PlayMontageTwoHandAttack()
 {
 	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 
@@ -140,7 +143,7 @@ void UCombatComponent::MeleeTwoHandAttack()
 	}
 }
 
-void UCombatComponent::GunFire()
+void UCombatComponent::PlayMontageGunFire()
 {
 	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 
@@ -150,7 +153,7 @@ void UCombatComponent::GunFire()
 	AnimInstance->Montage_JumpToSection(FName("GunFireFast"));
 }
 
-void UCombatComponent::GlaveAttack()
+void UCombatComponent::PlayMontageGlaveAttack()
 {
 	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 
@@ -164,6 +167,21 @@ void UCombatComponent::GlaveAttack()
 	else
 	{
 		AnimInstance->Montage_JumpToSection(FName("GlaveB"));
+	}
+}
+
+void UCombatComponent::RangedWeaponFire()
+{
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+	ERangedWeaponType ERWT = RangedWeapon->GetRangedWeaponType();
+	if (ERWT == ERangedWeaponType::ERWT_HitScan)
+	{
+		ARangedHitScanWeapon* HitScanWeapon = Cast<ARangedHitScanWeapon>(EquippedWeapon);
+		HitScanWeapon->Firing();
+	}
+	else
+	{
+
 	}
 }
 
@@ -195,4 +213,6 @@ void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 {
 	EquippedWeapon = Weapon;
 	EquippedWeapon->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+
+	// TODO : 캐스팅 연산 옮기기
 }

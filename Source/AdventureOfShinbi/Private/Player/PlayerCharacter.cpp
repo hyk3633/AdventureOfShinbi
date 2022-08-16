@@ -236,6 +236,7 @@ void APlayerCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)
 {
 	if (OtherWeapon)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherWeapon->GetName());
 		OverlappingWeapon = OtherWeapon;
 	}
 }
