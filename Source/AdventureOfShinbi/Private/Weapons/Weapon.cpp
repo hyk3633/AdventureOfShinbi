@@ -1,8 +1,11 @@
-
+﻿
 
 #include "Weapons/Weapon.h"
 #include "Components/SphereComponent.h"
 #include "Player/AOSCharacter.h"
+#include "Components/WidgetComponent.h"
+#include "HUD/PickupWidget.h"
+#include "Components/TextBlock.h"
 
 AWeapon::AWeapon()
 {
@@ -20,6 +23,9 @@ AWeapon::AWeapon()
 	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	Widget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
+	Widget->SetupAttachment(WeaponMesh);
 }
 
 void AWeapon::BeginPlay()
@@ -29,6 +35,8 @@ void AWeapon::BeginPlay()
 	OverlapSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnSphereOverlap);
 	OverlapSphere->OnComponentEndOverlap.AddDynamic(this, &AWeapon::OnSphereEndOverlap);
 
+	SetPickupWidgetInfo();
+	Widget->SetVisibility(false);
 }
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -38,6 +46,10 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	{
 		Player->SetOverlappingWeapon(this);
 	}
+	if (Widget)
+	{
+		Widget->SetVisibility(true);
+	}
 }
 
 void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
@@ -46,5 +58,61 @@ void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 	if (Player)
 	{
 		Player->SetOverlappingWeapon(nullptr);
+	}
+	if (Widget)
+	{
+		Widget->SetVisibility(false);
+	}
+}
+
+void AWeapon::SetPickupWidgetInfo()
+{
+	UPickupWidget* PickupWidget = Cast<UPickupWidget>(Widget->GetWidget());
+
+	bool bPickupWidgetValid =
+		PickupWidget &&
+		PickupWidget->ItemNameText &&
+		PickupWidget->ItemTypeText &&
+		PickupWidget->ItemRankText;
+
+	if (bPickupWidgetValid)
+	{
+		PickupWidget->ItemNameText->SetText(FText::FromString(WeaponName));
+		PickupWidget->ItemTypeText->SetText(FText::FromString(SetItemTypeToWidget(InfoItemType)));
+		PickupWidget->ItemRankText->SetText(FText::FromString(SetItemRankToWidget(InfoItemRank)));
+	}
+}
+
+
+FString AWeapon::SetItemTypeToWidget(EItemType Itemtype)
+{
+	FString Text;
+	switch (Itemtype)
+	{
+	case EItemType::EIT_MeleeWeapon:
+		return TEXT("근접 무기");
+	case EItemType::EIT_MagicMeleeWeapon:
+		return TEXT("마법 근접 무기");
+	case EItemType::EIT_RangedWeapon:
+		return TEXT("원거리 무기");
+	default:
+		return TEXT("미지정");
+	}
+}
+
+FString AWeapon::SetItemRankToWidget(EItemRank Itemrank)
+{
+	switch (Itemrank)
+	{
+	case EItemRank::EIR_Common:
+		return TEXT("일반");
+	case EItemRank::EIR_Rare:
+		return TEXT("희귀");
+	case EItemRank::EIR_Unique:
+		return TEXT("특별");
+	case EItemRank::EIR_Legendary:
+		return TEXT("전설");
+	default:
+		return TEXT("없음");
 	}
 }
