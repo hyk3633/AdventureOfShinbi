@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
-class APlayerCharacter;
+class AAOSCharacter;
 class AWeapon;
 class UAnimMontage;
 
@@ -16,7 +16,7 @@ class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 
-	friend APlayerCharacter;
+	friend AAOSCharacter;
 
 	UCombatComponent();
 
@@ -48,7 +48,7 @@ protected:
 
 private:
 
-	APlayerCharacter* Character;
+	AAOSCharacter* Character;
 
 	AWeapon* EquippedWeapon;
 

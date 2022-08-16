@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Weapons/Projectile.h"
-#include "BulletProjectile.generated.h"
+#include "ProjectileBullet.generated.h"
 
 /**
  * 
@@ -14,7 +14,7 @@ class UParticleSystem;
 class UParticleSystemComponent;
 
 UCLASS()
-class ADVENTUREOFSHINBI_API ABulletProjectile : public AProjectile
+class ADVENTUREOFSHINBI_API AProjectileBullet : public AProjectile
 {
 	GENERATED_BODY()
 	

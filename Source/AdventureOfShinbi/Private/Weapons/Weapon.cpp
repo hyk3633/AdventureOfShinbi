@@ -2,7 +2,7 @@
 
 #include "Weapons/Weapon.h"
 #include "Components/SphereComponent.h"
-#include "Player/PlayerCharacter.h"
+#include "Player/AOSCharacter.h"
 
 AWeapon::AWeapon()
 {
@@ -33,7 +33,7 @@ void AWeapon::BeginPlay()
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
+	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
 	if (Player)
 	{
 		Player->SetOverlappingWeapon(this);
@@ -42,7 +42,7 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 void AWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	APlayerCharacter* Player = Cast<APlayerCharacter>(OtherActor);
+	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
 	if (Player)
 	{
 		Player->SetOverlappingWeapon(nullptr);

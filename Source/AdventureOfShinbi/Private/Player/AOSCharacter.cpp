@@ -1,6 +1,6 @@
 
 
-#include "Player/PlayerCharacter.h"
+#include "Player/AOSCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -8,7 +8,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 
-APlayerCharacter::APlayerCharacter()
+AAOSCharacter::AAOSCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -35,7 +35,7 @@ APlayerCharacter::APlayerCharacter()
 	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 }
 
-void APlayerCharacter::BeginPlay()
+void AAOSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -43,7 +43,7 @@ void APlayerCharacter::BeginPlay()
 
 }
 
-void APlayerCharacter::PostInitializeComponents()
+void AAOSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
@@ -53,7 +53,7 @@ void APlayerCharacter::PostInitializeComponents()
 	}
 }
 
-void APlayerCharacter::MoveForward(float Value)
+void AAOSCharacter::MoveForward(float Value)
 {
 	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
 
@@ -68,7 +68,7 @@ void APlayerCharacter::MoveForward(float Value)
 
 }
 
-void APlayerCharacter::MoveRight(float Value)
+void AAOSCharacter::MoveRight(float Value)
 {
 	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
 
@@ -82,24 +82,24 @@ void APlayerCharacter::MoveRight(float Value)
 	}
 }
 
-void APlayerCharacter::Lookup(float Value)
+void AAOSCharacter::Lookup(float Value)
 {
 	AddControllerPitchInput(Value);
 }
 
-void APlayerCharacter::Turn(float Value)
+void AAOSCharacter::Turn(float Value)
 {
 	AddControllerYawInput(Value);
 }
 
-void APlayerCharacter::Jump()
+void AAOSCharacter::Jump()
 {
 	if (bIsAnimationPlaying) return;
 
 	ACharacter::Jump();
 }
 
-void APlayerCharacter::RunningButtonPressed()
+void AAOSCharacter::RunningButtonPressed()
 {
 	if (bIsAnimationPlaying) return;
 
@@ -108,7 +108,7 @@ void APlayerCharacter::RunningButtonPressed()
 	GetCharacterMovement()->MaxWalkSpeed = 700.f;
 }
 
-void APlayerCharacter::RunningButtonReleased()
+void AAOSCharacter::RunningButtonReleased()
 {
 	if (bIsAnimationPlaying) return;
 
@@ -117,7 +117,7 @@ void APlayerCharacter::RunningButtonReleased()
 	GetCharacterMovement()->MaxWalkSpeed = 250.f;
 }
 
-void APlayerCharacter::CrouchButtonPressed()
+void AAOSCharacter::CrouchButtonPressed()
 {
 	if (bIsAnimationPlaying || WeaponType != EWeaponType::EWT_MAX) return;
 
@@ -131,7 +131,7 @@ void APlayerCharacter::CrouchButtonPressed()
 	}
 }
 
-void APlayerCharacter::EquipButtonPressed()
+void AAOSCharacter::EquipButtonPressed()
 {
 	if (OverlappingWeapon == nullptr || CombatComp == nullptr || OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MAX) return;
 
@@ -175,7 +175,7 @@ void APlayerCharacter::EquipButtonPressed()
 	OverlappingWeapon->SetOwner(this);
 }
 
-void APlayerCharacter::AttackButtonePressed()
+void AAOSCharacter::AttackButtonePressed()
 {
 	if (CombatComp && WeaponType != EWeaponType::EWT_MAX)
 	{
@@ -183,12 +183,12 @@ void APlayerCharacter::AttackButtonePressed()
 	}
 }
 
-void APlayerCharacter::AttackButtoneReleassed()
+void AAOSCharacter::AttackButtoneReleassed()
 {
 
 }
 
-void APlayerCharacter::AimButtonPressed()
+void AAOSCharacter::AimButtonPressed()
 {
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
@@ -196,7 +196,7 @@ void APlayerCharacter::AimButtonPressed()
 	}
 }
 
-void APlayerCharacter::AimButtonReleased()
+void AAOSCharacter::AimButtonReleased()
 {
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
@@ -204,45 +204,44 @@ void APlayerCharacter::AimButtonReleased()
 	}
 }
 
-void APlayerCharacter::TransitionAnimationStart()
+void AAOSCharacter::TransitionAnimationStart()
 {
 	bIsAnimationPlaying = true;
 }
 
-void APlayerCharacter::TransitionAnimationEnd()
+void AAOSCharacter::TransitionAnimationEnd()
 {
 	bIsAnimationPlaying = false;
 }
 
-void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
-	PlayerInputComponent->BindAxis("Lookup", this, &APlayerCharacter::Lookup);
-	PlayerInputComponent->BindAxis("Turn", this, &APlayerCharacter::Turn);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::Jump);
-	PlayerInputComponent->BindAction("Running", IE_Pressed, this, &APlayerCharacter::RunningButtonPressed);
-	PlayerInputComponent->BindAction("Running", IE_Released, this, &APlayerCharacter::RunningButtonReleased);
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::CrouchButtonPressed);
-	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &APlayerCharacter::EquipButtonPressed);
-	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &APlayerCharacter::AttackButtonePressed);
-	PlayerInputComponent->BindAction("Attack", IE_Released, this, &APlayerCharacter::AttackButtoneReleassed);
-	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &APlayerCharacter::AimButtonPressed);
-	PlayerInputComponent->BindAction("Aim", IE_Released, this, &APlayerCharacter::AimButtonReleased);
+	PlayerInputComponent->BindAxis("MoveForward", this, &AAOSCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AAOSCharacter::MoveRight);
+	PlayerInputComponent->BindAxis("Lookup", this, &AAOSCharacter::Lookup);
+	PlayerInputComponent->BindAxis("Turn", this, &AAOSCharacter::Turn);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AAOSCharacter::Jump);
+	PlayerInputComponent->BindAction("Running", IE_Pressed, this, &AAOSCharacter::RunningButtonPressed);
+	PlayerInputComponent->BindAction("Running", IE_Released, this, &AAOSCharacter::RunningButtonReleased);
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AAOSCharacter::CrouchButtonPressed);
+	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &AAOSCharacter::EquipButtonPressed);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AAOSCharacter::AttackButtonePressed);
+	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtoneReleassed);
+	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AAOSCharacter::AimButtonPressed);
+	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
 }
 
-void APlayerCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)
+void AAOSCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)
 {
 	if (OtherWeapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *OtherWeapon->GetName());
 		OverlappingWeapon = OtherWeapon;
 	}
 }
 
-void APlayerCharacter::Tick(float DeltaTime)
+void AAOSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 

@@ -1,18 +1,19 @@
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Player/PlayerAnimInstance.h"
-#include "Player/PlayerCharacter.h"
+#include "Player/AOSAnimInstance.h"
+#include "Player/AOSCharacter.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
-void UPlayerAnimInstance::NativeInitializeAnimation()
+void UAOSAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 
-	PlayerCharacter = Cast<APlayerCharacter>(TryGetPawnOwner());
+	AOSCharacter = Cast<AAOSCharacter>(TryGetPawnOwner());
 }
 
-void UPlayerAnimInstance::TurnInPlace()
+void UAOSAnimInstance::TurnInPlace()
 {
 	if (Speed > 0.f)
 	{
@@ -52,32 +53,32 @@ void UPlayerAnimInstance::TurnInPlace()
 	}
 }
 
-void UPlayerAnimInstance::UpdateAnimationProperties(float DeltaTime)
+void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 {
-	if (PlayerCharacter == nullptr) return;
+	if (AOSCharacter == nullptr) return;
 
-	FVector Velocity = PlayerCharacter->GetVelocity();
+	FVector Velocity = AOSCharacter->GetVelocity();
 	Velocity.Z = 0.f;
 	Speed = Velocity.Size();
 
-	bIsInAir = PlayerCharacter->GetCharacterMovement()->IsFalling();
+	bIsInAir = AOSCharacter->GetCharacterMovement()->IsFalling();
 
-	bIsAccelerating = PlayerCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
+	bIsAccelerating = AOSCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 
-	bIsRunning = PlayerCharacter->GetIsRunning();
+	bIsRunning = AOSCharacter->GetIsRunning();
 
-	bIsCrouched = PlayerCharacter->bIsCrouched;
+	bIsCrouched = AOSCharacter->bIsCrouched;
 
-	bIsAnimationPlaying = PlayerCharacter->GetIsAnimationPlaying();
+	bIsAnimationPlaying = AOSCharacter->GetIsAnimationPlaying();
 
-	bIsMoving = PlayerCharacter->GetIsMoving();
+	bIsMoving = AOSCharacter->GetIsMoving();
 
-	bIsAiming = PlayerCharacter->GetIsAiming();
+	bIsAiming = AOSCharacter->GetIsAiming();
 
-	WeaponType = PlayerCharacter->GetCombatState();
+	WeaponType = AOSCharacter->GetCombatState();
 
-	FRotator AimRotation = PlayerCharacter->GetBaseAimRotation();
-	CharacterRotation = PlayerCharacter->GetActorRotation();
+	FRotator AimRotation = AOSCharacter->GetBaseAimRotation();
+	CharacterRotation = AOSCharacter->GetActorRotation();
 
 	Pitch = AimRotation.Pitch;
 

@@ -1,21 +1,23 @@
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "Types/WeaponType.h"
-#include "PlayerAnimInstance.generated.h"
-
-class APlayerCharacter;
+#include "AOSAnimInstance.generated.h"
 
 /**
- *
+ * 
  */
+
+class AAOSCharacter;
+
 UCLASS()
-class ADVENTUREOFSHINBI_API UPlayerAnimInstance : public UAnimInstance
+class ADVENTUREOFSHINBI_API UAOSAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
-
+	
 public:
 
 	UFUNCTION(BlueprintCallable)
@@ -30,7 +32,7 @@ protected:
 private:
 
 	UPROPERTY(VisibleAnywhere)
-	APlayerCharacter* PlayerCharacter;
+	AAOSCharacter* AOSCharacter;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float Speed;

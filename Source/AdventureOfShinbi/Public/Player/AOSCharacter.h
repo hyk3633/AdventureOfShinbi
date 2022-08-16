@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Types/WeaponType.h"
-#include "PlayerCharacter.generated.h"
+#include "AOSCharacter.generated.h"
 
 class UInputComponent;
 class USpringArmComponent;
@@ -22,14 +22,12 @@ enum class ECharacterState : uint8
 	ECT_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
-
 UCLASS()
-class ADVENTUREOFSHINBI_API APlayerCharacter : public ACharacter
+class ADVENTUREOFSHINBI_API AAOSCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
 public:
-	APlayerCharacter();
+	AAOSCharacter();
 
 	virtual void Tick(float DeltaTime) override;
 

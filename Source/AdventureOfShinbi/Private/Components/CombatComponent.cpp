@@ -4,7 +4,7 @@
 #include "Weapons/Weapon.h"
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Player/PlayerCharacter.h"
+#include "Player/AOSCharacter.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/RangedWeapon.h"
@@ -40,6 +40,7 @@ void UCombatComponent::Attack()
 
 	if (EquippedWeapon)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Attack"));
 		switch (EquippedWeapon->GetWeaponType())
 		{
 		case EWeaponType::EWT_MeleeOneHand:
@@ -124,7 +125,6 @@ void UCombatComponent::PlayMontageOneHandAttack()
 			ResetCombo();
 		}
 	}
-
 }
 
 void UCombatComponent::PlayMontageTwoHandAttack()
