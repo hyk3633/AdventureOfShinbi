@@ -61,18 +61,15 @@ void ARangedWeapon::PlayFireEffect()
 
 	if (MuzzleFlashParticle)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlashParticle, GetSocketTransform());
+		const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+		if (MuzzleSocket)
+		{
+			const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlashParticle, SocketTransform);
+		}
 	}
 	if (FireSound)
 	{
 		UGameplayStatics::PlaySound2D(this, FireSound);
 	}
-}
-
-FTransform ARangedWeapon::GetSocketTransform() const
-{
-	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
-
-	return SocketTransform;
 }

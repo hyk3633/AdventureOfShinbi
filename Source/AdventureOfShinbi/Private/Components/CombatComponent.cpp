@@ -9,6 +9,7 @@
 #include "Camera/CameraComponent.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/RangedHitScanWeapon.h"
+#include "Weapons/RangedProjectileWeapon.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -181,7 +182,8 @@ void UCombatComponent::RangedWeaponFire()
 	}
 	else
 	{
-
+		ARangedProjectileWeapon* ProjectileWeapon = Cast<ARangedProjectileWeapon>(EquippedWeapon);
+		ProjectileWeapon->Firing();
 	}
 }
 

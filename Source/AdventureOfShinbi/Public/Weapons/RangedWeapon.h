@@ -55,6 +55,5 @@ private:
 
 public:
 
-	FTransform GetSocketTransform() const;
 	FORCEINLINE ERangedWeaponType GetRangedWeaponType() const { return RangedWeaponType; }
 };

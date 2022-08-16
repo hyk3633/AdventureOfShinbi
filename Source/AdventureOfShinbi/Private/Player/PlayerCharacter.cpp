@@ -172,6 +172,7 @@ void APlayerCharacter::EquipButtonPressed()
 	WeaponType = OverlappingWeapon->GetWeaponType();
 
 	CombatComp->SetEquippedWeapon(OverlappingWeapon);
+	OverlappingWeapon->SetOwner(this);
 }
 
 void APlayerCharacter::AttackButtonePressed()

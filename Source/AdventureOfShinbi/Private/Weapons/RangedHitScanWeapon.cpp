@@ -11,8 +11,12 @@ void ARangedHitScanWeapon::Firing()
 {
 	Super::Firing();
 
+	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+	if (MuzzleSocket == nullptr) return;
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+
 	FHitResult MuzzleHitResult;
-	FVector MuzzleTraceStart = GetSocketTransform().GetLocation();
+	FVector MuzzleTraceStart = SocketTransform.GetLocation();
 	FVector MuzzleTraceEnd = TraceHitEndPoint;
 
 	GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleTraceStart, MuzzleTraceEnd, ECollisionChannel::ECC_Visibility);
@@ -29,7 +33,11 @@ void ARangedHitScanWeapon::PlayAfterFireEffect()
 {
 	if (TrailParticle)
 	{
-		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, GetSocketTransform());
+		const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+		if (MuzzleSocket == nullptr) return;
+		const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+
+		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, SocketTransform);
 		if (Trail)
 		{
 			Trail->SetVectorParameter(FName("Target"), TraceHitEndPoint);
