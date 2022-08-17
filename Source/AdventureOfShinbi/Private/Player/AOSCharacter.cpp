@@ -7,6 +7,7 @@
 #include "Weapons/Weapon.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
+#include "Components/WidgetComponent.h"
 
 AAOSCharacter::AAOSCharacter()
 {
@@ -171,6 +172,11 @@ void AAOSCharacter::EquipButtonPressed()
 
 	WeaponType = OverlappingWeapon->GetWeaponType();
 
+	if (OverlappingWeapon->GetWidget())
+	{
+		OverlappingWeapon->GetWidget()->SetVisibility(false);
+	}
+
 	CombatComp->SetEquippedWeapon(OverlappingWeapon);
 	OverlappingWeapon->SetOwner(this);
 }
@@ -204,6 +210,14 @@ void AAOSCharacter::AimButtonReleased()
 	}
 }
 
+void AAOSCharacter::ReloadButtonPressed()
+{
+	if (WeaponType == EWeaponType::EWT_Gun)
+	{
+		CombatComp->Reload();
+	}
+}
+
 void AAOSCharacter::TransitionAnimationStart()
 {
 	bIsAnimationPlaying = true;
@@ -231,6 +245,7 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtoneReleassed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AAOSCharacter::AimButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);
 }
 
 void AAOSCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)

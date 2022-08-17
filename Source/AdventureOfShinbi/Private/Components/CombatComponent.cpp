@@ -5,11 +5,13 @@
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Player/AOSCharacter.h"
+#include "Player/AOSController.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/RangedHitScanWeapon.h"
 #include "Weapons/RangedProjectileWeapon.h"
+#include "Components/TextBlock.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -22,6 +24,14 @@ UCombatComponent::UCombatComponent()
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeAmmoMap();
+
+	CharacterController = Cast<AAOSController>(Character->GetController());
+	if (CharacterController)
+	{
+		CharacterController->SetHUDAmmoInfoVisibility(false);
+	}
 
 	DefaultFOV = Character->GetCamera()->FieldOfView;
 	CurrentFOV = DefaultFOV;
@@ -174,6 +184,12 @@ void UCombatComponent::PlayMontageGlaveAttack()
 void UCombatComponent::RangedWeaponFire()
 {
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+
+	if (RangedWeapon->GetLoadedAmmo() > 0)
+	{
+		RangedWeapon->ConsumeAmmo();
+	}
+
 	ERangedWeaponType ERWT = RangedWeapon->GetRangedWeaponType();
 	if (ERWT == ERangedWeaponType::ERWT_HitScan)
 	{
@@ -184,6 +200,16 @@ void UCombatComponent::RangedWeaponFire()
 	{
 		ARangedProjectileWeapon* ProjectileWeapon = Cast<ARangedProjectileWeapon>(EquippedWeapon);
 		ProjectileWeapon->Firing();
+	}
+
+	if (CharacterController)
+	{
+		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+	}
+
+	if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
+	{
+		Reload();
 	}
 }
 
@@ -211,10 +237,61 @@ void UCombatComponent::Zoom(float DeltaTime)
 	}
 }
 
+void UCombatComponent::InitializeAmmoMap()
+{
+	AmmoMap.Add(EAmmoType::EAT_AR, 0);
+	AmmoMap.Add(EAmmoType::EAT_SMG, 20);
+	AmmoMap.Add(EAmmoType::EAT_Pistol, 0);
+	AmmoMap.Add(EAmmoType::EAT_Shell, 0);
+	AmmoMap.Add(EAmmoType::EAT_GrenadeLauncher, 0);
+	AmmoMap.Add(EAmmoType::EAT_Rocket, 0);
+}
+
+void UCombatComponent::Reload()
+{
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		if (AmmoMap[RangedWeapon->GetAmmoType()] == 0) return;
+
+		int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
+		if (AmmoToReload < AmmoMap[RangedWeapon->GetAmmoType()])
+		{
+			RangedWeapon->SetLoadedAmmo(AmmoToReload);
+			AmmoMap[RangedWeapon->GetAmmoType()] -= AmmoToReload;
+		}
+		else
+		{
+			RangedWeapon->SetLoadedAmmo(AmmoMap[RangedWeapon->GetAmmoType()]);
+			AmmoMap[RangedWeapon->GetAmmoType()] = 0;
+		}
+	}
+
+	if (CharacterController)
+	{
+		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+	}
+}
+
 void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 {
 	EquippedWeapon = Weapon;
 	EquippedWeapon->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
 	// TODO : 캐스팅 연산 옮기기
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+
+		CharacterController->SetHUDAmmoInfoVisibility(true);
+
+		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
+		{
+			Reload();
+		}
+	}
 }

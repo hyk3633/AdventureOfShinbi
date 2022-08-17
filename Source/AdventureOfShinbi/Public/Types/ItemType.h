@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
-{   // Åº¾à È¸º¹ ¹öÇÁ ±ÙÁ¢ ¸¶¹ı±ÙÁ¢ ¿ø°Å¸®
+{   // íƒ„ì•½ íšŒë³µ ë²„í”„ ê·¼ì ‘ ë§ˆë²•ê·¼ì ‘ ì›ê±°ë¦¬
 	EIT_Ammo UMETA(DisplayName = "Ammo"),
 	EIT_Recovery UMETA(DisplayName = "Recovery"),
 	EIT_Buff UMETA(DisplayName = "Buff"),
@@ -12,3 +12,24 @@ enum class EItemType : uint8
 
 	EIT_MAX UMETA(DisplayName = "DefaultMAX")
 };
+
+static FString SetItemTypeToWidget(EItemType Itemtype)
+{
+	switch (Itemtype)
+	{
+	case EItemType::EIT_MeleeWeapon:
+		return TEXT("ê·¼ì ‘ ë¬´ê¸°");
+	case EItemType::EIT_MagicMeleeWeapon:
+		return TEXT("ë§ˆë²• ê·¼ì ‘ ë¬´ê¸°");
+	case EItemType::EIT_RangedWeapon:
+		return TEXT("ì›ê±°ë¦¬ ë¬´ê¸°");
+	case EItemType::EIT_Ammo:
+		return TEXT("íƒ„ì•½");
+	case EItemType::EIT_Recovery:
+		return TEXT("íšŒë³µ");
+	case EItemType::EIT_Buff:
+		return TEXT("ê°•í™”");
+	default:
+		return TEXT("ë¯¸ì§€ì •");
+	}
+}

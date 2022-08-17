@@ -4,6 +4,7 @@
 #include "HUD/AOSHUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HUD/AOSCharacterOverlay.h"
+#include "Components/TextBlock.h"
 
 void AAOSHUD::BeginPlay()
 {

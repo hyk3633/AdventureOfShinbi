@@ -31,9 +31,6 @@ protected:
 
 	void SetPickupWidgetInfo();
 
-	FString SetItemTypeToWidget(EItemType Itemtype);
-	FString SetItemRankToWidget(EItemRank Itemrank);
-
 private:
 
 	UPROPERTY(EditAnywhere)
@@ -61,5 +58,6 @@ public:
 
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
+	FORCEINLINE UWidgetComponent* GetWidget() const { return Widget; }
 
 };

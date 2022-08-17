@@ -12,6 +12,7 @@
 
 class UProgressBar;
 class UTextBlock;
+class UHorizontalBox;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API UAOSCharacterOverlay : public UUserWidget
@@ -30,7 +31,10 @@ public:
 	UProgressBar* StaminaBar;
 
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* RoadedAmmoText;
+	UHorizontalBox* AmmoInfoBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* LoadedAmmoText;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TotalAmmoText;

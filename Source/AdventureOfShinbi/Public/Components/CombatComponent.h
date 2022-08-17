@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Types/AmmoType.h"
 #include "CombatComponent.generated.h"
 
 class AAOSCharacter;
+class AAOSController;
 class AWeapon;
 class UAnimMontage;
 
@@ -45,10 +47,15 @@ protected:
 
 	void Zoom(float DeltaTime);
 
+	void InitializeAmmoMap();
+
+	void Reload();
 
 private:
 
 	AAOSCharacter* Character;
+
+	AAOSController* CharacterController;
 
 	AWeapon* EquippedWeapon;
 
@@ -83,6 +90,18 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float ZoomSpeed = 30.f;
+
+	TMap<EAmmoType, int32> AmmoMap;
+
+	/*
+	재장전
+	컴포넌트 변수 : 내가 가진 탄약의 총량 예)100 , 장전 된 탄약 수
+	무기 변수 : 무기의 탄창량 예)30
+	30 / 100
+	15 / 100 -> R
+	if 장전 할 탄약 수 < 총량 : (탄창량 - 장전 된 탄약 수) 장전 후 총량 - 장전할 탄약 수
+	else : 총량 장전 후 총량 = 0
+	*/
 
 public:
 

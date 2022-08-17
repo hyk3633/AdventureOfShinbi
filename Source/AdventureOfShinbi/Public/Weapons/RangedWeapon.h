@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Weapons/Weapon.h"
+#include "Types/AmmoType.h"
 #include "RangedWeapon.generated.h"
 
 /**
@@ -53,7 +54,21 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
 	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
 
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	EAmmoType AmmoType = EAmmoType::EAT_MAX;
+
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "20", ClampMax = "1000"))
+	int32 Magazine = 30;
+	
+	UPROPERTY(VisibleAnywhere)
+	int32 LoadedAmmo = 0;
+
 public:
 
 	FORCEINLINE ERangedWeaponType GetRangedWeaponType() const { return RangedWeaponType; }
+	FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
+	FORCEINLINE int32 GetMagazine() const { return Magazine; }
+	FORCEINLINE int32 GetLoadedAmmo() const { return LoadedAmmo; }
+	FORCEINLINE void SetLoadedAmmo(int32 Quantity) { LoadedAmmo = Quantity; }
+	FORCEINLINE void ConsumeAmmo() { LoadedAmmo -= 1; }
 };

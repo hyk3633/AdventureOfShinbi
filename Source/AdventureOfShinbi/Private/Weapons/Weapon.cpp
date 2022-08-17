@@ -82,37 +82,3 @@ void AWeapon::SetPickupWidgetInfo()
 		PickupWidget->ItemRankText->SetText(FText::FromString(SetItemRankToWidget(InfoItemRank)));
 	}
 }
-
-
-FString AWeapon::SetItemTypeToWidget(EItemType Itemtype)
-{
-	FString Text;
-	switch (Itemtype)
-	{
-	case EItemType::EIT_MeleeWeapon:
-		return TEXT("근접 무기");
-	case EItemType::EIT_MagicMeleeWeapon:
-		return TEXT("마법 근접 무기");
-	case EItemType::EIT_RangedWeapon:
-		return TEXT("원거리 무기");
-	default:
-		return TEXT("미지정");
-	}
-}
-
-FString AWeapon::SetItemRankToWidget(EItemRank Itemrank)
-{
-	switch (Itemrank)
-	{
-	case EItemRank::EIR_Common:
-		return TEXT("일반");
-	case EItemRank::EIR_Rare:
-		return TEXT("희귀");
-	case EItemRank::EIR_Unique:
-		return TEXT("특별");
-	case EItemRank::EIR_Legendary:
-		return TEXT("전설");
-	default:
-		return TEXT("없음");
-	}
-}

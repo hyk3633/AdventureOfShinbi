@@ -55,6 +55,7 @@ private:
 	void AttackButtoneReleassed();
 	void AimButtonPressed();
 	void AimButtonReleased();
+	void ReloadButtonPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
