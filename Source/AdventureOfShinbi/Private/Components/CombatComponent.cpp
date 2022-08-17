@@ -15,7 +15,6 @@
 
 UCombatComponent::UCombatComponent()
 {
-
 	PrimaryComponentTick.bCanEverTick = true;
 
 
@@ -31,6 +30,8 @@ void UCombatComponent::BeginPlay()
 	if (CharacterController)
 	{
 		CharacterController->SetHUDAmmoInfoVisibility(false);
+		CharacterController->SetHUDHealthBar(Health, MaxHealth);
+		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
 	}
 
 	DefaultFOV = Character->GetCamera()->FieldOfView;
@@ -42,6 +43,8 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	Zoom(DeltaTime);
+
+	UpdateStamina(DeltaTime);
 }
 
 void UCombatComponent::Attack()
@@ -272,6 +275,57 @@ void UCombatComponent::Reload()
 	{
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+	}
+}
+
+void UCombatComponent::UpdateHealth(float Damage)
+{
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
+	if (CharacterController)
+	{
+		CharacterController->SetHUDHealthBar(Health, MaxHealth);
+	}
+}
+
+void UCombatComponent::UpdateStamina(float DeltaTime)
+{
+	if (FMath::FloorToFloat(Stamina) > 0.f && bCanRunning)
+	{
+		if (Character->GetIsRunning())
+		{
+			float Decrease = DeltaTime * StaminaDecreaseRate;
+			Stamina = FMath::Clamp(Stamina - Decrease, 0.f, MaxStamina);
+		}
+		else
+		{
+			float Increase = DeltaTime * StaminaIncreaseRate;
+			Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
+		}
+	}
+	else
+	{
+		if (FMath::FloorToFloat(Stamina) == 0.f)
+		{
+			bCanRunning = false;
+			Character->SetCanRunning(false);
+			Character->StopRunning();
+		}
+		if (Stamina <= MaxStamina * 0.6f)
+		{
+			float Increase = DeltaTime * StaminaIncreaseRate;
+			Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
+		}
+		else
+		{
+			bCanRunning = true;
+			Character->SetCanRunning(true);
+			Character->ResumeRunning();
+		}
+	}
+
+	if (CharacterController)
+	{
+		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
 	}
 }
 

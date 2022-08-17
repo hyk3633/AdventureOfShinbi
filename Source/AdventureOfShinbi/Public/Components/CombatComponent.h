@@ -30,6 +30,9 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	// 플레이어 스탯 처리
+	//void Health
+
 	// 공격 몽타주 재생
 
 	void PlayMontageOneHandAttack();
@@ -51,11 +54,37 @@ protected:
 
 	void Reload();
 
+	void UpdateHealth(float Damage);
+
+	void UpdateStamina(float DeltaTime);
+
 private:
 
 	AAOSCharacter* Character;
 
 	AAOSController* CharacterController;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float Health = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaxHealth = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float Mana = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaxMana = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float Stamina = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	float MaxStamina = 100.f;
+
+	float StaminaDecreaseRate = 20.f;
+
+	float StaminaIncreaseRate = 20.f;
 
 	AWeapon* EquippedWeapon;
 
@@ -81,6 +110,8 @@ private:
 
 	bool IsAnimationPlaying = false;
 
+	bool bCanRunning = true;
+
 	float DefaultFOV = 0.f;
 
 	float CurrentFOV = 0.f;
@@ -93,15 +124,7 @@ private:
 
 	TMap<EAmmoType, int32> AmmoMap;
 
-	/*
-	재장전
-	컴포넌트 변수 : 내가 가진 탄약의 총량 예)100 , 장전 된 탄약 수
-	무기 변수 : 무기의 탄창량 예)30
-	30 / 100
-	15 / 100 -> R
-	if 장전 할 탄약 수 < 총량 : (탄창량 - 장전 된 탄약 수) 장전 후 총량 - 장전할 탄약 수
-	else : 총량 장전 후 총량 = 0
-	*/
+
 
 public:
 

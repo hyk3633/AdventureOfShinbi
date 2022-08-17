@@ -73,3 +73,8 @@ void ARangedWeapon::PlayFireEffect()
 		UGameplayStatics::PlaySound2D(this, FireSound);
 	}
 }
+
+void ARangedWeapon::ConsumeAmmo()
+{
+	LoadedAmmo = FMath::Clamp(LoadedAmmo - AmmoConsumption, 0, Magazine);
+}

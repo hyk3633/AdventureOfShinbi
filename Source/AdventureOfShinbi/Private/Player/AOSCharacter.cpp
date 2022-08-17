@@ -41,7 +41,7 @@ void AAOSCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
-
+	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
 }
 
 void AAOSCharacter::PostInitializeComponents()
@@ -51,6 +51,14 @@ void AAOSCharacter::PostInitializeComponents()
 	if (CombatComp)
 	{
 		CombatComp->Character = this;
+	}
+}
+
+void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
+{
+	if (CombatComp)
+	{
+		CombatComp->UpdateHealth(Damage);
 	}
 }
 
@@ -102,7 +110,7 @@ void AAOSCharacter::Jump()
 
 void AAOSCharacter::RunningButtonPressed()
 {
-	if (bIsAnimationPlaying) return;
+	if (bIsAnimationPlaying || bCanRunning == false) return;
 
 	bIsRunning = true;
 
@@ -226,6 +234,16 @@ void AAOSCharacter::TransitionAnimationStart()
 void AAOSCharacter::TransitionAnimationEnd()
 {
 	bIsAnimationPlaying = false;
+}
+
+void AAOSCharacter::ResumeRunning()
+{
+	RunningButtonPressed();
+}
+
+void AAOSCharacter::StopRunning()
+{
+	RunningButtonReleased();
 }
 
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

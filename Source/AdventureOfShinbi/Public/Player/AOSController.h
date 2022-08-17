@@ -22,6 +22,9 @@ public:
 	void SetHUDLoadedAmmoText(int32 Ammo);
 	void SetHUDTotalAmmoText(int32 Ammo);
 	void SetHUDAmmoInfoVisibility(bool Visibility);
+	void SetHUDHealthBar(float HealthAmount, float MaxHealthAmount);
+	void SetHUDManaBar(float ManaAmount);
+	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
 
 protected:
 

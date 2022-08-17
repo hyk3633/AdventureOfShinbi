@@ -41,3 +41,26 @@ void AAOSController::SetHUDAmmoInfoVisibility(bool Visibility)
 		AOSHUD->CharacterOverlay->AmmoInfoBox->SetVisibility(ESV);
 	}
 }
+
+void AAOSController::SetHUDHealthBar(float HealthAmount, float MaxHealthAmount)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->HealthBar)
+	{
+		const float HealthPercent = HealthAmount / MaxHealthAmount;
+		AOSHUD->CharacterOverlay->HealthBar->SetPercent(HealthPercent);
+	}
+}
+
+void AAOSController::SetHUDManaBar(float ManaAmount)
+{
+
+}
+
+void AAOSController::SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->StaminaBar)
+	{
+		const float StaminaPercent = StaminaAmount / MaxStaminaAmount;
+		AOSHUD->CharacterOverlay->StaminaBar->SetPercent(StaminaPercent);
+	}
+}

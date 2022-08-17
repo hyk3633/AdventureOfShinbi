@@ -57,11 +57,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
 	EAmmoType AmmoType = EAmmoType::EAT_MAX;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "20", ClampMax = "1000"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute" , meta = (ClampMin = "20", ClampMax = "1000"))
 	int32 Magazine = 30;
 	
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Ranged Attribute")
 	int32 LoadedAmmo = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	int32 AmmoConsumption = 1;
 
 public:
 
@@ -70,5 +73,5 @@ public:
 	FORCEINLINE int32 GetMagazine() const { return Magazine; }
 	FORCEINLINE int32 GetLoadedAmmo() const { return LoadedAmmo; }
 	FORCEINLINE void SetLoadedAmmo(int32 Quantity) { LoadedAmmo = Quantity; }
-	FORCEINLINE void ConsumeAmmo() { LoadedAmmo -= 1; }
+	void ConsumeAmmo();
 };

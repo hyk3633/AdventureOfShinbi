@@ -40,6 +40,9 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+	UFUNCTION()
+	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
+
 private:
 
 	void MoveForward(float Value);
@@ -73,6 +76,8 @@ private:
 
 	bool bIsRunning = false;
 
+	bool bCanRunning = true;
+
 	bool bIsAnimationPlaying = false;
 
 	bool bIsMoving = false;
@@ -94,9 +99,12 @@ public:
 
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
 	FORCEINLINE bool GetIsRunning() const { return bIsRunning; }
+	FORCEINLINE void SetCanRunning(bool IsCapable) { bCanRunning = IsCapable; }
 	FORCEINLINE bool GetIsAnimationPlaying() const { return bIsAnimationPlaying; }
 	FORCEINLINE bool GetIsMoving() const { return bIsMoving; }
 	FORCEINLINE bool GetIsAiming() const { return bIsAiming; }
 	FORCEINLINE EWeaponType GetCombatState() const { return WeaponType; }
+	void ResumeRunning();
+	void StopRunning();
 
 };
