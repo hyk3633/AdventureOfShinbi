@@ -4,7 +4,9 @@
 #include "Weapons/RangedWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Sound/SoundCue.h"
+#include "DrawDebugHelpers.h"
 
 ARangedWeapon::ARangedWeapon()
 {
@@ -14,20 +16,15 @@ ARangedWeapon::ARangedWeapon()
 void ARangedWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-}
 
-void ARangedWeapon::Firing()
-{
-	PlayFireEffect();
-
-	FHitResult HitResult;
-
-	FVector2D ViewPortSize;
 	if (GEngine && GEngine->GameViewport)
 	{
 		GEngine->GameViewport->GetViewportSize(ViewPortSize);
 	}
+}
 
+void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
+{
 	FVector2D CrosshairLocation(ViewPortSize.X / 2.f, ViewPortSize.Y / 2.f);
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
@@ -39,6 +36,7 @@ void ARangedWeapon::Firing()
 
 	if (bScreenToWorld)
 	{
+		FHitResult HitResult;
 		FVector TraceStart = CrosshairWorldPosition;
 		FVector TraceEnd = TraceStart + CrosshairWorldDirection * 10000.f;
 
@@ -47,11 +45,11 @@ void ARangedWeapon::Firing()
 		// 적중하지 않았을 경우 충격 지점을 TraceEnd 로 지정
 		if (!HitResult.bBlockingHit)
 		{
-			TraceHitEndPoint = TraceEnd;
+			OutHitPoint = TraceEnd;
 		}
 		else
 		{
-			TraceHitEndPoint = HitResult.ImpactPoint;
+			OutHitPoint = HitResult.ImpactPoint;
 		}
 	}
 }

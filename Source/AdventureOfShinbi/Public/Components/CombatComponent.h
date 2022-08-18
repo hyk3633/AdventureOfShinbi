@@ -30,11 +30,6 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// 플레이어 스탯 처리
-	//void Health
-
-	// 공격 몽타주 재생
-
 	void PlayMontageOneHandAttack();
 
 	void PlayMontageTwoHandAttack();
@@ -53,6 +48,8 @@ protected:
 	void InitializeAmmoMap();
 
 	void Reload();
+
+	// 플레이어 스탯 처리
 
 	void UpdateHealth(float Damage);
 

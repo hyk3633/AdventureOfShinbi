@@ -30,4 +30,7 @@ private:
 	UParticleSystem* Tracer;
 
 	UParticleSystemComponent* TracerComponent;
+
+	UPROPERTY(EditAnywhere)
+	float LifeSpan = 3.f;
 };

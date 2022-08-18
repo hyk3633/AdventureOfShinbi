@@ -35,15 +35,13 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	virtual void Firing();
+	void CrosshairLineTrace(FVector& OutHitPoint);
 
 	void PlayFireEffect();
 
-protected:
-
-	FVector TraceHitEndPoint;
-
 private:
+
+	FVector2D ViewPortSize;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
 	UParticleSystem* MuzzleFlashParticle;

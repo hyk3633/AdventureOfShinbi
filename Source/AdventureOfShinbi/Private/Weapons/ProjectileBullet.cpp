@@ -22,4 +22,6 @@ void AProjectileBullet::BeginPlay()
 			EAttachLocation::KeepWorldPosition
 		);
 	}
+
+	SetLifeSpan(LifeSpan);
 }

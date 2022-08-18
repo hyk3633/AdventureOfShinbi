@@ -9,7 +9,9 @@
 
 void ARangedHitScanWeapon::Firing()
 {
-	Super::Firing();
+	PlayFireEffect();
+
+	CrosshairLineTrace(HitPoint);
 
 	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
@@ -17,13 +19,15 @@ void ARangedHitScanWeapon::Firing()
 
 	FHitResult MuzzleHitResult;
 	FVector MuzzleTraceStart = SocketTransform.GetLocation();
-	FVector MuzzleTraceEnd = TraceHitEndPoint;
+	FVector MuzzleTraceEnd = MuzzleTraceStart + (HitPoint - MuzzleTraceStart) * 1.25f;
 
 	GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleTraceStart, MuzzleTraceEnd, ECollisionChannel::ECC_Visibility);
 
 	if (MuzzleHitResult.bBlockingHit)
 	{
-		TraceHitEndPoint = MuzzleHitResult.Location;
+		HitPoint = MuzzleHitResult.ImpactPoint;
+		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
+		// 데미지 적용
 	}
 
 	PlayAfterFireEffect();
@@ -40,15 +44,15 @@ void ARangedHitScanWeapon::PlayAfterFireEffect()
 		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, SocketTransform);
 		if (Trail)
 		{
-			Trail->SetVectorParameter(FName("Target"), TraceHitEndPoint);
+			Trail->SetVectorParameter(FName("Target"), HitPoint);
 		}
 	}
 	if (ImpactParticle)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, TraceHitEndPoint);
+		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, HitPoint, ImpactRotator);
 	}
 	if (ImpactSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, TraceHitEndPoint);
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, HitPoint);
 	}
 }

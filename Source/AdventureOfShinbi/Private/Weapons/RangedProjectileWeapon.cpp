@@ -3,19 +3,24 @@
 #include "Weapons/RangedProjectileWeapon.h"
 #include "Weapons/Projectile.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "DrawDebugHelpers.h"
 
 void ARangedProjectileWeapon::Firing()
 {
-	Super::Firing();
+	PlayFireEffect();
 
-	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
+	FVector HitPoint;
+	CrosshairLineTrace(HitPoint);
 
 	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
 
-	FVector ToTarget = TraceHitEndPoint - SocketTransform.GetLocation();
+	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 	FRotator TargetRotation = ToTarget.Rotation();
+
+	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 
 	if (ProjectileClass && InstigatorPawn)
 	{
@@ -29,4 +34,40 @@ void ARangedProjectileWeapon::Firing()
 			World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
 		}
 	}
+}
+
+void ARangedProjectileWeapon::ScatterFiring()
+{
+	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+	if (MuzzleSocket == nullptr) return;
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+
+	for (int8 i = 0; i < NumberOfShots; i++)
+	{
+		FVector HitPoint;
+		CrosshairLineTrace(HitPoint);
+		FVector ToTarget = HitPoint - SocketTransform.GetLocation();
+		FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, ScatterRange);
+		ShotRotator.Add(RandomUnitVector.Rotation());
+	}
+
+	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
+
+	if (ProjectileClass && InstigatorPawn)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.Instigator = InstigatorPawn;
+
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			for (int8 i = 0; i < NumberOfShots; i++)
+			{
+				World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), ShotRotator[i], SpawnParams);
+			}
+		}
+	}
+
+	ShotRotator.Empty();
 }

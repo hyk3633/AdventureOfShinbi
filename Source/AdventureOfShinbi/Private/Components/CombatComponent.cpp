@@ -53,7 +53,6 @@ void UCombatComponent::Attack()
 
 	if (EquippedWeapon)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Attack"));
 		switch (EquippedWeapon->GetWeaponType())
 		{
 		case EWeaponType::EWT_MeleeOneHand:
@@ -202,7 +201,7 @@ void UCombatComponent::RangedWeaponFire()
 	else
 	{
 		ARangedProjectileWeapon* ProjectileWeapon = Cast<ARangedProjectileWeapon>(EquippedWeapon);
-		ProjectileWeapon->Firing();
+		ProjectileWeapon->GetScatterGun() == true ? ProjectileWeapon->ScatterFiring() : ProjectileWeapon->Firing();
 	}
 
 	if (CharacterController)
@@ -340,7 +339,6 @@ void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
-
 		CharacterController->SetHUDAmmoInfoVisibility(true);
 
 		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)

@@ -17,7 +17,7 @@ class ADVENTUREOFSHINBI_API ARangedHitScanWeapon : public ARangedWeapon
 
 public:
 
-	virtual void Firing() override;
+	void Firing();
 
 protected:
 
@@ -33,5 +33,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
 	USoundCue* ImpactSound;
+
+	FVector HitPoint;
+
+	FRotator ImpactRotator;
 	
 };
