@@ -9,6 +9,7 @@
 
 class AAOSCharacter;
 class AAOSController;
+class AAOSHUD;
 class AWeapon;
 class UAnimMontage;
 
@@ -55,11 +56,17 @@ protected:
 
 	void UpdateStamina(float DeltaTime);
 
+	void SetCrosshair();
+
+	void SpreadCrosshair(float DeltaTime);
+
 private:
 
 	AAOSCharacter* Character;
 
 	AAOSController* CharacterController;
+
+	AAOSHUD* HUD;
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
 	float Health = 100.f;
@@ -121,7 +128,8 @@ private:
 
 	TMap<EAmmoType, int32> AmmoMap;
 
-
+	float CrosshairVelocityFactor;
+	float CrosshairInAirFactor;
 
 public:
 

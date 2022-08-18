@@ -12,6 +12,7 @@
 #include "Weapons/RangedHitScanWeapon.h"
 #include "Weapons/RangedProjectileWeapon.h"
 #include "Components/TextBlock.h"
+#include "HUD/AOSHUD.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -29,6 +30,7 @@ void UCombatComponent::BeginPlay()
 	CharacterController = Cast<AAOSController>(Character->GetController());
 	if (CharacterController)
 	{
+		HUD = Cast<AAOSHUD>(CharacterController->GetHUD());
 		CharacterController->SetHUDAmmoInfoVisibility(false);
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
 		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
@@ -45,6 +47,8 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	Zoom(DeltaTime);
 
 	UpdateStamina(DeltaTime);
+
+	SpreadCrosshair(DeltaTime);
 }
 
 void UCombatComponent::Attack()
@@ -333,6 +337,8 @@ void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 	EquippedWeapon = Weapon;
 	EquippedWeapon->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
+	SetCrosshair();
+
 	// TODO : 캐스팅 연산 옮기기
 	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
@@ -346,4 +352,54 @@ void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 			Reload();
 		}
 	}
+}
+
+void UCombatComponent::SetCrosshair()
+{
+	if (CharacterController == nullptr) return;
+
+	if (HUD)
+	{
+		if (EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+		{
+			ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+			if (RangedWeapon)
+			{
+				HUD->CrosshairCenter = RangedWeapon->CrosshairCenter;
+				HUD->CrosshairLeft = RangedWeapon->CrosshairLeft;
+				HUD->CrosshairRight = RangedWeapon->CrosshairRight;
+				HUD->CrosshairTop = RangedWeapon->CrosshairTop;
+				HUD->CrosshairBottom = RangedWeapon->CrosshairBottom;
+			}
+		}
+		else
+		{
+			HUD->CrosshairCenter = nullptr;
+			HUD->CrosshairLeft = nullptr;
+			HUD->CrosshairRight = nullptr;
+			HUD->CrosshairTop = nullptr;
+			HUD->CrosshairBottom = nullptr;
+		}
+	}
+}
+
+void UCombatComponent::SpreadCrosshair(float DeltaTime)
+{
+	FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+	FVector2D VelocityMultiplierRange(0.f, 1.f);
+	FVector Velocity = Character->GetVelocity();
+	Velocity.Z = 0.f;
+
+	CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+	}
+	else
+	{
+		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+	}
+
+	HUD->SetCrosshairSpread(CrosshairVelocityFactor + CrosshairInAirFactor);
 }

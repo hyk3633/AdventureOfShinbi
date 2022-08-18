@@ -12,6 +12,7 @@
 
 class UUserWidget;
 class UAOSCharacterOverlay;
+class UTexture2D;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AAOSHUD : public AHUD
@@ -27,13 +28,34 @@ public:
 
 	UAOSCharacterOverlay* CharacterOverlay;
 
+	UTexture2D* CrosshairCenter;
+
+	UTexture2D* CrosshairLeft;
+
+	UTexture2D* CrosshairRight;
+
+	UTexture2D* CrosshairTop;
+
+	UTexture2D* CrosshairBottom;
+
 protected:
 
 	virtual void BeginPlay() override;
 
 	void AddOverlay();
 
+	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread);
+
 private:
 
+	UPROPERTY(EditAnywhere)
+	float CrosshairSpread;
+
+	UPROPERTY(EditAnywhere)
+	float CrosshairSpreadMax = 16.f;
+
+public:
+
+	FORCEINLINE void SetCrosshairSpread(float Spread) { CrosshairSpread = Spread; }
 
 };

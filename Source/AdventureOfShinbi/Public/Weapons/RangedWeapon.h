@@ -12,6 +12,7 @@
  */
 
 class USoundCue;
+class UTexture2D;
 
 UENUM(BlueprintType)
 enum class ERangedWeaponType : uint8
@@ -30,6 +31,21 @@ class ADVENTUREOFSHINBI_API ARangedWeapon : public AWeapon
 public:
 
 	ARangedWeapon();
+
+	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UTexture2D* CrosshairCenter;
+
+	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UTexture2D* CrosshairLeft;
+
+	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UTexture2D* CrosshairRight;
+
+	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UTexture2D* CrosshairTop;
+	
+	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UTexture2D* CrosshairBottom;
 
 protected:
 
