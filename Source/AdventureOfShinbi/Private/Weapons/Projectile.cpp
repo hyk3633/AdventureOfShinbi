@@ -3,6 +3,8 @@
 #include "Weapons/Projectile.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Player/AOSCharacter.h"
 
 AProjectile::AProjectile()
 {
@@ -28,10 +30,35 @@ void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+
+	IgnoreActors.Add(GetOwner());
 }
 
 void AProjectile::Tick(float DeltaTime)
 {
 
 }
+
+void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
+	if (Causer)
+	{
+		AController* CauserController = Cast<AController>(Causer->Controller);
+		if (CauserController)
+		{
+			if (bIsExplosive)
+			{
+				UGameplayStatics::ApplyRadialDamage(this, Damage, GetActorLocation(), ExplosionRadius, UDamageType::StaticClass(), IgnoreActors, Causer, CauserController);
+			}
+			else
+			{
+				float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
+				UGameplayStatics::ApplyDamage(OtherActor, Dmg, CauserController, Causer, UDamageType::StaticClass());
+			}
+		}
+	}
+}
+
 

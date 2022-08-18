@@ -28,6 +28,11 @@ void ARangedHitScanWeapon::Firing()
 		HitPoint = MuzzleHitResult.ImpactPoint;
 		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
 		// 데미지 적용
+		float Dmg = MuzzleHitResult.BoneName == FName("head") ? HeadShotDamage : Damage;
+		AActor* DamagedActor = Cast<AActor>(MuzzleHitResult.Actor);
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+
+		UGameplayStatics::ApplyDamage(DamagedActor, Dmg, OwnerPawn->GetController(), OwnerPawn, UDamageType::StaticClass());
 	}
 
 	PlayAfterFireEffect();

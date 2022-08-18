@@ -42,7 +42,7 @@ void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
 
 		GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
 
-		// 적중하지 않았을 경우 충격 지점을 TraceEnd 로 지정
+		// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
 		if (!HitResult.bBlockingHit)
 		{
 			OutHitPoint = TraceEnd;

@@ -34,6 +34,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
 	USoundCue* ImpactSound;
 
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float Damage = 5.f;
+	
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float HeadShotDamage = 10.f;
+
 	FVector HitPoint;
 
 	FRotator ImpactRotator;

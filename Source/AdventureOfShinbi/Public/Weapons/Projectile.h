@@ -23,7 +23,13 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-private:	
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	bool bIsExplosive = false;
 
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxCollision;
@@ -31,7 +37,14 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
-public:
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float Damage = 5.f;
 
-	FORCEINLINE UBoxComponent* GetBoxCollision() const { return BoxCollision; }
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
+	float HeadShotDamage = 10.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
+	float ExplosionRadius = 30.f;
+
+	TArray<AActor*> IgnoreActors;
 };

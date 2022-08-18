@@ -35,7 +35,7 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	void CrosshairLineTrace(FVector& OutHitPoint);
+	void CrosshairLineTrace(FVector& OutHit);
 
 	void PlayFireEffect();
 
