@@ -38,14 +38,17 @@ void ARangedProjectileWeapon::Firing()
 
 void ARangedProjectileWeapon::ScatterFiring()
 {
+	PlayFireEffect();
+
 	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
 
+	FVector HitPoint;
+	CrosshairLineTrace(HitPoint);
+
 	for (int8 i = 0; i < NumberOfShots; i++)
 	{
-		FVector HitPoint;
-		CrosshairLineTrace(HitPoint);
 		FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 		FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, ScatterRange);
 		ShotRotator.Add(RandomUnitVector.Rotation());

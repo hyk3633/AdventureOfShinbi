@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "DrawDebugHelpers.h"
 
 void ARangedHitScanWeapon::Firing()
 {
@@ -21,12 +23,20 @@ void ARangedHitScanWeapon::Firing()
 	FVector MuzzleTraceStart = SocketTransform.GetLocation();
 	FVector MuzzleTraceEnd = MuzzleTraceStart + (HitPoint - MuzzleTraceStart) * 1.25f;
 
+	if (BulletSpread > 0.f)
+	{
+		FVector ToTarget = HitPoint - SocketTransform.GetLocation();
+		FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
+		MuzzleTraceEnd = MuzzleTraceStart + (RandomUnitVector * 5000.f);
+	}
+
 	GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleTraceStart, MuzzleTraceEnd, ECollisionChannel::ECC_Visibility);
 
 	if (MuzzleHitResult.bBlockingHit)
 	{
 		HitPoint = MuzzleHitResult.ImpactPoint;
 		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
+
 		// 데미지 적용
 		float Dmg = MuzzleHitResult.BoneName == FName("head") ? HeadShotDamage : Damage;
 		AActor* DamagedActor = Cast<AActor>(MuzzleHitResult.Actor);

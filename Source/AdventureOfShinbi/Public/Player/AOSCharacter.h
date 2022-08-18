@@ -95,6 +95,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComp;
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float GunRecoil = 0.f;
+
 public:
 
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }

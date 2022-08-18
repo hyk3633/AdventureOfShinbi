@@ -43,5 +43,7 @@ private:
 	FVector HitPoint;
 
 	FRotator ImpactRotator;
-	
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BulletSpread = 0.f;
 };

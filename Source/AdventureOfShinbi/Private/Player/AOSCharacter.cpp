@@ -5,6 +5,7 @@
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/Weapon.h"
+#include "Weapons/RangedWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 #include "Components/WidgetComponent.h"
@@ -148,30 +149,30 @@ void AAOSCharacter::EquipButtonPressed()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	// TODO : ¹«±â ÀåÂø ½Ã °È±â¶û ¶Ù±â ¼Óµµ °ª Áõ°¡
 
-	if (GetMesh() == nullptr) return;
-
 	FName SocketName;
-	switch (OverlappingWeapon->GetWeaponType())
+	if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
-	case EWeaponType::EWT_Gun:
+		ARangedWeapon* RW = Cast<ARangedWeapon>(OverlappingWeapon);
+		GunRecoil = RW->GetGunRecoil();
 		SocketName = FName("GunSocket");
-		break;
-
-	case EWeaponType::EWT_Bow:
-		break;
-
-	case EWeaponType::EWT_MeleeOneHand:
-		SocketName = FName("OneHandSocket");
-		break;
-
-	case EWeaponType::EWT_MeleeTwoHand:
-		SocketName = FName("TwoHandSocket");
-		break;
-
-	case EWeaponType::EWT_Glave:
-		SocketName = FName("GlaveSocket");
-		break;
 	}
+	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+	{
+
+	}
+	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	{
+		SocketName = FName("OneHandSocket");
+	}
+	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MeleeTwoHand)
+	{
+		SocketName = FName("TwoHandSocket");
+	}
+	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	{
+		SocketName = FName("GlaveSocket");
+	}
+
 	const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(SocketName);
 	if (HandSocket)
 	{
