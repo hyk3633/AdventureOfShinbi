@@ -94,14 +94,14 @@ private:
 
 public:
 
-	FORCEINLINE ERangedWeaponType GetRangedWeaponType() const { return RangedWeaponType; }
-	FORCEINLINE EAmmoType GetAmmoType() const { return AmmoType; }
-	FORCEINLINE int32 GetMagazine() const { return Magazine; }
-	FORCEINLINE int32 GetLoadedAmmo() const { return LoadedAmmo; }
-	FORCEINLINE void SetLoadedAmmo(int32 Quantity) { LoadedAmmo = Quantity; }
-	FORCEINLINE float GetGunRecoil() const { return GunRecoil; }
-	FORCEINLINE bool GetAutomaticFire() const { return bAutomaticFire; }
-	FORCEINLINE float GetFireRate() const { return FireRate; }
-	FORCEINLINE float GetZoomScope() const { return ZoomScope; }
+	ERangedWeaponType GetRangedWeaponType() const;
+	EAmmoType GetAmmoType() const;
+	int32 GetMagazine() const;
+	int32 GetLoadedAmmo() const;
+	void SetLoadedAmmo(int32 Quantity);
+	float GetGunRecoil() const;
+	bool GetAutomaticFire() const;
+	float GetFireRate() const;
+	float GetZoomScope() const;
 	void ConsumeAmmo();
 };

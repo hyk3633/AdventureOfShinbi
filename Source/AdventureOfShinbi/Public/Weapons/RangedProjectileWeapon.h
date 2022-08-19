@@ -43,5 +43,5 @@ private:
 
 public:
 
-	FORCEINLINE bool GetScatterGun() const { return bScatterGun; }
+	bool GetScatterGun() const;
 };

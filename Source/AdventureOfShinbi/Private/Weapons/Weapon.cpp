@@ -82,3 +82,18 @@ void AWeapon::SetPickupWidgetInfo()
 		PickupWidget->ItemRankText->SetText(FText::FromString(SetItemRankToWidget(InfoItemRank)));
 	}
 }
+
+EWeaponType AWeapon::GetWeaponType() const
+{
+	return WeaponType;
+}
+
+USkeletalMeshComponent* AWeapon::GetWeaponMesh() const
+{
+	return WeaponMesh;
+}
+
+UWidgetComponent* AWeapon::GetWidget() const
+{
+	return Widget;
+}

@@ -316,3 +316,43 @@ void AAOSCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
+
+UCameraComponent* AAOSCharacter::GetCamera() const
+{
+	return Camera;
+}
+
+bool AAOSCharacter::GetIsRunning() const
+{
+	return bIsRunning;
+}
+
+void AAOSCharacter::SetCanRunning(bool IsCapable)
+{
+	bCanRunning = IsCapable;
+}
+
+bool AAOSCharacter::GetIsAnimationPlaying() const
+{
+	return bIsAnimationPlaying;
+}
+
+bool AAOSCharacter::GetIsMoving() const
+{
+	return bIsMoving;
+}
+
+bool AAOSCharacter::GetIsAiming() const
+{
+	return bIsAiming;
+}
+
+bool AAOSCharacter::GetAttackButtonPressing() const
+{
+	return bAttackButtonPressing;
+}
+
+EWeaponType AAOSCharacter::GetCombatState() const
+{
+	return WeaponType;
+}

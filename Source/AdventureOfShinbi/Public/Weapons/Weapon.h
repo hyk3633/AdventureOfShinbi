@@ -56,7 +56,7 @@ private:
 
 public:
 
-	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
-	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
-	FORCEINLINE UWidgetComponent* GetWidget() const { return Widget; }
+	EWeaponType GetWeaponType() const;
+	USkeletalMeshComponent* GetWeaponMesh() const;
+	UWidgetComponent* GetWidget() const;
 };

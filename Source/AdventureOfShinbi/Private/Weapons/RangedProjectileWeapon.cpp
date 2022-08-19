@@ -74,3 +74,8 @@ void ARangedProjectileWeapon::ScatterFiring()
 
 	ShotRotator.Empty();
 }
+
+bool ARangedProjectileWeapon::GetScatterGun() const
+{
+	return bScatterGun;
+}

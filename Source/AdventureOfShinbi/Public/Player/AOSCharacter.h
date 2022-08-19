@@ -111,14 +111,14 @@ private:
 
 public:
 
-	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
-	FORCEINLINE bool GetIsRunning() const { return bIsRunning; }
-	FORCEINLINE void SetCanRunning(bool IsCapable) { bCanRunning = IsCapable; }
-	FORCEINLINE bool GetIsAnimationPlaying() const { return bIsAnimationPlaying; }
-	FORCEINLINE bool GetIsMoving() const { return bIsMoving; }
-	FORCEINLINE bool GetIsAiming() const { return bIsAiming; }
-	FORCEINLINE bool GetAttackButtonPressing() const { return bAttackButtonPressing; }
-	FORCEINLINE EWeaponType GetCombatState() const { return WeaponType; }
+	UCameraComponent* GetCamera() const;
+	bool GetIsRunning() const;
+	void SetCanRunning(bool IsCapable);
+	bool GetIsAnimationPlaying() const;
+	bool GetIsMoving() const;
+	bool GetIsAiming() const;
+	bool GetAttackButtonPressing() const;
+	EWeaponType GetCombatState() const;
 	void ResumeRunning();
 	void StopRunning();
 

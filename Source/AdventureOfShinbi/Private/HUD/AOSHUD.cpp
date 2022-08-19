@@ -83,3 +83,8 @@ void AAOSHUD::DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVect
 		FLinearColor::White
 	);
 }
+
+void AAOSHUD::SetCrosshairSpread(float Spread)
+{
+	CrosshairSpread = Spread;
+}

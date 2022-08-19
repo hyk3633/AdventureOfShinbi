@@ -76,3 +76,48 @@ void ARangedWeapon::ConsumeAmmo()
 {
 	LoadedAmmo = FMath::Clamp(LoadedAmmo - AmmoConsumption, 0, Magazine);
 }
+
+ERangedWeaponType ARangedWeapon::GetRangedWeaponType() const
+{
+	return RangedWeaponType;
+}
+
+EAmmoType ARangedWeapon::GetAmmoType() const
+{
+	return AmmoType;
+}
+
+int32 ARangedWeapon::GetMagazine() const
+{
+	return Magazine;
+}
+
+int32 ARangedWeapon::GetLoadedAmmo() const
+{
+	return LoadedAmmo;
+}
+
+void ARangedWeapon::SetLoadedAmmo(int32 Quantity)
+{
+	LoadedAmmo = Quantity;
+}
+
+float ARangedWeapon::GetGunRecoil() const
+{
+	return GunRecoil;
+}
+
+bool ARangedWeapon::GetAutomaticFire() const
+{
+	return bAutomaticFire;
+}
+
+float ARangedWeapon::GetFireRate() const
+{
+	return FireRate;
+}
+
+float ARangedWeapon::GetZoomScope() const
+{
+	return ZoomScope;
+}

@@ -56,6 +56,6 @@ private:
 
 public:
 
-	FORCEINLINE void SetCrosshairSpread(float Spread) { CrosshairSpread = Spread; }
+	void SetCrosshairSpread(float Spread);
 
 };
