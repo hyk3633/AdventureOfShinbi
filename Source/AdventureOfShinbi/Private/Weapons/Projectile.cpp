@@ -8,7 +8,7 @@
 
 AProjectile::AProjectile()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	SetRootComponent(BoxCollision);
@@ -33,11 +33,6 @@ void AProjectile::BeginPlay()
 	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 
 	IgnoreActors.Add(GetOwner());
-}
-
-void AProjectile::Tick(float DeltaTime)
-{
-
 }
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
