@@ -122,6 +122,7 @@ private:
 
 	float CurrentFOV = 0.f;
 
+	// 값을 저장해서 쓸건지?
 	UPROPERTY(EditAnywhere)
 	float ZoomedFOV = 50.f;
 

@@ -87,7 +87,10 @@ private:
 	bool bAutomaticFire = false;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bAutomaticFire"))
-	float FireRate = 1.0f;
+	float FireRate = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float ZoomScope = 30.f;
 
 public:
 
@@ -99,5 +102,6 @@ public:
 	FORCEINLINE float GetGunRecoil() const { return GunRecoil; }
 	FORCEINLINE bool GetAutomaticFire() const { return bAutomaticFire; }
 	FORCEINLINE float GetFireRate() const { return FireRate; }
+	FORCEINLINE float GetZoomScope() const { return ZoomScope; }
 	void ConsumeAmmo();
 };

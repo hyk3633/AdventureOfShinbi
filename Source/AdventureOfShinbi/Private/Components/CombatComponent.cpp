@@ -228,20 +228,24 @@ void UCombatComponent::ResetCombo()
 
 void UCombatComponent::Zoom(float DeltaTime)
 {
-	if (Character == nullptr) return;
+	if (Character == nullptr || EquippedWeapon == nullptr || EquippedWeapon->GetWeaponType() != EWeaponType::EWT_Gun) return;
 
-	if (Character->GetIsAiming())
+	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+	if (RW)
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, ZoomedFOV, DeltaTime, ZoomSpeed);
-	}
-	else
-	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomSpeed);
-	}
+		if (Character->GetIsAiming())
+		{
+			CurrentFOV = FMath::FInterpTo(CurrentFOV, RW->GetZoomScope(), DeltaTime, ZoomSpeed);
+		}
+		else
+		{
+			CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomSpeed);
+		}
 
-	if (Character->GetCamera())
-	{
-		Character->GetCamera()->FieldOfView = CurrentFOV;
+		if (Character->GetCamera())
+		{
+			Character->GetCamera()->FieldOfView = CurrentFOV;
+		}
 	}
 }
 
@@ -324,7 +328,10 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 		{
 			bCanRunning = true;
 			Character->SetCanRunning(true);
-			Character->ResumeRunning();
+			if (Character->GetIsRunning())
+			{
+				Character->ResumeRunning();
+			}
 		}
 	}
 
