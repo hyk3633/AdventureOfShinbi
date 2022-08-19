@@ -13,10 +13,10 @@ void AProjectileBullet::BeginPlay()
 
 	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectileBullet::OnHit);
 
-	if (Tracer)
+	if (BulletParticle)
 	{
-		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
-			Tracer,
+		BulletComponent = UGameplayStatics::SpawnEmitterAttached(
+			BulletParticle,
 			BoxCollision,
 			FName(),
 			GetActorLocation(),
@@ -31,6 +31,11 @@ void AProjectileBullet::BeginPlay()
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
+
+	if (HitParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+	}
 
 	Destroy();
 }

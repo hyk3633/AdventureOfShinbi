@@ -83,6 +83,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GunRecoil = 0.35f;
 
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	bool bAutomaticFire = false;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bAutomaticFire"))
+	float FireRate = 1.0f;
+
 public:
 
 	FORCEINLINE ERangedWeaponType GetRangedWeaponType() const { return RangedWeaponType; }
@@ -91,5 +97,7 @@ public:
 	FORCEINLINE int32 GetLoadedAmmo() const { return LoadedAmmo; }
 	FORCEINLINE void SetLoadedAmmo(int32 Quantity) { LoadedAmmo = Quantity; }
 	FORCEINLINE float GetGunRecoil() const { return GunRecoil; }
+	FORCEINLINE bool GetAutomaticFire() const { return bAutomaticFire; }
+	FORCEINLINE float GetFireRate() const { return FireRate; }
 	void ConsumeAmmo();
 };

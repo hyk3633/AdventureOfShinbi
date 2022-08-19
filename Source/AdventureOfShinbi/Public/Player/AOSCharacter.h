@@ -66,6 +66,11 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationEnd();
 
+	void Fire();
+	void StartTimerFire();
+	void FireReturn();
+
+
 private:
 
 	UPROPERTY(EditAnywhere)
@@ -84,6 +89,10 @@ private:
 
 	bool bIsAiming = false;
 
+	bool bAttackButtonPressing = false;
+
+	bool bAbleFire = true;
+
 	AWeapon* OverlappingWeapon;
 
 	UPROPERTY(VisibleAnywhere)
@@ -98,6 +107,8 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float GunRecoil = 0.f;
 
+	FTimerHandle FireTimer;
+
 public:
 
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
@@ -106,6 +117,7 @@ public:
 	FORCEINLINE bool GetIsAnimationPlaying() const { return bIsAnimationPlaying; }
 	FORCEINLINE bool GetIsMoving() const { return bIsMoving; }
 	FORCEINLINE bool GetIsAiming() const { return bIsAiming; }
+	FORCEINLINE bool GetAttackButtonPressing() const { return bAttackButtonPressing; }
 	FORCEINLINE EWeaponType GetCombatState() const { return WeaponType; }
 	void ResumeRunning();
 	void StopRunning();

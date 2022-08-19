@@ -23,7 +23,9 @@ public:
 
 	UCombatComponent();
 
-	void Attack();
+	void MeleeAttack();
+
+	void GunFire();
 
 protected:
 

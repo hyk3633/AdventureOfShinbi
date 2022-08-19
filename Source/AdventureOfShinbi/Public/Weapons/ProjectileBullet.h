@@ -29,9 +29,12 @@ protected:
 private:
 
 	UPROPERTY(EditAnywhere)
-	UParticleSystem* Tracer;
+	UParticleSystem* BulletParticle;
 
-	UParticleSystemComponent* TracerComponent;
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* HitParticle;
+
+	UParticleSystemComponent* BulletComponent;
 
 	UPROPERTY(EditAnywhere)
 	float LifeSpan = 3.f;

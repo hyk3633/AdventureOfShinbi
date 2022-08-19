@@ -51,7 +51,7 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	SpreadCrosshair(DeltaTime);
 }
 
-void UCombatComponent::Attack()
+void UCombatComponent::MeleeAttack()
 {
 	if (Character->GetIsAnimationPlaying()) return;
 
@@ -67,15 +67,17 @@ void UCombatComponent::Attack()
 		case EWeaponType::EWT_MeleeTwoHand:
 			PlayMontageTwoHandAttack();
 			break;
-		case EWeaponType::EWT_Gun:
-			PlayMontageGunFire();
-			RangedWeaponFire();
-			break;
 		case EWeaponType::EWT_Glave:
 			PlayMontageGlaveAttack();
 			break;
 		}
 	}
+}
+
+void UCombatComponent::GunFire()
+{
+	PlayMontageGunFire();
+	RangedWeaponFire();
 }
 
 void UCombatComponent::PlayMontageOneHandAttack()

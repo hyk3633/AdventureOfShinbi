@@ -192,15 +192,51 @@ void AAOSCharacter::EquipButtonPressed()
 
 void AAOSCharacter::AttackButtonePressed()
 {
-	if (CombatComp && WeaponType != EWeaponType::EWT_MAX)
+	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX) return;
+
+	bAttackButtonPressing = true;
+
+	if (WeaponType == EWeaponType::EWT_Gun)
 	{
-		CombatComp->Attack();
+		Fire();
+	}
+	else
+	{
+		CombatComp->MeleeAttack();
 	}
 }
 
 void AAOSCharacter::AttackButtoneReleassed()
 {
+	bAttackButtonPressing = false;
+}
 
+void AAOSCharacter::Fire()
+{
+	if (bAbleFire)
+	{
+		CombatComp->GunFire();
+		StartTimerFire();
+	}
+}
+
+void AAOSCharacter::StartTimerFire()
+{
+	ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
+
+	bAbleFire = false;
+	GetWorldTimerManager().SetTimer(FireTimer, this, &AAOSCharacter::FireReturn, RW->GetFireRate());
+
+}
+
+void AAOSCharacter::FireReturn()
+{
+	bAbleFire = true;
+	ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
+	if (RW->GetAutomaticFire() && bAttackButtonPressing)
+	{
+		Fire();
+	}
 }
 
 void AAOSCharacter::AimButtonPressed()
