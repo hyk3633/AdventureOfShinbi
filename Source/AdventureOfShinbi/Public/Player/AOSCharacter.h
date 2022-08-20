@@ -59,6 +59,7 @@ private:
 	void AimButtonPressed();
 	void AimButtonReleased();
 	void ReloadButtonPressed();
+	void InventoryKeyPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
@@ -92,6 +93,8 @@ private:
 	bool bAttackButtonPressing = false;
 
 	bool bAbleFire = true;
+
+	bool bIsInventoryOn = false;
 
 	AWeapon* OverlappingWeapon;
 

@@ -12,6 +12,18 @@
 class USphereComponent;
 class UWidgetComponent;
 class UPickupWidget;
+class UTexture2D;
+
+UENUM()
+enum class EWeaponState : uint8
+{   
+	EWS_Field,
+	EWS_PickedUp,
+	EWS_Equipped,
+	EWS_Dropped,
+
+	EWS_MAX
+};
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AWeapon : public AActor
@@ -54,9 +66,16 @@ private:
 	UPROPERTY(EditAnywhere)
 	UWidgetComponent* Widget;
 
+	UPROPERTY(EditAnywhere)
+	UTexture2D* WeaponIcon;
+
+	EWeaponState WeaponState = EWeaponState::EWS_MAX;
+
 public:
 
 	EWeaponType GetWeaponType() const;
 	USkeletalMeshComponent* GetWeaponMesh() const;
 	UWidgetComponent* GetWidget() const;
+	UTexture2D* GetWeaponIcon() const;
+	virtual void SetWeaponState(const EWeaponState State);
 };

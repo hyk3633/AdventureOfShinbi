@@ -36,3 +36,34 @@ void AMeleeWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedCompo
 		}
 	}
 }
+
+void AMeleeWeapon::SetWeaponState(const EWeaponState State)
+{
+	Super::SetWeaponState(State);
+
+	if (State == EWeaponState::EWS_Field)
+	{
+		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	}
+	else if (State == EWeaponState::EWS_PickedUp)
+	{
+		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	}
+	else if (State == EWeaponState::EWS_Equipped)
+	{
+		DamageCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	}
+	else if (State == EWeaponState::EWS_Dropped)
+	{
+		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	}
+	else
+	{
+
+	}
+}

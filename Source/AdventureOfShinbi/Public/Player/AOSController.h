@@ -11,6 +11,7 @@
  */
 
 class AAOSHUD;
+class UTexture2D;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AAOSController : public APlayerController
@@ -19,19 +20,32 @@ class ADVENTUREOFSHINBI_API AAOSController : public APlayerController
 	
 public:
 
-	void SetHUDLoadedAmmoText(int32 Ammo);
-	void SetHUDTotalAmmoText(int32 Ammo);
-	void SetHUDAmmoInfoVisibility(bool Visibility);
 	void SetHUDHealthBar(float HealthAmount, float MaxHealthAmount);
 	void SetHUDManaBar(float ManaAmount);
 	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
+
+	void SetHUDItemIcon(UTexture2D* Icon);
+	void SetHUDEquippedWeaponIcon(UTexture2D* Icon);
+	void SetHUDWeaponQuickSlot1Icon(UTexture2D*Icon);
+	void SetHUDWeaponQuickSlot2Icon(UTexture2D* Icon);
+
+	void HUDInventoryOn(bool IsInventoryOn);
+
+	void SetHUDLoadedAmmoText(int32 Ammo);
+	void SetHUDTotalAmmoText(int32 Ammo);
+	void HUDAmmoInfoOn();
 
 protected:
 
 	virtual void BeginPlay() override;
 
+	void HUDInventoryOff();
+
 private:
 
 	AAOSHUD* AOSHUD;
 
+	FTimerHandle InventoryOffDelayTimer;
+
+	float InventoryOffDelayTime = 1.f;
 };

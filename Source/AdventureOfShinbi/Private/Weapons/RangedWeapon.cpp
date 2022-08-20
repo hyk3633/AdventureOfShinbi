@@ -72,11 +72,6 @@ void ARangedWeapon::PlayFireEffect()
 	}
 }
 
-void ARangedWeapon::ConsumeAmmo()
-{
-	LoadedAmmo = FMath::Clamp(LoadedAmmo - AmmoConsumption, 0, Magazine);
-}
-
 ERangedWeaponType ARangedWeapon::GetRangedWeaponType() const
 {
 	return RangedWeaponType;
@@ -97,7 +92,7 @@ int32 ARangedWeapon::GetLoadedAmmo() const
 	return LoadedAmmo;
 }
 
-void ARangedWeapon::SetLoadedAmmo(int32 Quantity)
+void ARangedWeapon::SetLoadedAmmo(const int32 Quantity)
 {
 	LoadedAmmo = Quantity;
 }
@@ -120,4 +115,31 @@ float ARangedWeapon::GetFireRate() const
 float ARangedWeapon::GetZoomScope() const
 {
 	return ZoomScope;
+}
+
+void ARangedWeapon::ConsumeAmmo()
+{
+	LoadedAmmo = FMath::Clamp(LoadedAmmo - AmmoConsumption, 0, Magazine);
+}
+
+void ARangedWeapon::SetWeaponState(const EWeaponState State)
+{
+	Super::SetWeaponState(State);
+
+	if (State == EWeaponState::EWS_Field)
+	{
+
+	}
+	else if (State == EWeaponState::EWS_PickedUp)
+	{
+
+	}
+	else if (State == EWeaponState::EWS_Equipped)
+	{
+
+	}
+	else
+	{
+
+	}
 }

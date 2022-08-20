@@ -12,7 +12,7 @@
 
 class UUserWidget;
 class UAOSCharacterOverlay;
-class UTexture2D;
+class AWeapon;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AAOSHUD : public AHUD
@@ -22,6 +22,12 @@ class ADVENTUREOFSHINBI_API AAOSHUD : public AHUD
 public:
 
 	virtual void DrawHUD() override;
+
+	void SetCrosshairSpread(float Spread);
+
+	void CreateInventorySlot();
+
+	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);
 
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> CharacterOverlayClass;
@@ -38,6 +44,9 @@ public:
 
 	UTexture2D* CrosshairBottom;
 
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	TSubclassOf<UUserWidget> InventorySlotClass;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -53,9 +62,5 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpreadMax = 16.f;
-
-public:
-
-	void SetCrosshairSpread(float Spread);
 
 };

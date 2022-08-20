@@ -31,7 +31,6 @@ void UCombatComponent::BeginPlay()
 	if (CharacterController)
 	{
 		HUD = Cast<AAOSHUD>(CharacterController->GetHUD());
-		CharacterController->SetHUDAmmoInfoVisibility(false);
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
 		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
 	}
@@ -344,17 +343,15 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
 {
 	EquippedWeapon = Weapon;
-	EquippedWeapon->GetWeaponMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
 	SetCrosshair();
 
-	// TODO : 캐스팅 연산 옮기기
 	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
-		CharacterController->SetHUDAmmoInfoVisibility(true);
+		CharacterController->HUDAmmoInfoOn();
 
 		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
 		{
@@ -411,4 +408,33 @@ void UCombatComponent::SpreadCrosshair(float DeltaTime)
 	}
 
 	HUD->SetCrosshairSpread(CrosshairVelocityFactor + CrosshairInAirFactor);
+}
+
+void UCombatComponent::PickingUpWeapon(AWeapon* PickedWeapon)
+{
+	if (PickedWeapon)
+	{
+		if (AcquiredWeapons.Num() % 5 == 0)
+		{
+			HUD->CreateInventorySlot();
+		}
+
+		AcquiredWeapons.Add(PickedWeapon);
+
+		PickedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
+
+		AddToInventory();
+	}
+}
+
+void UCombatComponent::AddToInventory()
+{
+	if (HUD == nullptr) return;
+
+	HUD->AddWeaponToSlot(AcquiredWeapons.Num() - 1, AcquiredWeapons.Last());
+}
+
+void UCombatComponent::DiscardWeapon()
+{
+
 }

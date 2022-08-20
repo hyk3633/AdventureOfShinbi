@@ -62,6 +62,12 @@ protected:
 
 	void SpreadCrosshair(float DeltaTime);
 
+	void PickingUpWeapon(AWeapon* PickedWeapon);
+
+	void AddToInventory();
+
+	void DiscardWeapon();
+
 private:
 
 	AAOSCharacter* Character;
@@ -133,6 +139,8 @@ private:
 
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;
+
+	TArray<AWeapon*> AcquiredWeapons;
 
 public:
 

@@ -2,15 +2,24 @@
 
 
 #include "HUD/AOSHUD.h"
-#include "GameFramework/PlayerController.h"
 #include "HUD/AOSCharacterOverlay.h"
+#include "HUD/Inventory.h"
+#include "HUD/InventorySlot.h"
+#include "Weapons/Weapon.h"
+#include "GameFramework/PlayerController.h"
 #include "Components/TextBlock.h"
+#include "Components/UniformGridPanel.h"
+#include "Components/UniformGridSlot.h"
+#include "Components/Image.h"
+#include "Engine/Texture2D.h"
 
 void AAOSHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
 	AddOverlay();
+
+	CreateInventorySlot();
 }
 
 void AAOSHUD::AddOverlay()
@@ -87,4 +96,42 @@ void AAOSHUD::DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVect
 void AAOSHUD::SetCrosshairSpread(float Spread)
 {
 	CrosshairSpread = Spread;
+}
+
+void AAOSHUD::CreateInventorySlot()
+{
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) return;
+	
+	APlayerController* PlayerController = GetOwningPlayerController();
+
+	if (PlayerController && InventorySlotClass)
+	{
+		int8 SlotCount = CharacterOverlay->InventoryWidget->SlotArray.Num() + 1;
+		int8 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
+
+		for (int8 i = 0; i < 5; i++)
+		{
+			UInventorySlot* Slot = CreateWidget<UInventorySlot>(PlayerController, InventorySlotClass);
+			CharacterOverlay->InventoryWidget->SlotArray.Add(Slot);
+
+			if (CharacterOverlay->InventoryWidget->InventoryGridPanel)
+			{
+				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->InventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i+Row*5], Row, i);
+				GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+				GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
+			}
+		}
+	}
+}
+
+void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
+{
+	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
+	{
+		CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->SetSlottedWeapon(Weapon);
+		if (CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon && Weapon->GetWeaponIcon())
+		{
+			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetWeaponIcon());
+		}
+	}
 }

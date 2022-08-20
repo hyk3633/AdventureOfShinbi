@@ -1,6 +1,7 @@
 
 
 #include "Player/AOSCharacter.h"
+#include "Player/AOSController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -9,6 +10,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 #include "Components/WidgetComponent.h"
+#include "HUD/AOSHUD.h"
 
 AAOSCharacter::AAOSCharacter()
 {
@@ -149,7 +151,7 @@ void AAOSCharacter::EquipButtonPressed()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	// TODO : ¹«±â ÀåÂø ½Ã °È±â¶û ¶Ù±â ¼Óµµ °ª Áõ°¡
 
-	FName SocketName;
+	/*FName SocketName;
 	if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
 		ARangedWeapon* RW = Cast<ARangedWeapon>(OverlappingWeapon);
@@ -186,8 +188,12 @@ void AAOSCharacter::EquipButtonPressed()
 		OverlappingWeapon->GetWidget()->SetVisibility(false);
 	}
 
-	CombatComp->SetEquippedWeapon(OverlappingWeapon);
+	CombatComp->SetEquippedWeapon(OverlappingWeapon);*/
+
+
+	CombatComp->PickingUpWeapon(OverlappingWeapon);
 	OverlappingWeapon->SetOwner(this);
+	OverlappingWeapon = nullptr;
 }
 
 void AAOSCharacter::AttackButtonePressed()
@@ -263,6 +269,17 @@ void AAOSCharacter::ReloadButtonPressed()
 	}
 }
 
+void AAOSCharacter::InventoryKeyPressed()
+{
+	bIsInventoryOn = bIsInventoryOn ? false : true;
+
+	AAOSController* AC = Cast<AAOSController>(Controller);
+	if (AC)
+	{
+		AC->HUDInventoryOn(bIsInventoryOn);
+	}
+}
+
 void AAOSCharacter::TransitionAnimationStart()
 {
 	bIsAnimationPlaying = true;
@@ -301,6 +318,7 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AAOSCharacter::AimButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);
+	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AAOSCharacter::InventoryKeyPressed);
 }
 
 void AAOSCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)

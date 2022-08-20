@@ -98,10 +98,11 @@ public:
 	EAmmoType GetAmmoType() const;
 	int32 GetMagazine() const;
 	int32 GetLoadedAmmo() const;
-	void SetLoadedAmmo(int32 Quantity);
+	void SetLoadedAmmo(const int32 Quantity);
 	float GetGunRecoil() const;
 	bool GetAutomaticFire() const;
 	float GetFireRate() const;
 	float GetZoomScope() const;
 	void ConsumeAmmo();
+	virtual void SetWeaponState(const EWeaponState State) override;
 };
