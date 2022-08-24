@@ -11,6 +11,7 @@
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "Components/Image.h"
+#include "Components/Button.h"
 #include "Engine/Texture2D.h"
 
 void AAOSHUD::BeginPlay()
@@ -112,6 +113,8 @@ void AAOSHUD::CreateInventorySlot()
 		for (int8 i = 0; i < 5; i++)
 		{
 			UInventorySlot* Slot = CreateWidget<UInventorySlot>(PlayerController, InventorySlotClass);
+			//Slot->RenderTransform.Scale.X = 1.5;
+			//Slot->RenderTransform.Scale.Y = 1.5;
 			CharacterOverlay->InventoryWidget->SlotArray.Add(Slot);
 
 			if (CharacterOverlay->InventoryWidget->InventoryGridPanel)
@@ -132,6 +135,7 @@ void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 		if (CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon && Weapon->GetWeaponIcon())
 		{
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetWeaponIcon());
+			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->BindSlotClickEvent();
 		}
 	}
 }

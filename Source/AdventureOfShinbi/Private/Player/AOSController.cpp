@@ -82,11 +82,21 @@ void AAOSController::HUDInventoryOn(bool IsInventoryOn)
 			AOSHUD->CharacterOverlay->InventoryWidget->SetVisibility(ESlateVisibility::Visible);
 			AOSHUD->CharacterOverlay->InventoryWidget->SetIsEnabled(true);
 			AOSHUD->CharacterOverlay->PlayAnimation(AOSHUD->CharacterOverlay->AnimInventoryFadeInOut);
+
+			AOSHUD->CharacterOverlay->InventoryWidget->bIsFocusable = true;
+
+			FInputModeGameAndUI InputModeGameAndUI;
+			SetInputMode(InputModeGameAndUI);
+			SetShowMouseCursor(true);
 		}
 		else
 		{
 			GetWorldTimerManager().SetTimer(InventoryOffDelayTimer, this, &AAOSController::HUDInventoryOff, InventoryOffDelayTime);
 			AOSHUD->CharacterOverlay->PlayAnimation(AOSHUD->CharacterOverlay->AnimInventoryFadeInOut, 0.f, 1, EUMGSequencePlayMode::Reverse);
+
+			FInputModeGameOnly InputModeGameOnly;
+			SetInputMode(InputModeGameOnly);
+			SetShowMouseCursor(false);
 		}
 	}
 }

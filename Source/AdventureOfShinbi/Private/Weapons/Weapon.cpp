@@ -13,21 +13,10 @@ AWeapon::AWeapon()
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	SetRootComponent(WeaponMesh);
-	//WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	//WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
-	
-	//WeaponMesh->SetSimulatePhysics(false);
-	//WeaponMesh->SetEnableGravity(false);
-	//WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(WeaponMesh);
 	OverlapSphere->SetSphereRadius(100.f);
-	//OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	//OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	//OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	Widget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
 	Widget->SetupAttachment(WeaponMesh);

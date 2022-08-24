@@ -76,4 +76,6 @@ public:
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	UWidgetAnimation* AnimAmmoInfoFadeOut;
 
+
+
 };
