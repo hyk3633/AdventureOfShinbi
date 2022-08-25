@@ -19,16 +19,4 @@ class ADVENTUREOFSHINBI_API UInventorySlotClick : public UUserWidget
 	
 public:
 
-	UPROPERTY(meta = (BindWidget))
-	UButton* ButtonEquip;
-
-	UPROPERTY(meta = (BindWidget))
-	UButton* ButtonEquipToQuickSlot1;
-
-	UPROPERTY(meta = (BindWidget))
-	UButton* ButtonEquipToQuickSlot2;
-
-	UPROPERTY(meta = (BindWidget))
-	UButton* ButtonDiscardWeapon;
-
 };

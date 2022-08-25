@@ -27,6 +27,8 @@ public:
 
 	void CreateInventorySlot();
 
+	void UpdateInventory();
+
 	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);
 
 	UPROPERTY(EditAnywhere, Category = "HUD")

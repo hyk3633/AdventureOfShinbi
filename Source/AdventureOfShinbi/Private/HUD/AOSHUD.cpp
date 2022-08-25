@@ -107,14 +107,13 @@ void AAOSHUD::CreateInventorySlot()
 
 	if (PlayerController && InventorySlotClass)
 	{
-		int8 SlotCount = CharacterOverlay->InventoryWidget->SlotArray.Num() + 1;
-		int8 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
+		int32 SlotCount = CharacterOverlay->InventoryWidget->SlotArray.Num() + 1;
+		int32 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
 
-		for (int8 i = 0; i < 5; i++)
+		for (int32 i = 0; i < 5; i++)
 		{
 			UInventorySlot* Slot = CreateWidget<UInventorySlot>(PlayerController, InventorySlotClass);
-			//Slot->RenderTransform.Scale.X = 1.5;
-			//Slot->RenderTransform.Scale.Y = 1.5;
+
 			CharacterOverlay->InventoryWidget->SlotArray.Add(Slot);
 
 			if (CharacterOverlay->InventoryWidget->InventoryGridPanel)
@@ -127,13 +126,31 @@ void AAOSHUD::CreateInventorySlot()
 	}
 }
 
+void AAOSHUD::UpdateInventory()
+{
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->InventoryGridPanel == nullptr) return;
+
+	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->SlotArray.Num(); i++)
+	{
+		UUniformGridSlot* GridSlot =
+			CharacterOverlay->InventoryWidget->InventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i], i / 5, i % 5);
+		GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+		GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
+	}
+}
+
 void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 {
 	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
 	{
 		CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->SetSlottedWeapon(Weapon);
+		Weapon->SetInventorySlot(CharacterOverlay->InventoryWidget->SlotArray[SlotNum]);
+
 		if (CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon && Weapon->GetWeaponIcon())
 		{
+			FSlateBrush Brush;
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrush(Brush);
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetWeaponIcon());
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->BindSlotClickEvent();
 		}

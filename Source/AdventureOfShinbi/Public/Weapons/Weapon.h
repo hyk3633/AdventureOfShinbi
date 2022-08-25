@@ -5,25 +5,20 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Types/WeaponType.h"
+#include "Types/WeaponState.h"
 #include "Types/ItemRank.h"
 #include "Types/ItemType.h"
 #include "Weapon.generated.h"
 
 class USphereComponent;
+class UBoxComponent;
 class UWidgetComponent;
 class UPickupWidget;
 class UTexture2D;
+class AWeapon;
+class UInventorySlot;
 
-UENUM()
-enum class EWeaponState : uint8
-{   
-	EWS_Field,
-	EWS_PickedUp,
-	EWS_Equipped,
-	EWS_Dropped,
-
-	EWS_MAX
-};
+DECLARE_MULTICAST_DELEGATE_OneParam(OnWeaponStateChangedDelegate, AWeapon* Weapon);
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AWeapon : public AActor
@@ -41,6 +36,9 @@ protected:
 	UFUNCTION()
 	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	UFUNCTION()
+	void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 	void SetPickupWidgetInfo();
 
 private:
@@ -50,6 +48,12 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	USphereComponent* OverlapSphere;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* DamageCollision;
+
+	UPROPERTY(EditAnywhere)
+	float MeleeDamage = 20.f;
 
 	UPROPERTY(EditAnywhere)
 	EWeaponType WeaponType = EWeaponType::EWT_MAX;
@@ -71,11 +75,18 @@ private:
 
 	EWeaponState WeaponState = EWeaponState::EWS_MAX;
 
+	UInventorySlot* InventorySlot;
+
 public:
+
+	OnWeaponStateChangedDelegate WeaponStateChanged;
 
 	EWeaponType GetWeaponType() const;
 	USkeletalMeshComponent* GetWeaponMesh() const;
 	UWidgetComponent* GetWidget() const;
 	UTexture2D* GetWeaponIcon() const;
 	virtual void SetWeaponState(const EWeaponState State);
+	EWeaponState GetWeaponState() const;
+	void SetInventorySlot(UInventorySlot* Slot);
+	UInventorySlot* GetInventorySlot() const;
 };

@@ -9,61 +9,10 @@
 AMeleeWeapon::AMeleeWeapon()
 {
 
-	DamageCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
-	DamageCollision->SetupAttachment(RootComponent);
-	DamageCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 }
 
 void AMeleeWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DamageCollision->OnComponentBeginOverlap.AddDynamic(this, &AMeleeWeapon::OnDamageCollisionOverlap);
-}
-
-void AMeleeWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
-	if (Causer)
-	{
-		AController* CauserController = Cast<AController>(Causer->Controller);
-		if (CauserController)
-		{
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, CauserController, Causer, UDamageType::StaticClass());
-		}
-	}
-}
-
-void AMeleeWeapon::SetWeaponState(const EWeaponState State)
-{
-	Super::SetWeaponState(State);
-
-	if (State == EWeaponState::EWS_Field)
-	{
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	}
-	else if (State == EWeaponState::EWS_PickedUp)
-	{
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	}
-	else if (State == EWeaponState::EWS_Equipped)
-	{
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	}
-	else if (State == EWeaponState::EWS_Dropped)
-	{
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	}
-	else
-	{
-
-	}
 }

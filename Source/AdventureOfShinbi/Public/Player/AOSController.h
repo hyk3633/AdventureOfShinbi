@@ -34,6 +34,11 @@ public:
 	void SetHUDLoadedAmmoText(int32 Ammo);
 	void SetHUDTotalAmmoText(int32 Ammo);
 	void HUDAmmoInfoOn();
+	void HUDAmmoInfoOff();
+
+	void SetHUDInventoryEquippedWeaponSlotIcon(UTexture2D* Icon);
+	void SetHUDInventoryQuickSlot1Icon(UTexture2D* Icon);
+	void SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon);
 
 protected:
 

@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Types/AmmoType.h"
+#include "Weapons/Weapon.h"
 #include "CombatComponent.generated.h"
 
 class AAOSCharacter;
 class AAOSController;
 class AAOSHUD;
-class AWeapon;
 class UAnimMontage;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -64,9 +64,19 @@ protected:
 
 	void PickingUpWeapon(AWeapon* PickedWeapon);
 
-	void AddToInventory();
+	void WeaponQuickSwap();
 
-	void DiscardWeapon();
+	void OnChangedWeaponState(AWeapon* Weapon);
+
+	void EquipWeapon(AWeapon* Weapon);
+
+	void UnEquipWeapon(AWeapon* Weapon);
+
+	void WeaponToQuickSlot1(AWeapon* Weapon);
+
+	void WeaponToQuickSlot2(AWeapon* Weapon);
+
+	void DiscardWeapon(AWeapon* Weapon);
 
 private:
 
@@ -98,7 +108,10 @@ private:
 
 	float StaminaIncreaseRate = 20.f;
 
-	AWeapon* EquippedWeapon;
+	AWeapon* EquippedWeapon = nullptr;
+
+	AWeapon* QuickSlot1Weapon = nullptr;
+	AWeapon* QuickSlot2Weapon = nullptr;
 
 	int8 MeleeAttackComboCount = 0;
 	int8 RandomMontageNum;
@@ -141,9 +154,5 @@ private:
 	float CrosshairInAirFactor;
 
 	TArray<AWeapon*> AcquiredWeapons;
-
-public:
-
-	void SetEquippedWeapon(AWeapon* Weapon);
 
 };

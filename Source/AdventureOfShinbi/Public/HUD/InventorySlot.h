@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Types/WeaponState.h"
 #include "InventorySlot.generated.h"
 
 /**
@@ -14,7 +15,8 @@ class UImage;
 class AWeapon;
 class UButton;
 class AAOSHUD;
-class UInventorySlotClick;
+class UVerticalBox;
+class UTextBlock;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API UInventorySlot : public UUserWidget
@@ -23,6 +25,10 @@ class ADVENTUREOFSHINBI_API UInventorySlot : public UUserWidget
 
 public:
 
+	void BindSlotClickEvent();
+
+	void InitializeOthers(EWeaponState State);
+
 	UPROPERTY(meta = (BindWidget))
 	UImage* InventorySlotIcon;
 
@@ -30,23 +36,66 @@ public:
 	UButton* InventorySlotIconButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UInventorySlotClick* InventorySlotClick;
+	UVerticalBox* InventorySlotClick;
 
-	AWeapon* GetSlottedWeapon() const { return SlottedWeapon; }
-	void SetSlottedWeapon(AWeapon* Weapon) { SlottedWeapon = Weapon; }
+	UPROPERTY(meta = (BindWidget))
+	UButton* ButtonEquip;
 
-	void BindSlotClickEvent();
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* EquipButtonText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* QuickSlot1ButtonText;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* QuickSlot2ButtonText;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* ButtonEquipToQuickSlot1;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* ButtonEquipToQuickSlot2;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* ButtonDiscardWeapon;
+
+	UFUNCTION()
+	void EquipButtonClicked();
+
+	UFUNCTION()
+	void QuickSlot1ButtonClicked();
+
+	UFUNCTION()
+	void QuickSlot2ButtonClicked();
+
+	UFUNCTION()
+	void DiscardButtonClicked();
 
 protected:
 
 	UFUNCTION()
 	void ActivateInventorySlotClick();
 
+	void DeactivateInventorySlotClick();
+
+	void ToggleEquippedSlot();
+
+	void ToggleQuickSlot1();
+
+	void ToggleQuickSlot2();
+
 private:
 
 	AWeapon* SlottedWeapon;
 
-	//UPROPERTY(Transient, meta = (BindWidgetAnim))
-	//UWidgetAnimation* AnimInventorySlotClick;
+	bool bIsEquipped = false;
+	bool bIsQuickSlot1 = false;
+	bool bIsQuickSlot2 = false;
+
+public:
+
+	AWeapon* GetSlottedWeapon() const;
+	void SetSlottedWeapon(AWeapon* Weapon);
+	void InitializeIcon();
 	
 };

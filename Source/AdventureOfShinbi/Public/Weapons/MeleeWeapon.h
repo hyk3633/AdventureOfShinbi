@@ -10,7 +10,6 @@
  * 
  */
 
-class UBoxComponent;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AMeleeWeapon : public AWeapon
@@ -25,20 +24,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-
 private:
 
-	UPROPERTY(EditAnywhere)
-	UBoxComponent* DamageCollision;
-
-	UPROPERTY(EditAnywhere)
-	float Damage = 20.f;
-
 public:
-
-	virtual void SetWeaponState(const EWeaponState State) override;
 
 };

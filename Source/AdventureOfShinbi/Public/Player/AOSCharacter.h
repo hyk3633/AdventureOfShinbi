@@ -60,6 +60,7 @@ private:
 	void AimButtonReleased();
 	void ReloadButtonPressed();
 	void InventoryKeyPressed();
+	void WeaponQuickSwapKeyPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
@@ -99,7 +100,7 @@ private:
 	AWeapon* OverlappingWeapon;
 
 	UPROPERTY(VisibleAnywhere)
-	EWeaponType WeaponType = EWeaponType::EWT_MAX;
+	EWeaponType WeaponType = EWeaponType::EWT_None;
 
 	UPROPERTY(VisibleAnywhere)
 	ECharacterState CharacterState = ECharacterState::ECS_Nothing;
@@ -121,8 +122,10 @@ public:
 	bool GetIsMoving() const;
 	bool GetIsAiming() const;
 	bool GetAttackButtonPressing() const;
-	EWeaponType GetCombatState() const;
+	EWeaponType GetWeaponType() const;
+	void SetWeaponType(EWeaponType Type);
 	void ResumeRunning();
 	void StopRunning();
+	void SetGunRecoil(float Recoil);
 
 };

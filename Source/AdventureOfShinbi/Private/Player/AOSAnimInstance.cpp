@@ -75,7 +75,7 @@ void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	bIsAiming = AOSCharacter->GetIsAiming();
 
-	WeaponType = AOSCharacter->GetCombatState();
+	WeaponType = AOSCharacter->GetWeaponType();
 
 	FRotator AimRotation = AOSCharacter->GetBaseAimRotation();
 	CharacterRotation = AOSCharacter->GetActorRotation();

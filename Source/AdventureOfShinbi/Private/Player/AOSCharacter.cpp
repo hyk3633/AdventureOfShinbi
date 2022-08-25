@@ -113,7 +113,7 @@ void AAOSCharacter::Jump()
 
 void AAOSCharacter::RunningButtonPressed()
 {
-	if (bIsAnimationPlaying || bCanRunning == false) return;
+	if (bIsAnimationPlaying || bCanRunning == false || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f) return;
 
 	bIsRunning = true;
 
@@ -151,49 +151,7 @@ void AAOSCharacter::EquipButtonPressed()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	// TODO : ¹«±â ÀåÂø ½Ã °È±â¶û ¶Ù±â ¼Óµµ °ª Áõ°¡
 
-	/*FName SocketName;
-	if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
-	{
-		ARangedWeapon* RW = Cast<ARangedWeapon>(OverlappingWeapon);
-		GunRecoil = RW->GetGunRecoil();
-		SocketName = FName("GunSocket");
-	}
-	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
-	{
-
-	}
-	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
-	{
-		SocketName = FName("OneHandSocket");
-	}
-	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MeleeTwoHand)
-	{
-		SocketName = FName("TwoHandSocket");
-	}
-	else if (OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
-	{
-		SocketName = FName("GlaveSocket");
-	}
-
-	const USkeletalMeshSocket* HandSocket = GetMesh()->GetSocketByName(SocketName);
-	if (HandSocket)
-	{
-		HandSocket->AttachActor(OverlappingWeapon, GetMesh());
-	}
-
-	WeaponType = OverlappingWeapon->GetWeaponType();
-
-	if (OverlappingWeapon->GetWidget())
-	{
-		OverlappingWeapon->GetWidget()->SetVisibility(false);
-	}
-
-	CombatComp->SetEquippedWeapon(OverlappingWeapon);*/
-
-
 	CombatComp->PickingUpWeapon(OverlappingWeapon);
-	OverlappingWeapon->SetOwner(this);
-	OverlappingWeapon = nullptr;
 }
 
 void AAOSCharacter::AttackButtonePressed()
@@ -280,6 +238,14 @@ void AAOSCharacter::InventoryKeyPressed()
 	}
 }
 
+void AAOSCharacter::WeaponQuickSwapKeyPressed()
+{
+	if (CombatComp)
+	{
+		CombatComp->WeaponQuickSwap();
+	}
+}
+
 void AAOSCharacter::TransitionAnimationStart()
 {
 	bIsAnimationPlaying = true;
@@ -298,6 +264,11 @@ void AAOSCharacter::ResumeRunning()
 void AAOSCharacter::StopRunning()
 {
 	RunningButtonReleased();
+}
+
+void AAOSCharacter::SetGunRecoil(float Recoil)
+{
+	GunRecoil = Recoil;
 }
 
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -319,6 +290,7 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AAOSCharacter::InventoryKeyPressed);
+	PlayerInputComponent->BindAction("WeaponQuickSwap", IE_Pressed, this, &AAOSCharacter::WeaponQuickSwapKeyPressed);
 }
 
 void AAOSCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)
@@ -370,7 +342,12 @@ bool AAOSCharacter::GetAttackButtonPressing() const
 	return bAttackButtonPressing;
 }
 
-EWeaponType AAOSCharacter::GetCombatState() const
+EWeaponType AAOSCharacter::GetWeaponType() const
 {
 	return WeaponType;
+}
+
+void AAOSCharacter::SetWeaponType(EWeaponType Type)
+{
+	WeaponType = Type;
 }

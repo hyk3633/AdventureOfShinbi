@@ -53,15 +53,38 @@ void AAOSController::SetHUDEquippedWeaponIcon(UTexture2D* Icon)
 {
 	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->EquippedWeaponIcon)
 	{
-		AOSHUD->CharacterOverlay->EquippedWeaponIcon->SetBrushFromTexture(Icon);
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			AOSHUD->CharacterOverlay->EquippedWeaponIcon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			AOSHUD->CharacterOverlay->EquippedWeaponIcon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->EquippedWeaponIcon->SetBrushFromTexture(Icon);
+		}
 	}
+	
 }
 
 void AAOSController::SetHUDWeaponQuickSlot1Icon(UTexture2D* Icon)
 {
 	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->WeaponQuickSlot1Icon)
 	{
-		AOSHUD->CharacterOverlay->WeaponQuickSlot1Icon->SetBrushFromTexture(Icon);
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			AOSHUD->CharacterOverlay->WeaponQuickSlot1Icon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			AOSHUD->CharacterOverlay->WeaponQuickSlot1Icon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->WeaponQuickSlot1Icon->SetBrushFromTexture(Icon);
+		}
 	}
 }
 
@@ -69,7 +92,18 @@ void AAOSController::SetHUDWeaponQuickSlot2Icon(UTexture2D* Icon)
 {
 	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->WeaponQuickSlot2Icon)
 	{
-		AOSHUD->CharacterOverlay->WeaponQuickSlot2Icon->SetBrushFromTexture(Icon);
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			AOSHUD->CharacterOverlay->WeaponQuickSlot2Icon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			AOSHUD->CharacterOverlay->WeaponQuickSlot2Icon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->WeaponQuickSlot2Icon->SetBrushFromTexture(Icon);
+		}
 	}
 }
 
@@ -131,6 +165,77 @@ void AAOSController::HUDAmmoInfoOn()
 	{
 		AOSHUD->CharacterOverlay->AmmoInfoBoxOverlay->SetVisibility(ESlateVisibility::Visible);
 		AOSHUD->CharacterOverlay->PlayAnimation(AOSHUD->CharacterOverlay->AnimAmmoInfoAppear);
+	}
+}
+
+void AAOSController::HUDAmmoInfoOff()
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->AmmoInfoBoxOverlay && AOSHUD->CharacterOverlay->AnimAmmoInfoAppear)
+	{
+		AOSHUD->CharacterOverlay->AmmoInfoBoxOverlay->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void AAOSController::SetHUDInventoryEquippedWeaponSlotIcon(UTexture2D* Icon)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->InventoryWidget && AOSHUD->CharacterOverlay->InventoryWidget->InventoryEquippedWeaponSlotIcon)
+	{
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			Brush.SetImageSize(FVector2D(150.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryEquippedWeaponSlotIcon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(150.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryEquippedWeaponSlotIcon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryEquippedWeaponSlotIcon->SetBrushFromTexture(Icon);
+		}
+	}
+}
+
+void AAOSController::SetHUDInventoryQuickSlot1Icon(UTexture2D* Icon)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->InventoryWidget && AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot1Icon)
+	{
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			Brush.SetImageSize(FVector2D(120.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot1Icon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(120.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot1Icon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot1Icon->SetBrushFromTexture(Icon);
+		}
+	}
+}
+
+void AAOSController::SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->InventoryWidget && AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot2Icon)
+	{
+		FSlateBrush Brush;
+		if (Icon == nullptr)
+		{
+			Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+			Brush.SetImageSize(FVector2D(120.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot2Icon->SetBrush(Brush);
+		}
+		else
+		{
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(120.f));
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot2Icon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->InventoryWidget->InventoryQuickSlot2Icon->SetBrushFromTexture(Icon);
+		}
 	}
 }
 

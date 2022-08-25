@@ -1,18 +1,23 @@
 
 
 #include "Components/CombatComponent.h"
-#include "Weapons/Weapon.h"
+#include "Components/TextBlock.h"
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/RangedHitScanWeapon.h"
 #include "Weapons/RangedProjectileWeapon.h"
-#include "Components/TextBlock.h"
 #include "HUD/AOSHUD.h"
+#include "HUD/AOSCharacterOverlay.h"
+#include "HUD/Inventory.h"
+#include "HUD/InventorySlot.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Types/WeaponState.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -340,26 +345,6 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 	}
 }
 
-void UCombatComponent::SetEquippedWeapon(AWeapon* Weapon)
-{
-	EquippedWeapon = Weapon;
-
-	SetCrosshair();
-
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
-	{
-		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
-		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
-		CharacterController->HUDAmmoInfoOn();
-
-		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
-		{
-			Reload();
-		}
-	}
-}
-
 void UCombatComponent::SetCrosshair()
 {
 	if (CharacterController == nullptr) return;
@@ -412,29 +397,255 @@ void UCombatComponent::SpreadCrosshair(float DeltaTime)
 
 void UCombatComponent::PickingUpWeapon(AWeapon* PickedWeapon)
 {
-	if (PickedWeapon)
+	if (HUD == nullptr || PickedWeapon == nullptr) return;
+
+	
+	if (AcquiredWeapons.Num() % 5 == 0)
 	{
-		if (AcquiredWeapons.Num() % 5 == 0)
-		{
-			HUD->CreateInventorySlot();
-		}
-
-		AcquiredWeapons.Add(PickedWeapon);
-
-		PickedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
-
-		AddToInventory();
+		HUD->CreateInventorySlot();
 	}
-}
 
-void UCombatComponent::AddToInventory()
-{
-	if (HUD == nullptr) return;
+	AcquiredWeapons.Add(PickedWeapon);
+
+	PickedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
+
+	PickedWeapon->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
 
 	HUD->AddWeaponToSlot(AcquiredWeapons.Num() - 1, AcquiredWeapons.Last());
 }
 
-void UCombatComponent::DiscardWeapon()
+void UCombatComponent::WeaponQuickSwap()
 {
+	if (QuickSlot1Weapon == nullptr && QuickSlot2Weapon == nullptr)
+	{
+		return;
+	}
+	else if (QuickSlot1Weapon != nullptr && QuickSlot2Weapon == nullptr)
+	{
+		QuickSlot1Weapon->GetInventorySlot()->EquipButtonClicked();
+	}
+	else if (QuickSlot1Weapon == nullptr && QuickSlot2Weapon != nullptr)
+	{
+		QuickSlot2Weapon->GetInventorySlot()->EquipButtonClicked();
+	}
+	else
+	{
+		QuickSlot1Weapon->GetInventorySlot()->EquipButtonClicked();
+		QuickSlot2Weapon->GetInventorySlot()->QuickSlot1ButtonClicked();
+	}
+}
 
+void UCombatComponent::OnChangedWeaponState(AWeapon* Weapon)
+{
+	switch (Weapon->GetWeaponState())
+	{
+	case EWeaponState::EWS_Equipped:
+		EquipWeapon(Weapon);
+		break;
+	case EWeaponState::EWS_PickedUp:
+		UnEquipWeapon(Weapon);
+		break;
+	case EWeaponState::EWS_QuickSlot1:
+		WeaponToQuickSlot1(Weapon);
+		break;
+	case EWeaponState::EWS_QuickSlot2:
+		WeaponToQuickSlot2(Weapon);
+		break;
+	case EWeaponState::EWS_Dropped:
+		DiscardWeapon(Weapon);
+		break;
+	}
+}
+
+void UCombatComponent::EquipWeapon(AWeapon* Weapon)
+{
+	if (EquippedWeapon != nullptr)
+	{
+		if (Weapon == QuickSlot1Weapon)
+		{
+			EquippedWeapon->GetInventorySlot()->QuickSlot1ButtonClicked();
+		}
+		else if (Weapon == QuickSlot2Weapon)
+		{
+			EquippedWeapon->GetInventorySlot()->QuickSlot2ButtonClicked();
+		}
+		else
+		{
+			EquippedWeapon->GetInventorySlot()->EquipButtonClicked();
+		}
+	}
+	else
+	{
+		if (Weapon == QuickSlot1Weapon)
+		{
+			QuickSlot1Weapon = nullptr;
+			CharacterController->SetHUDWeaponQuickSlot1Icon(nullptr);
+			CharacterController->SetHUDInventoryQuickSlot1Icon(nullptr);
+		}
+		else if (Weapon == QuickSlot2Weapon)
+		{
+			QuickSlot2Weapon = nullptr;
+			CharacterController->SetHUDWeaponQuickSlot2Icon(nullptr);
+			CharacterController->SetHUDInventoryQuickSlot2Icon(nullptr);
+		}
+	}
+
+	EquippedWeapon = Weapon;
+
+	SetCrosshair();
+
+	FName SocketName;
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+		CharacterController->HUDAmmoInfoOn();
+
+		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
+		{
+			Reload();
+		}
+
+		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+		Character->SetGunRecoil(RW->GetGunRecoil());
+		SocketName = FName("GunSocket");
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+	{
+		CharacterController->HUDAmmoInfoOff();
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	{
+		SocketName = FName("OneHandSocket");
+		CharacterController->HUDAmmoInfoOff();
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeTwoHand)
+	{
+		SocketName = FName("TwoHandSocket");
+		CharacterController->HUDAmmoInfoOff();
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	{
+		SocketName = FName("GlaveSocket");
+		CharacterController->HUDAmmoInfoOff();
+	}
+
+	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(SocketName);
+	if (HandSocket)
+	{
+		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+	}
+
+	CharacterController->SetHUDEquippedWeaponIcon(EquippedWeapon->GetWeaponIcon());
+	CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(EquippedWeapon->GetWeaponIcon());
+
+	EquippedWeapon->SetOwner(Character);
+	Character->SetWeaponType(EquippedWeapon->GetWeaponType());
+}
+
+void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
+{
+	if (Weapon == EquippedWeapon)
+	{
+		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+		EquippedWeapon->GetWeaponMesh()->DetachFromComponent(DetachRules);
+		EquippedWeapon->SetOwner(nullptr);
+		EquippedWeapon = nullptr;
+		SetCrosshair();
+		CharacterController->SetHUDEquippedWeaponIcon(nullptr);
+		CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(nullptr);
+		Character->SetWeaponType(EWeaponType::EWT_None);
+	}
+	else if (Weapon == QuickSlot1Weapon)
+	{
+		QuickSlot1Weapon = nullptr;
+		CharacterController->SetHUDWeaponQuickSlot1Icon(nullptr);
+		CharacterController->SetHUDInventoryQuickSlot1Icon(nullptr);
+	}
+	else if (Weapon == QuickSlot2Weapon)
+	{
+		QuickSlot2Weapon = nullptr;
+		CharacterController->SetHUDWeaponQuickSlot2Icon(nullptr);
+		CharacterController->SetHUDInventoryQuickSlot2Icon(nullptr);
+	}
+}
+
+void UCombatComponent::WeaponToQuickSlot1(AWeapon* Weapon)
+{
+	if(Weapon == EquippedWeapon)
+	{
+		UnEquipWeapon(Weapon);
+		if (QuickSlot1Weapon != nullptr)
+		{
+			QuickSlot1Weapon->GetInventorySlot()->EquipButtonClicked();
+		}
+	}
+	else if (Weapon == QuickSlot2Weapon)
+	{
+		QuickSlot2Weapon = nullptr;
+		CharacterController->SetHUDWeaponQuickSlot2Icon(nullptr);
+		CharacterController->SetHUDInventoryQuickSlot2Icon(nullptr);
+		if (QuickSlot1Weapon != nullptr)
+		{
+			QuickSlot1Weapon->GetInventorySlot()->QuickSlot2ButtonClicked();
+		}
+	}
+	else if (QuickSlot1Weapon != nullptr)
+	{
+		QuickSlot1Weapon->GetInventorySlot()->QuickSlot1ButtonClicked();
+	}
+	
+	QuickSlot1Weapon = Weapon;
+	CharacterController->SetHUDWeaponQuickSlot1Icon(Weapon->GetWeaponIcon());
+	CharacterController->SetHUDInventoryQuickSlot1Icon(Weapon->GetWeaponIcon());
+}
+
+void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
+{
+	if (Weapon == EquippedWeapon)
+	{
+		UnEquipWeapon(Weapon);
+		if (QuickSlot2Weapon != nullptr)
+		{
+			QuickSlot2Weapon->GetInventorySlot()->EquipButtonClicked();
+		}
+	}
+	else if (Weapon == QuickSlot1Weapon)
+	{
+		QuickSlot1Weapon = nullptr;
+		CharacterController->SetHUDWeaponQuickSlot1Icon(nullptr);
+		CharacterController->SetHUDInventoryQuickSlot1Icon(nullptr);
+		if (QuickSlot2Weapon != nullptr)
+		{
+			QuickSlot2Weapon->GetInventorySlot()->QuickSlot1ButtonClicked();
+		}
+	}
+	else if(QuickSlot2Weapon != nullptr)
+	{
+		QuickSlot2Weapon->GetInventorySlot()->QuickSlot2ButtonClicked();
+	}
+
+	QuickSlot2Weapon = Weapon;
+	CharacterController->SetHUDWeaponQuickSlot2Icon(Weapon->GetWeaponIcon());
+	CharacterController->SetHUDInventoryQuickSlot2Icon(Weapon->GetWeaponIcon());
+}
+
+void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
+{
+	if (Weapon->GetWeaponState() != EWeaponState::EWS_PickedUp)
+	{
+		UnEquipWeapon(Weapon);
+	}
+	FVector DropLoc = Character->GetActorLocation() + FVector(50.f, 0.f, 100.f);
+	Weapon->SetActorLocation(DropLoc);
+
+	AcquiredWeapons.Remove(Weapon);
+	Weapon->GetInventorySlot()->SetSlottedWeapon(nullptr);
+	Weapon->GetInventorySlot()->InitializeIcon();
+	HUD->CharacterOverlay->InventoryWidget->SlotArray.Remove(Weapon->GetInventorySlot());
+	HUD->CharacterOverlay->InventoryWidget->SlotArray.Add(Weapon->GetInventorySlot());
+	HUD->UpdateInventory();
+	Weapon->SetInventorySlot(nullptr);
+	Weapon->SetOwner(nullptr);
 }
