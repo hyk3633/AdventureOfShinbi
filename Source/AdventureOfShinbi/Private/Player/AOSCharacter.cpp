@@ -5,12 +5,15 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Items/Item.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 #include "Components/WidgetComponent.h"
 #include "HUD/AOSHUD.h"
+#include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 
 AAOSCharacter::AAOSCharacter()
 {
@@ -131,7 +134,7 @@ void AAOSCharacter::RunningButtonReleased()
 
 void AAOSCharacter::CrouchButtonPressed()
 {
-	if (bIsAnimationPlaying || WeaponType != EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying || WeaponType != EWeaponType::EWT_None) return;
 
 	if (bIsCrouched)
 	{
@@ -145,13 +148,17 @@ void AAOSCharacter::CrouchButtonPressed()
 
 void AAOSCharacter::EquipButtonPressed()
 {
-	if (OverlappingWeapon == nullptr || CombatComp == nullptr || OverlappingWeapon->GetWeaponType() == EWeaponType::EWT_MAX) return;
+	if (OverlappingItem == nullptr || CombatComp == nullptr) return;
 
+	// 무기 장착시에 설정하고 무기 빼면 원상복구하기
 	bUseControllerRotationYaw = true;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	// TODO : 무기 장착 시 걷기랑 뛰기 속도 값 증가
 
-	CombatComp->PickingUpWeapon(OverlappingWeapon);
+	if (OverlappingItem)
+	{
+		CombatComp->PickingUpItem(OverlappingItem);
+	}
 }
 
 void AAOSCharacter::AttackButtonePressed()
@@ -293,18 +300,79 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("WeaponQuickSwap", IE_Pressed, this, &AAOSCharacter::WeaponQuickSwapKeyPressed);
 }
 
-void AAOSCharacter::SetOverlappingWeapon(AWeapon* OtherWeapon)
+void AAOSCharacter::SetOverlappingItem()
 {
-	if (OtherWeapon)
+	if (!bExistOverlappingItem) return;
+
+	FHitResult HitItem;
+	TraceItem(HitItem);
+
+	if (HitItem.bBlockingHit)
 	{
-		OverlappingWeapon = OtherWeapon;
+
+		AItem* Item = Cast<AItem>(HitItem.Actor);
+		if (Item)
+		{
+			OverlappingItem = Item;
+			OverlappingItem->GetWidget()->SetVisibility(true);
+		}
+		else
+		{
+			OverlappingItem = nullptr;
+		}
+
+		if (OverlappingItemLastFrame)
+		{
+			if (OverlappingItemLastFrame != OverlappingItem)
+			{
+				OverlappingItemLastFrame->GetWidget()->SetVisibility(false);
+			}
+		}
+
+		OverlappingItemLastFrame = OverlappingItem;
 	}
+}
+
+void AAOSCharacter::TraceItem(FHitResult& HitItem)
+{
+	FVector2D ViewPortSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewPortSize);
+	}
+
+	FVector2D CrosshairLocation(ViewPortSize.X / 2.f, ViewPortSize.Y / 2.f);
+	FVector CrosshairWorldPosition;
+	FVector CrosshairWorldDirection;
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		CrosshairLocation,
+		CrosshairWorldPosition,
+		CrosshairWorldDirection);
+
+	if (bScreenToWorld)
+	{
+		FVector TraceStart = CrosshairWorldPosition;
+		FVector TraceEnd = TraceStart + CrosshairWorldDirection * 10000.f;
+
+		GetWorld()->LineTraceSingleByChannel(HitItem, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+
+		// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
+		if (!HitItem.bBlockingHit)
+		{
+			HitItem.ImpactPoint = TraceEnd;
+		}
+
+		DrawDebugLine(GetWorld(), TraceStart+FVector(0.f,0.f,-30.f), HitItem.ImpactPoint, FColor::Blue, false, -1.f, 0U, 2.f);
+	}
+
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	SetOverlappingItem();
 }
 
 UCameraComponent* AAOSCharacter::GetCamera() const
@@ -340,6 +408,20 @@ bool AAOSCharacter::GetIsAiming() const
 bool AAOSCharacter::GetAttackButtonPressing() const
 {
 	return bAttackButtonPressing;
+}
+
+void AAOSCharacter::SetOverlappingItemCount(int8 Quantity)
+{
+	if (OverlappingItemCount + Quantity <= 0)
+	{
+		bExistOverlappingItem = false;
+		OverlappingItemCount = 0;
+	}
+	else
+	{
+		bExistOverlappingItem = true;
+		OverlappingItemCount += Quantity;
+	}
 }
 
 EWeaponType AAOSCharacter::GetWeaponType() const

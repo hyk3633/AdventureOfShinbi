@@ -11,6 +11,7 @@ class UInputComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class AWeapon;
+class AItem;
 class UCombatComponent;
 
 UENUM(BlueprintType)
@@ -33,8 +34,6 @@ public:
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	void SetOverlappingWeapon(AWeapon* OtherWeapon);
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -42,6 +41,10 @@ protected:
 
 	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
+
+	void SetOverlappingItem();
+
+	void TraceItem(FHitResult& HitItem);
 
 private:
 
@@ -81,6 +84,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* Camera;
 
+	int32 OverlappingItemCount = 0;
+
+	bool bExistOverlappingItem = false;
+
 	bool bIsRunning = false;
 
 	bool bCanRunning = true;
@@ -96,6 +103,8 @@ private:
 	bool bAbleFire = true;
 
 	bool bIsInventoryOn = false;
+
+	AItem* OverlappingItem;
 
 	AWeapon* OverlappingWeapon;
 
@@ -113,6 +122,8 @@ private:
 
 	FTimerHandle FireTimer;
 
+	AItem* OverlappingItemLastFrame = nullptr;
+
 public:
 
 	UCameraComponent* GetCamera() const;
@@ -122,6 +133,7 @@ public:
 	bool GetIsMoving() const;
 	bool GetIsAiming() const;
 	bool GetAttackButtonPressing() const;
+	void SetOverlappingItemCount(int8 Quantity);
 	EWeaponType GetWeaponType() const;
 	void SetWeaponType(EWeaponType Type);
 	void ResumeRunning();

@@ -15,9 +15,9 @@ void ARangedHitScanWeapon::Firing()
 
 	CrosshairLineTrace(HitPoint);
 
-	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
 	FHitResult MuzzleHitResult;
 	FVector MuzzleTraceStart = SocketTransform.GetLocation();
@@ -52,9 +52,9 @@ void ARangedHitScanWeapon::PlayAfterFireEffect()
 {
 	if (TrailParticle)
 	{
-		const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+		const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 		if (MuzzleSocket == nullptr) return;
-		const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+		const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
 		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, SocketTransform);
 		if (Trail)

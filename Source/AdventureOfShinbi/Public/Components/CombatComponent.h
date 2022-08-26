@@ -5,13 +5,14 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Types/AmmoType.h"
-#include "Weapons/Weapon.h"
 #include "CombatComponent.generated.h"
 
 class AAOSCharacter;
 class AAOSController;
 class AAOSHUD;
 class UAnimMontage;
+class AItem;
+class AWeapon;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
@@ -62,7 +63,7 @@ protected:
 
 	void SpreadCrosshair(float DeltaTime);
 
-	void PickingUpWeapon(AWeapon* PickedWeapon);
+	void PickingUpItem(AItem* PickedItem);
 
 	void WeaponQuickSwap();
 
@@ -107,6 +108,8 @@ private:
 	float StaminaDecreaseRate = 20.f;
 
 	float StaminaIncreaseRate = 20.f;
+
+	AItem* EquippedItem = nullptr;
 
 	AWeapon* EquippedWeapon = nullptr;
 

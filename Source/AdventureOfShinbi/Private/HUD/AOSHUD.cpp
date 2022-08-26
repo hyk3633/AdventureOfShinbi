@@ -146,12 +146,12 @@ void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 		CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->SetSlottedWeapon(Weapon);
 		Weapon->SetInventorySlot(CharacterOverlay->InventoryWidget->SlotArray[SlotNum]);
 
-		if (CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon && Weapon->GetWeaponIcon())
+		if (CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon && Weapon->GetItemIcon())
 		{
 			FSlateBrush Brush;
 			Brush.DrawAs = ESlateBrushDrawType::Image;
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrush(Brush);
-			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetWeaponIcon());
+			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetItemIcon());
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->BindSlotClickEvent();
 		}
 	}

@@ -3,7 +3,6 @@
 
 #include "HUD/InventorySlot.h"
 #include "HUD/AOSHUD.h"
-#include "HUD/InventorySlotClick.h"
 #include "Components/Button.h"
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
@@ -45,12 +44,14 @@ void UInventorySlot::ToggleEquippedSlot()
 		bIsEquipped = false;
 		SlottedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
 		EquipButtonText->SetText(FText::FromString(TEXT("장착하기")));
+		UE_LOG(LogTemp, Warning, TEXT("%s : 장착해제"), *SlottedWeapon->GetName());
 	}
 	else
 	{
 		bIsEquipped = true;
 		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 		EquipButtonText->SetText(FText::FromString(TEXT("장착 해제")));
+		UE_LOG(LogTemp, Warning, TEXT("%s : 장착"), *SlottedWeapon->GetName());
 	}
 }
 
@@ -164,7 +165,7 @@ void UInventorySlot::DiscardButtonClicked()
 {
 	if (SlottedWeapon)
 	{
-		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Dropped);
+		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Field);
 		DeactivateInventorySlotClick();
 	}
 }
