@@ -5,6 +5,7 @@
 #include "HUD/AOSCharacterOverlay.h"
 #include "HUD/Inventory.h"
 #include "HUD/InventorySlot.h"
+#include "HUD/ItemInventorySlot.h"
 #include "Weapons/Weapon.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/TextBlock.h"
@@ -21,6 +22,7 @@ void AAOSHUD::BeginPlay()
 	AddOverlay();
 
 	CreateInventorySlot();
+	CreateItemInventorySlot();
 }
 
 void AAOSHUD::AddOverlay()
@@ -30,6 +32,11 @@ void AAOSHUD::AddOverlay()
 	{
 		CharacterOverlay = CreateWidget<UAOSCharacterOverlay>(PlayerController, CharacterOverlayClass);
 		CharacterOverlay->AddToViewport();
+	}
+
+	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
+	{
+		CharacterOverlay->InventoryWidget->BindButtonEvent();
 	}
 }
 
@@ -153,6 +160,67 @@ void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrush(Brush);
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->InventorySlotIcon->SetBrushFromTexture(Weapon->GetItemIcon());
 			CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->BindSlotClickEvent();
+		}
+	}
+}
+
+void AAOSHUD::CreateItemInventorySlot()
+{
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) return;
+
+	APlayerController* PlayerController = GetOwningPlayerController();
+
+	if (PlayerController && ItemInventorySlotClass)
+	{
+		int32 SlotCount = CharacterOverlay->InventoryWidget->ItemSlotArray.Num() + 1;
+		int32 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
+
+		for (int32 i = 0; i < 5; i++)
+		{
+			UItemInventorySlot* ItemSlot = CreateWidget<UItemInventorySlot>(PlayerController, ItemInventorySlotClass);
+
+			CharacterOverlay->InventoryWidget->ItemSlotArray.Add(ItemSlot);
+
+			if (CharacterOverlay->InventoryWidget->ItemInventoryGridPanel)
+			{
+				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i + Row * 5], Row, i);
+				GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+				GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
+			}
+		}
+	}
+}
+
+void AAOSHUD::UpdateItemInventory()
+{
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->ItemInventoryGridPanel == nullptr) return;
+
+
+
+	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->ItemSlotArray.Num(); i++)
+	{
+		UUniformGridSlot* GridSlot =
+			CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i], i / 5, i % 5);
+		GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+		GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
+	}
+}
+
+void AAOSHUD::AddItemToSlot(int32 SlotNum, AItem* Item)
+{
+	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
+	{
+		CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->SetSlottedItem(Item);
+		Item->SetInventorySlot(CharacterOverlay->InventoryWidget->SlotArray[SlotNum]);
+
+		if (CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->ItemInventorySlotIcon && Item->GetItemIcon())
+		{
+			FSlateBrush Brush;
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(110.f));
+			CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->ItemInventorySlotIcon->SetBrush(Brush);
+			CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->ItemInventorySlotIcon->SetBrushFromTexture(Item->GetItemIcon());
+			CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->BindSlotClickEvent();
 		}
 	}
 }

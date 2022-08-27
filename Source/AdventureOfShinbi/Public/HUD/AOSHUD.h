@@ -13,6 +13,7 @@
 class UUserWidget;
 class UAOSCharacterOverlay;
 class AWeapon;
+class AItem;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AAOSHUD : public AHUD
@@ -25,11 +26,23 @@ public:
 
 	void SetCrosshairSpread(float Spread);
 
+	// 인벤토리 
+
 	void CreateInventorySlot();
 
 	void UpdateInventory();
 
 	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);
+
+	// 아이템 인벤토리
+
+	void CreateItemInventorySlot();
+
+	void UpdateItemInventory();
+
+	void AddItemToSlot(int32 SlotNum, AItem* Item);
+
+public:
 
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> CharacterOverlayClass;
@@ -48,6 +61,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> InventorySlotClass;
+
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	TSubclassOf<UUserWidget> ItemInventorySlotClass;
 
 protected:
 

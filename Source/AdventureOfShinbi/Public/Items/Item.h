@@ -36,13 +36,13 @@ protected:
 
 	void SetPickupWidgetInfo();
 
+	UPROPERTY(VisibleAnywhere)
+	EItemType InfoItemType;
+
 private:
 
 	UPROPERTY(EditAnywhere)
 	FString ItemName;
-
-	UPROPERTY(EditAnywhere)
-	EItemType InfoItemType;
 
 	UPROPERTY(EditAnywhere)
 	EItemRank InfoItemRank;
@@ -70,6 +70,7 @@ public:
 	bool GetIsWeapon() const;
 	USkeletalMeshComponent* GetItemMesh() const;
 	UWidgetComponent* GetWidget() const;
+	EItemType GetItemType() const;
 	UTexture2D* GetItemIcon() const;
 	void SetInventorySlot(UInventorySlot* Slot);
 	UInventorySlot* GetInventorySlot() const;

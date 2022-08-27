@@ -44,14 +44,12 @@ void UInventorySlot::ToggleEquippedSlot()
 		bIsEquipped = false;
 		SlottedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
 		EquipButtonText->SetText(FText::FromString(TEXT("장착하기")));
-		UE_LOG(LogTemp, Warning, TEXT("%s : 장착해제"), *SlottedWeapon->GetName());
 	}
 	else
 	{
 		bIsEquipped = true;
 		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
 		EquipButtonText->SetText(FText::FromString(TEXT("장착 해제")));
-		UE_LOG(LogTemp, Warning, TEXT("%s : 장착"), *SlottedWeapon->GetName());
 	}
 }
 

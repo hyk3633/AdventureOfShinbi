@@ -10,6 +10,7 @@
 #include "Weapons/RangedWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
+#include "Components/ItemComponent.h"
 #include "Components/WidgetComponent.h"
 #include "HUD/AOSHUD.h"
 #include "Kismet/GameplayStatics.h"
@@ -40,6 +41,8 @@ AAOSCharacter::AAOSCharacter()
 	GetCharacterMovement()->MaxWalkSpeedCrouched = 150.f;
 
 	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+
+	ItemComp = CreateDefaultSubobject<UItemComponent>(TEXT("ItemComponent"));
 }
 
 void AAOSCharacter::BeginPlay()
@@ -57,6 +60,12 @@ void AAOSCharacter::PostInitializeComponents()
 	if (CombatComp)
 	{
 		CombatComp->Character = this;
+		CombatComp->ItemComp = ItemComp;
+	}
+	if (ItemComp)
+	{
+		ItemComp->SetCharacter(this);
+		ItemComp->SetCombatComp(CombatComp);
 	}
 }
 
@@ -276,6 +285,16 @@ void AAOSCharacter::StopRunning()
 void AAOSCharacter::SetGunRecoil(float Recoil)
 {
 	GunRecoil = Recoil;
+}
+
+UCombatComponent* AAOSCharacter::GetCombatComp() const
+{
+	return CombatComp;
+}
+
+UItemComponent* AAOSCharacter::GetItemComp() const
+{
+	return ItemComp;
 }
 
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

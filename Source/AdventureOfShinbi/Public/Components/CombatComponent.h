@@ -9,6 +9,7 @@
 
 class AAOSCharacter;
 class AAOSController;
+class UItemComponent;
 class AAOSHUD;
 class UAnimMontage;
 class AItem;
@@ -22,6 +23,8 @@ public:
 
 	friend AAOSCharacter;
 
+	friend UItemComponent;
+
 	UCombatComponent();
 
 	void MeleeAttack();
@@ -29,6 +32,8 @@ public:
 	void GunFire();
 
 protected:
+
+	virtual void InitializeComponent() override;
 
 	virtual void BeginPlay() override;
 
@@ -48,8 +53,6 @@ protected:
 	void ResetCombo();
 
 	void Zoom(float DeltaTime);
-
-	void InitializeAmmoMap();
 
 	void Reload();
 
@@ -85,6 +88,8 @@ private:
 
 	AAOSController* CharacterController;
 
+	UItemComponent* ItemComp;
+
 	AAOSHUD* HUD;
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
@@ -108,8 +113,6 @@ private:
 	float StaminaDecreaseRate = 20.f;
 
 	float StaminaIncreaseRate = 20.f;
-
-	AItem* EquippedItem = nullptr;
 
 	AWeapon* EquippedWeapon = nullptr;
 
@@ -150,8 +153,6 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float ZoomSpeed = 30.f;
-
-	TMap<EAmmoType, int32> AmmoMap;
 
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;

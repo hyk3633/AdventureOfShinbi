@@ -6,10 +6,12 @@
 #include "HUD/AOSHUD.h"
 #include "HUD/Inventory.h"
 #include "Components/TextBlock.h"
+#include "Components/Button.h"
 #include "Components/ProgressBar.h"
 #include "Components/HorizontalBox.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
+#include "Components/VerticalBox.h"
 
 void AAOSController::BeginPlay()
 {
@@ -41,11 +43,11 @@ void AAOSController::SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmoun
 	}
 }
 
-void AAOSController::SetHUDItemIcon(UTexture2D* Icon)
+void AAOSController::SetHUDEquippedItemIcon(UTexture2D* Icon)
 {
-	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->ItemIcon)
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->EquippedItemIcon)
 	{
-		AOSHUD->CharacterOverlay->ItemIcon->SetBrushFromTexture(Icon);
+		AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrushFromTexture(Icon);
 	}
 }
 
@@ -66,7 +68,6 @@ void AAOSController::SetHUDEquippedWeaponIcon(UTexture2D* Icon)
 			AOSHUD->CharacterOverlay->EquippedWeaponIcon->SetBrushFromTexture(Icon);
 		}
 	}
-	
 }
 
 void AAOSController::SetHUDWeaponQuickSlot1Icon(UTexture2D* Icon)
@@ -239,4 +240,7 @@ void AAOSController::SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon)
 	}
 }
 
+void AAOSController::SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon)
+{
 
+}

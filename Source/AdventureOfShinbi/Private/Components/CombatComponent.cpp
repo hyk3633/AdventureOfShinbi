@@ -1,6 +1,7 @@
 
 
 #include "Components/CombatComponent.h"
+#include "Components/ItemComponent.h"
 #include "Components/TextBlock.h"
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -25,11 +26,15 @@ UCombatComponent::UCombatComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
+void UCombatComponent::InitializeComponent()
+{
+	Super::InitializeComponent();
+
+}
+
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InitializeAmmoMap();
 
 	CharacterController = Cast<AAOSController>(Character->GetController());
 	if (CharacterController)
@@ -218,7 +223,7 @@ void UCombatComponent::RangedWeaponFire()
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 	}
 
-	if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
+	if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] > 0)
 	{
 		Reload();
 	}
@@ -252,41 +257,33 @@ void UCombatComponent::Zoom(float DeltaTime)
 	}
 }
 
-void UCombatComponent::InitializeAmmoMap()
-{
-	AmmoMap.Add(EAmmoType::EAT_AR, 0);
-	AmmoMap.Add(EAmmoType::EAT_SMG, 20);
-	AmmoMap.Add(EAmmoType::EAT_Pistol, 0);
-	AmmoMap.Add(EAmmoType::EAT_Shell, 0);
-	AmmoMap.Add(EAmmoType::EAT_GrenadeLauncher, 0);
-	AmmoMap.Add(EAmmoType::EAT_Rocket, 0);
-}
-
 void UCombatComponent::Reload()
 {
+	if (Character->GetItemComp() == nullptr) return;
+
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 
 	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
-		if (AmmoMap[RangedWeapon->GetAmmoType()] == 0) return;
+		if (Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] == 0) return;
 
 		int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
-		if (AmmoToReload < AmmoMap[RangedWeapon->GetAmmoType()])
+		if (AmmoToReload < Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()])
 		{
 			RangedWeapon->SetLoadedAmmo(AmmoToReload);
-			AmmoMap[RangedWeapon->GetAmmoType()] -= AmmoToReload;
+			Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] -= AmmoToReload;
 		}
 		else
 		{
-			RangedWeapon->SetLoadedAmmo(AmmoMap[RangedWeapon->GetAmmoType()]);
-			AmmoMap[RangedWeapon->GetAmmoType()] = 0;
+			RangedWeapon->SetLoadedAmmo(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
+			Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] = 0;
 		}
 	}
 
 	if (CharacterController)
 	{
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
 	}
 }
 
@@ -415,6 +412,7 @@ void UCombatComponent::PickingUpItem(AItem* PickedItem)
 	else
 	{
 		// TODO : Item ½Àµæ Ã³¸®
+		Character->GetItemComp()->AddItem(PickedItem);
 	}
 }
 
@@ -474,10 +472,10 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	{
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(AmmoMap[RangedWeapon->GetAmmoType()]);
+		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
 		CharacterController->HUDAmmoInfoOn();
 
-		if (RangedWeapon->GetLoadedAmmo() == 0 && AmmoMap[RangedWeapon->GetAmmoType()] > 0)
+		if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] > 0)
 		{
 			Reload();
 		}

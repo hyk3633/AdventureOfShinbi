@@ -13,6 +13,7 @@ class UCameraComponent;
 class AWeapon;
 class AItem;
 class UCombatComponent;
+class UItemComponent;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -117,6 +118,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComp;
 
+	UPROPERTY(VisibleAnywhere)
+	UItemComponent* ItemComp;
+
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float GunRecoil = 0.f;
 
@@ -139,5 +143,6 @@ public:
 	void ResumeRunning();
 	void StopRunning();
 	void SetGunRecoil(float Recoil);
-
+	UCombatComponent* GetCombatComp() const;
+	UItemComponent* GetItemComp() const;
 };

@@ -91,6 +91,11 @@ UWidgetComponent* AItem::GetWidget() const
 	return Widget;
 }
 
+EItemType AItem::GetItemType() const
+{
+	return InfoItemType;
+}
+
 UTexture2D* AItem::GetItemIcon() const
 {
 	return ItemIcon;
