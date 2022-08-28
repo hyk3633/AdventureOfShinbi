@@ -168,7 +168,6 @@ void UInventorySlot::DiscardButtonClicked()
 	}
 }
 
-
 AWeapon* UInventorySlot::GetSlottedWeapon() const 
 { 
 	return SlottedWeapon; 

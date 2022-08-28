@@ -19,6 +19,8 @@ class UUniformGridPanel;
 class UInventorySlot;
 class UItemInventorySlot;
 
+DECLARE_DELEGATE_FourParams(Delegate_ItemQuickSelect, int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText);
+
 USTRUCT()
 struct FItemInventoryQuickSlot
 {
@@ -45,6 +47,10 @@ class ADVENTUREOFSHINBI_API UInventory : public UUserWidget
 public:
 
 	void BindButtonEvent();
+
+	void AllQuickSlotButtonEnabled();
+
+	void AllQuickSlotButtonDisabled();
 
 	// 인벤토리 변경 버튼
 
@@ -79,10 +85,16 @@ public:
 	UImage* ItemInventoryQuickSlot1Icon;
 
 	UPROPERTY(meta = (BindWidget))
+	UButton* ItemInventoryQuickSlot1Button;
+
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemInventoryQuickSlot1CountText;
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* ItemInventoryQuickSlot2Icon;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* ItemInventoryQuickSlot2Button;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemInventoryQuickSlot2CountText;
@@ -91,10 +103,16 @@ public:
 	UImage* ItemInventoryQuickSlot3Icon;
 
 	UPROPERTY(meta = (BindWidget))
+	UButton* ItemInventoryQuickSlot3Button;
+
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemInventoryQuickSlot3CountText;
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* ItemInventoryQuickSlot4Icon;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* ItemInventoryQuickSlot4Button;
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemInventoryQuickSlot4CountText;
@@ -103,12 +121,35 @@ public:
 	UImage* ItemInventoryQuickSlot5Icon;
 
 	UPROPERTY(meta = (BindWidget))
+	UButton* ItemInventoryQuickSlot5Button;
+
+	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemInventoryQuickSlot5CountText;
 
 	UPROPERTY(meta = (BindWidget))
 	UUniformGridPanel* ItemInventoryGridPanel;
 
 	TArray<UItemInventorySlot*> ItemSlotArray;
+
+	// 위젯 애니메이션
+
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	UWidgetAnimation* Highlighting;
+
+	Delegate_ItemQuickSelect OnItemQuickSlotSelected;
+
+protected:
+
+	UFUNCTION()
+	void QuickSlot1Clicked();
+	UFUNCTION()
+	void QuickSlot2Clicked();
+	UFUNCTION()
+	void QuickSlot3Clicked();
+	UFUNCTION()
+	void QuickSlot4Clicked();
+	UFUNCTION()
+	void QuickSlot5Clicked();
 
 private:
 

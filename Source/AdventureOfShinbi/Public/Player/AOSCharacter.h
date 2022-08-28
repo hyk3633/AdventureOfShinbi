@@ -65,6 +65,8 @@ private:
 	void ReloadButtonPressed();
 	void InventoryKeyPressed();
 	void WeaponQuickSwapKeyPressed();
+	void UseItemKeyPressed();
+	void ItemChangeKeyPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();

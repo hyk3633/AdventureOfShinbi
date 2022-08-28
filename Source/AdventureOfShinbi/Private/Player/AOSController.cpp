@@ -29,9 +29,13 @@ void AAOSController::SetHUDHealthBar(float HealthAmount, float MaxHealthAmount)
 	}
 }
 
-void AAOSController::SetHUDManaBar(float ManaAmount)
+void AAOSController::SetHUDManaBar(float ManaAmount, float MaxManaAmount)
 {
-
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->ManaBar)
+	{
+		const float ManaPercent = ManaAmount / MaxManaAmount;
+		AOSHUD->CharacterOverlay->ManaBar->SetPercent(ManaPercent);
+	}
 }
 
 void AAOSController::SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount)

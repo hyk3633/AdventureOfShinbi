@@ -18,7 +18,7 @@ class AAOSHUD;
 class UVerticalBox;
 class UTextBlock;
 
-DECLARE_DELEGATE_OneParam(Delegate_ItemUse, AItem* Item);
+DECLARE_DELEGATE_TwoParams(Delegate_ItemMenuSelect, AItem* Item, EItemSlotMenuState State);
 
 UCLASS()
 class ADVENTUREOFSHINBI_API UItemInventorySlot : public UUserWidget
@@ -56,14 +56,15 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemQuickSlotButtonText;
 
-	Delegate_ItemUse OnItemUse;
+	UPROPERTY(meta = (BindWidget))
+	UButton* ButtonCancel;
+
+	Delegate_ItemMenuSelect OnItemMenuSelect;
 
 protected:
 
 	UFUNCTION()
 	void ActivateItemInventorySlotClick();
-
-	void DeactivateItemInventorySlotClick();
 
 	UFUNCTION()
 	void UseButtonClicked();
@@ -71,12 +72,18 @@ protected:
 	UFUNCTION()
 	void QuickSlotButtonClicked();
 
+	UFUNCTION()
+	void CancelButtonClicked();
+
 private:
 
 	AItem* SlottedItem;
 
+	bool bItemEquippedQuickSlot = false;
+
 public:
 
+	void DeactivateItemInventorySlotClick();
 	void SetSlottedItem(AItem* Item);
-
+	void SetItemEquippedQuickSlot(const bool IsEquipped);
 };

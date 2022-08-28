@@ -21,7 +21,18 @@ enum class ERecoveryType : uint8
 	ERT_Mana,
 	ERT_Stamina,
 
-	ERT_MAX UMETA(DisplayName = "DefaultMAX")
+	ERT_MAX
+};
+
+UENUM()
+enum class EItemSlotMenuState : uint8
+{
+	EISMS_Use,
+	EISMS_Equip,
+	EISMS_Cancel,
+	EISMS_Dismount,
+
+	EISMS_MAX
 };
 
 static FString SetItemTypeToWidget(EItemType Itemtype)

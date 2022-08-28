@@ -13,6 +13,29 @@ class AAOSController;
 class AAOSHUD;
 class AItem;
 class UImage;
+class UButton;
+class UTextBlock;
+
+USTRUCT()
+struct FQuickSlotItem
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY()
+	AItem* QuickSlotItem;
+
+	UPROPERTY()
+	UImage* QuickSlotIcon;
+
+	UPROPERTY()
+	UButton* QuickSlotButton;
+
+	UPROPERTY()
+	UTextBlock* QuickSlotItemCountText;
+
+};
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UItemComponent : public UActorComponent
@@ -25,23 +48,45 @@ public:
 
 	void AddItem(AItem* Item);
 
+	void UseActivatedQuickSlotItem();
+
+	void ItemChange();
+
 protected:
 
 	virtual void BeginPlay() override;
+	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void InitializeTMap();
+
+	void InitializeQuickSlotItemArray();
 
 	void AddRecoveryItem(AItem* Item);
 
 	void AddAmmoItem(AItem* Item);
 
 	UFUNCTION()
-	void ItemUse(AItem* Item);
+	void ItemUseOrEquip(AItem* Item, EItemSlotMenuState State);
+
+	void UseItem(AItem* Item);
+
+	UFUNCTION()
+	void EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText);
+
+	bool CheckQuickSlotArrayIsEmpty();
+
+	void DismountItem(AItem* Item);
+
+	void PlayQuickSlotAnimation();
 
 	void UseRecoveryItem(AItem* Item);
 
-	void RecoveryHealth(float DeltaTime);
+	void Recovery(float DeltaTime);
+
+	int32 GetItemCount(AItem* Item);
+
+	FSlateBrush SetBrush(float Size, ESlateBrushDrawType::Type DrawType);
 
 private:
 
@@ -75,8 +120,20 @@ private:
 	TMap<EAmmoType, int32> AmmoQuantityMap;
 
 	bool bDoRecoveryHealth = false;
+	bool bDoRecoveryMana = false;
 
 	float RecoveredHealthAmount = 0.f;
+	float RecoveredManaAmount = 0.f;
+
+	FTimerHandle QuickSlotAnimationTimer;
+
+	float QuickSlotAnimationTime = 1.0f;
+
+	TArray<FQuickSlotItem> QuickSlotItemArray;
+
+	AItem* SelectedItem = nullptr;
+
+	int8 ActivatedQuickSlotNumber = 0;
 
 public:
 

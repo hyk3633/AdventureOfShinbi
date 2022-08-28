@@ -1,4 +1,4 @@
-
+﻿
 
 #include "HUD/ItemInventorySlot.h"
 #include "Items/Item.h"
@@ -22,6 +22,10 @@ void UItemInventorySlot::BindSlotClickEvent()
 		if (ButtonEquipToQuickSlot)
 		{
 			ButtonEquipToQuickSlot->OnClicked.AddDynamic(this, &UItemInventorySlot::QuickSlotButtonClicked);
+		}
+		if (ButtonCancel)
+		{
+			ButtonCancel->OnClicked.AddDynamic(this, &UItemInventorySlot::CancelButtonClicked);
 		}
 	}
 
@@ -68,16 +72,42 @@ void UItemInventorySlot::DeactivateItemInventorySlotClick()
 
 void UItemInventorySlot::UseButtonClicked()
 {
-	OnItemUse.ExecuteIfBound(SlottedItem);
+	OnItemMenuSelect.ExecuteIfBound(SlottedItem, EItemSlotMenuState::EISMS_Use);
 	DeactivateItemInventorySlotClick();
 }
 
 void UItemInventorySlot::QuickSlotButtonClicked()
 {
+	if (bItemEquippedQuickSlot)
+	{
+		ButtonEquipToQuickSlot->SetIsEnabled(true);
+		ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
+		OnItemMenuSelect.ExecuteIfBound(SlottedItem, EItemSlotMenuState::EISMS_Dismount);
+	}
+	else
+	{
+		ButtonEquipToQuickSlot->SetIsEnabled(false);
+		ButtonCancel->SetVisibility(ESlateVisibility::Visible);
+		OnItemMenuSelect.ExecuteIfBound(SlottedItem, EItemSlotMenuState::EISMS_Equip);
+	}
+}
+
+void UItemInventorySlot::CancelButtonClicked()
+{
+	OnItemMenuSelect.ExecuteIfBound(SlottedItem, EItemSlotMenuState::EISMS_Cancel);
+
+	ButtonEquipToQuickSlot->SetIsEnabled(true);
+	ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
+
 	DeactivateItemInventorySlotClick();
 }
 
 void UItemInventorySlot::SetSlottedItem(AItem* Item)
 {
 	SlottedItem = Item;
+}
+
+void UItemInventorySlot::SetItemEquippedQuickSlot(const bool IsEquipped)
+{
+	bItemEquippedQuickSlot = IsEquipped;
 }

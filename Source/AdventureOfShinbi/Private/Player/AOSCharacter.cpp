@@ -262,6 +262,22 @@ void AAOSCharacter::WeaponQuickSwapKeyPressed()
 	}
 }
 
+void AAOSCharacter::UseItemKeyPressed()
+{
+	if (ItemComp)
+	{
+		ItemComp->UseActivatedQuickSlotItem();
+	}
+}
+
+void AAOSCharacter::ItemChangeKeyPressed()
+{
+	if (ItemComp)
+	{
+		ItemComp->ItemChange();
+	}
+}
+
 void AAOSCharacter::TransitionAnimationStart()
 {
 	bIsAnimationPlaying = true;
@@ -317,6 +333,8 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AAOSCharacter::InventoryKeyPressed);
 	PlayerInputComponent->BindAction("WeaponQuickSwap", IE_Pressed, this, &AAOSCharacter::WeaponQuickSwapKeyPressed);
+	PlayerInputComponent->BindAction("UseItem", IE_Pressed, this, &AAOSCharacter::UseItemKeyPressed);
+	PlayerInputComponent->BindAction("ItemChange", IE_Pressed, this, &AAOSCharacter::ItemChangeKeyPressed);
 }
 
 void AAOSCharacter::SetOverlappingItem()

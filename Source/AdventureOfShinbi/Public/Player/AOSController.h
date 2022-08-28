@@ -23,7 +23,7 @@ public:
 	// 스탯 ui 세팅
 
 	void SetHUDHealthBar(float HealthAmount, float MaxHealthAmount);
-	void SetHUDManaBar(float ManaAmount);
+	void SetHUDManaBar(float ManaAmount, float MaxManaAmount);
 	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
 
 	// 메인 ui 세팅
