@@ -159,4 +159,7 @@ private:
 
 	TArray<AWeapon*> AcquiredWeapons;
 
+public:
+
+	AWeapon* GetEquippedWeapon() const;
 };

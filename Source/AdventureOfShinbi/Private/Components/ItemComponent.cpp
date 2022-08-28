@@ -14,6 +14,8 @@
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Weapons/Weapon.h"
+#include "Weapons/RangedWeapon.h"
 
 
 UItemComponent::UItemComponent()
@@ -37,6 +39,11 @@ void UItemComponent::BeginPlay()
 	}
 
 	HUD->CharacterOverlay->InventoryWidget->OnItemQuickSlotSelected.BindUObject(this, &UItemComponent::EquipToItemQuickSlot);
+
+	if (CombatComp)
+	{
+		DefaultStaminaIncreaseRate = CombatComp->StaminaIncreaseRate;
+	}
 }
 
 void UItemComponent::AddItem(AItem* Item)
@@ -90,6 +97,12 @@ void UItemComponent::ItemChange()
 	}
 }
 
+void UItemComponent::UpdateAmmo(EAmmoType AmmoType)
+{
+	FText AmmoCount = FText::FromString(FString::FromInt(AmmoQuantityMap[AmmoType]));
+	HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[AmmoIndexMap[AmmoType]]->ItemSlotCountText->SetText(AmmoCount);
+}
+
 void UItemComponent::AddRecoveryItem(AItem* Item)
 {
 	AItemRecovery* Recovery = Cast<AItemRecovery>(Item);
@@ -116,26 +129,35 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 void UItemComponent::AddAmmoItem(AItem* Item)
 {
 	AItemAmmo* Ammo = Cast<AItemAmmo>(Item);
-
-	if (AmmoQuantityMap[Ammo->GetAmmoType()] == 0)
+	
+	if (AmmoQuantityMap.Find(Ammo->GetAmmoType()) == nullptr)
 	{
 		ItemArray.Add(Item);
+		AmmoQuantityMap.Add(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
+		AmmoIndexMap[Ammo->GetAmmoType()] = ItemArray.Num() - 1;
 		HUD->AddItemToSlot(ItemArray.Num()-1, Item);
 		HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemArray.Num() - 1]->ItemInventorySlotIconButton->SetIsEnabled(false);
-		HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemArray.Num()-1]->OnItemMenuSelect.BindUObject(this, &UItemComponent::ItemUseOrEquip);
 		Ammo->GetStaticMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Ammo->GetStaticMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		Ammo->GetStaticMesh()->SetVisibility(false);
 	}
 	else
 	{
+		AmmoQuantityMap[Ammo->GetAmmoType()] += Ammo->GetAmmoQuantity();
 		Item->Destroy();
 	}
 
-	AmmoQuantityMap[Ammo->GetAmmoType()] += Ammo->GetAmmoQuantity();
-
-	HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemArray.Num()-1]->SetItemSlotCountText(AmmoQuantityMap[Ammo->GetAmmoType()]);
-
+	HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[AmmoIndexMap[Ammo->GetAmmoType()]]->SetItemSlotCountText(AmmoQuantityMap[Ammo->GetAmmoType()]);
+	
+	// 현재 장착된 무기가 총이고 총의 탄약 타입과 획득한 탄약의 타입이 같으면 탄약 정보 ui 갱신
+	if (CombatComp->GetEquippedWeapon() && CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->GetEquippedWeapon());
+		if (RW->GetAmmoType() == Ammo->GetAmmoType())
+		{
+			CharacterController->SetHUDTotalAmmoText(AmmoQuantityMap[Ammo->GetAmmoType()]);
+		}
+	}
 }
 
 void UItemComponent::ItemUseOrEquip(AItem* Item, EItemSlotMenuState State)
@@ -167,9 +189,6 @@ void UItemComponent::UseItem(AItem* Item)
 	{
 	case EItemType::EIT_Recovery:
 		UseRecoveryItem(Item);
-		break;
-	case EItemType::EIT_Ammo:
-		AddAmmoItem(Item);
 		break;
 	}
 }
@@ -322,7 +341,8 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 			}
 			else if (IR->GetRecoveryType() == ERecoveryType::ERT_Stamina)
 			{
-
+				CombatComp->StaminaIncreaseRate *= StaminaRecoveryBoostAmount;
+				Character->GetWorldTimerManager().SetTimer(StaminaRecoveryBoostTimer, this, &UItemComponent::StaminaRecoveryBoostTimeOff, StaminaRecoveryBoostTime);
 			}
 		}
 
@@ -394,6 +414,12 @@ int32 UItemComponent::GetItemCount(AItem* Item)
 	}
 }
 
+void UItemComponent::StaminaRecoveryBoostTimeOff()
+{
+	CombatComp->StaminaIncreaseRate = DefaultStaminaIncreaseRate;
+	UE_LOG(LogTemp, Warning, TEXT("End"));
+}
+
 void UItemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -407,12 +433,12 @@ void UItemComponent::InitializeTMap()
 	RecoveryItemMap.Add(ERecoveryType::ERT_Mana, 0);
 	RecoveryItemMap.Add(ERecoveryType::ERT_Stamina, 0);
 
-	AmmoQuantityMap.Add(EAmmoType::EAT_AR, 0);
-	AmmoQuantityMap.Add(EAmmoType::EAT_SMG, 20);
-	AmmoQuantityMap.Add(EAmmoType::EAT_Pistol, 0);
-	AmmoQuantityMap.Add(EAmmoType::EAT_Shell, 0);
-	AmmoQuantityMap.Add(EAmmoType::EAT_GrenadeLauncher, 0);
-	AmmoQuantityMap.Add(EAmmoType::EAT_Rocket, 0);
+	AmmoIndexMap.Add(EAmmoType::EAT_AR, -1);
+	AmmoIndexMap.Add(EAmmoType::EAT_Sniper, -1);
+	AmmoIndexMap.Add(EAmmoType::EAT_Pistol, -1);
+	AmmoIndexMap.Add(EAmmoType::EAT_Shell, -1);
+	AmmoIndexMap.Add(EAmmoType::EAT_GrenadeLauncher, -1);
+	AmmoIndexMap.Add(EAmmoType::EAT_Rocket, -1);
 }
 
 void UItemComponent::InitializeQuickSlotItemArray()
@@ -433,8 +459,13 @@ void UItemComponent::SetCombatComp(UCombatComponent* Combat)
 	CombatComp = Combat;
 }
 
-TMap<EAmmoType, int32> UItemComponent::GetAmmoMap() const
+int32 UItemComponent::GetAmmo(EAmmoType Type) const
 {
-	return AmmoQuantityMap;
+	return AmmoQuantityMap[Type];
+}
+
+void UItemComponent::SetAmmo(EAmmoType Type, int32 Quantity)
+{
+	AmmoQuantityMap[Type] = Quantity;
 }
 

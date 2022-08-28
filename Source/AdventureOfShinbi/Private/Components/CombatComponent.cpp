@@ -41,6 +41,7 @@ void UCombatComponent::BeginPlay()
 	{
 		HUD = Cast<AAOSHUD>(CharacterController->GetHUD());
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
+		CharacterController->SetHUDManaBar(Mana, MaxMana);
 		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
 	}
 
@@ -223,7 +224,7 @@ void UCombatComponent::RangedWeaponFire()
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 	}
 
-	if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] > 0)
+	if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()) > 0)
 	{
 		Reload();
 	}
@@ -265,25 +266,27 @@ void UCombatComponent::Reload()
 
 	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
-		if (Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] == 0) return;
+		int32 TotalAmmo = Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType());
+		if (TotalAmmo == 0) return;
 
 		int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
-		if (AmmoToReload < Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()])
+		if (AmmoToReload < TotalAmmo)
 		{
-			RangedWeapon->SetLoadedAmmo(AmmoToReload);
-			Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] -= AmmoToReload;
+			RangedWeapon->SetLoadedAmmo(RangedWeapon->GetMagazine());
+			Character->GetItemComp()->SetAmmo(RangedWeapon->GetAmmoType(), TotalAmmo - AmmoToReload);
 		}
 		else
 		{
-			RangedWeapon->SetLoadedAmmo(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
-			Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] = 0;
+			RangedWeapon->SetLoadedAmmo(RangedWeapon->GetLoadedAmmo() + TotalAmmo);
+			Character->GetItemComp()->SetAmmo(RangedWeapon->GetAmmoType(), 0);
 		}
 	}
 
 	if (CharacterController)
 	{
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
+		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()));
+		Character->GetItemComp()->UpdateAmmo(RangedWeapon->GetAmmoType());
 	}
 }
 
@@ -472,10 +475,10 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	{
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()]);
+		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()));
 		CharacterController->HUDAmmoInfoOn();
 
-		if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmoMap()[RangedWeapon->GetAmmoType()] > 0)
+		if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()) > 0)
 		{
 			Reload();
 		}
@@ -695,4 +698,9 @@ void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
 	Weapon->SetInventorySlot(nullptr);
 	Weapon->SetOwner(nullptr);
 	Weapon->WeaponStateChanged.RemoveAll(this);
+}
+
+AWeapon* UCombatComponent::GetEquippedWeapon() const
+{
+	return EquippedWeapon;
 }

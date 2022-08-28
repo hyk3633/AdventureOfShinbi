@@ -6,7 +6,7 @@ UENUM()
 enum class EAmmoType : uint8
 {
 	EAT_AR,
-	EAT_SMG,
+	EAT_Sniper,
 	EAT_Pistol,
 	EAT_Shell,
 	EAT_GrenadeLauncher,

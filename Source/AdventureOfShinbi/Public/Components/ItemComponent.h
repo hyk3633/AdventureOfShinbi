@@ -52,6 +52,8 @@ public:
 
 	void ItemChange();
 
+	void UpdateAmmo(EAmmoType AmmoType);
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -88,6 +90,8 @@ protected:
 
 	FSlateBrush SetBrush(float Size, ESlateBrushDrawType::Type DrawType);
 
+	void StaminaRecoveryBoostTimeOff();
+
 private:
 
 	UCombatComponent* CombatComp;
@@ -115,9 +119,11 @@ private:
 	float ManaRecoveryRate = 10.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
-	float StaminaRecoveryRate = 10.f;
+	float StaminaRecoveryBoostAmount = 2.f;
 
 	TMap<EAmmoType, int32> AmmoQuantityMap;
+
+	TMap<EAmmoType, int8> AmmoIndexMap;
 
 	bool bDoRecoveryHealth = false;
 	bool bDoRecoveryMana = false;
@@ -135,12 +141,20 @@ private:
 
 	int8 ActivatedQuickSlotNumber = 0;
 
+	FTimerHandle StaminaRecoveryBoostTimer;
+
+	float StaminaRecoveryBoostTime = 60.f;
+
+	float DefaultStaminaIncreaseRate = 0.f;
+
 public:
 
 	void SetCharacter(AAOSCharacter* CharacterToSet);
 
 	void SetCombatComp(UCombatComponent* Combat);
 
-	TMap<EAmmoType, int32> GetAmmoMap() const;
+	int32 GetAmmo(EAmmoType Type) const;
+
+	void SetAmmo(EAmmoType Type, int32 Quantity);
 
 };
