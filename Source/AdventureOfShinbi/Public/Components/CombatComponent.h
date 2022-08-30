@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Types/AmmoType.h"
-#include "Weapons/Weapon.h"
 #include "CombatComponent.generated.h"
 
 class AAOSCharacter;
 class AAOSController;
+class UItemComponent;
 class AAOSHUD;
 class UAnimMontage;
+class AItem;
+class AWeapon;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
@@ -21,6 +23,8 @@ public:
 
 	friend AAOSCharacter;
 
+	friend UItemComponent;
+
 	UCombatComponent();
 
 	void MeleeAttack();
@@ -28,6 +32,8 @@ public:
 	void GunFire();
 
 protected:
+
+	virtual void InitializeComponent() override;
 
 	virtual void BeginPlay() override;
 
@@ -48,8 +54,6 @@ protected:
 
 	void Zoom(float DeltaTime);
 
-	void InitializeAmmoMap();
-
 	void Reload();
 
 	// 플레이어 스탯 처리
@@ -62,7 +66,7 @@ protected:
 
 	void SpreadCrosshair(float DeltaTime);
 
-	void PickingUpWeapon(AWeapon* PickedWeapon);
+	void PickingUpItem(AItem* PickedItem);
 
 	void WeaponQuickSwap();
 
@@ -83,6 +87,8 @@ private:
 	AAOSCharacter* Character;
 
 	AAOSController* CharacterController;
+
+	UItemComponent* ItemComp;
 
 	AAOSHUD* HUD;
 
@@ -148,11 +154,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	float ZoomSpeed = 30.f;
 
-	TMap<EAmmoType, int32> AmmoMap;
-
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;
 
 	TArray<AWeapon*> AcquiredWeapons;
 
+public:
+
+	AWeapon* GetEquippedWeapon() const;
 };

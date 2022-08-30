@@ -6,11 +6,33 @@ enum class EItemType : uint8
 	EIT_Ammo UMETA(DisplayName = "Ammo"),
 	EIT_Recovery UMETA(DisplayName = "Recovery"),
 	EIT_Buff UMETA(DisplayName = "Buff"),
+	EIT_Bomb UMETA(DisplayName = "Bomb"),
 	EIT_MeleeWeapon UMETA(DisplayName = "Melee Weapon"),
 	EIT_MagicMeleeWeapon UMETA(DisplayName = "MagicMelee Weapon"),
 	EIT_RangedWeapon UMETA(DisplayName = "Ranged Weapon"),
 
 	EIT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+UENUM()
+enum class ERecoveryType : uint8
+{
+	ERT_Health,
+	ERT_Mana,
+	ERT_Stamina,
+
+	ERT_MAX
+};
+
+UENUM()
+enum class EItemSlotMenuState : uint8
+{
+	EISMS_Use,
+	EISMS_Equip,
+	EISMS_Cancel,
+	EISMS_Dismount,
+
+	EISMS_MAX
 };
 
 static FString SetItemTypeToWidget(EItemType Itemtype)
@@ -23,6 +45,8 @@ static FString SetItemTypeToWidget(EItemType Itemtype)
 		return TEXT("마법 근접 무기");
 	case EItemType::EIT_RangedWeapon:
 		return TEXT("원거리 무기");
+	case EItemType::EIT_Bomb:
+		return TEXT("폭탄");
 	case EItemType::EIT_Ammo:
 		return TEXT("탄약");
 	case EItemType::EIT_Recovery:

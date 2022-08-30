@@ -49,7 +49,10 @@ public:
 	// 하단 아이템 정보
 
 	UPROPERTY(meta = (BindWidget))
-	UImage* ItemIcon;
+	UImage* EquippedItemIcon;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* EquippedItemSlotCountText;
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* EquippedWeaponIcon;

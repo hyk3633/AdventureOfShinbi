@@ -3,7 +3,6 @@
 
 #include "HUD/InventorySlot.h"
 #include "HUD/AOSHUD.h"
-#include "HUD/InventorySlotClick.h"
 #include "Components/Button.h"
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"
@@ -164,11 +163,10 @@ void UInventorySlot::DiscardButtonClicked()
 {
 	if (SlottedWeapon)
 	{
-		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Dropped);
+		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Field);
 		DeactivateInventorySlotClick();
 	}
 }
-
 
 AWeapon* UInventorySlot::GetSlottedWeapon() const 
 { 

@@ -13,9 +13,9 @@ void ARangedProjectileWeapon::Firing()
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);
 
-	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
 	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 	FRotator TargetRotation = ToTarget.Rotation();
@@ -40,9 +40,9 @@ void ARangedProjectileWeapon::ScatterFiring()
 {
 	PlayFireEffect();
 
-	const USkeletalMeshSocket* MuzzleSocket = GetWeaponMesh()->GetSocketByName("MuzzleSocket");
+	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetWeaponMesh());
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);

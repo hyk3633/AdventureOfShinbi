@@ -11,7 +11,9 @@ class UInputComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class AWeapon;
+class AItem;
 class UCombatComponent;
+class UItemComponent;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -33,8 +35,6 @@ public:
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	void SetOverlappingWeapon(AWeapon* OtherWeapon);
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -42,6 +42,10 @@ protected:
 
 	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
+
+	void SetOverlappingItem();
+
+	void TraceItem(FHitResult& HitItem);
 
 private:
 
@@ -61,6 +65,8 @@ private:
 	void ReloadButtonPressed();
 	void InventoryKeyPressed();
 	void WeaponQuickSwapKeyPressed();
+	void UseItemKeyPressed();
+	void ItemChangeKeyPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
@@ -81,6 +87,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* Camera;
 
+	int32 OverlappingItemCount = 0;
+
+	bool bExistOverlappingItem = false;
+
 	bool bIsRunning = false;
 
 	bool bCanRunning = true;
@@ -97,6 +107,8 @@ private:
 
 	bool bIsInventoryOn = false;
 
+	AItem* OverlappingItem;
+
 	AWeapon* OverlappingWeapon;
 
 	UPROPERTY(VisibleAnywhere)
@@ -108,10 +120,15 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComp;
 
+	UPROPERTY(VisibleAnywhere)
+	UItemComponent* ItemComp;
+
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float GunRecoil = 0.f;
 
 	FTimerHandle FireTimer;
+
+	AItem* OverlappingItemLastFrame = nullptr;
 
 public:
 
@@ -122,10 +139,12 @@ public:
 	bool GetIsMoving() const;
 	bool GetIsAiming() const;
 	bool GetAttackButtonPressing() const;
+	void SetOverlappingItemCount(int8 Quantity);
 	EWeaponType GetWeaponType() const;
 	void SetWeaponType(EWeaponType Type);
 	void ResumeRunning();
 	void StopRunning();
 	void SetGunRecoil(float Recoil);
-
+	UCombatComponent* GetCombatComp() const;
+	UItemComponent* GetItemComp() const;
 };

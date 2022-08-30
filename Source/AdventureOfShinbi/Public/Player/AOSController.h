@@ -20,25 +20,37 @@ class ADVENTUREOFSHINBI_API AAOSController : public APlayerController
 	
 public:
 
+	// 스탯 ui 세팅
+
 	void SetHUDHealthBar(float HealthAmount, float MaxHealthAmount);
-	void SetHUDManaBar(float ManaAmount);
+	void SetHUDManaBar(float ManaAmount, float MaxManaAmount);
 	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
 
-	void SetHUDItemIcon(UTexture2D* Icon);
+	// 메인 ui 세팅
+
+	void SetHUDEquippedItemIcon(UTexture2D* Icon);
 	void SetHUDEquippedWeaponIcon(UTexture2D* Icon);
 	void SetHUDWeaponQuickSlot1Icon(UTexture2D*Icon);
 	void SetHUDWeaponQuickSlot2Icon(UTexture2D* Icon);
 
 	void HUDInventoryOn(bool IsInventoryOn);
 
+	// 탄약 ui 세팅
+
 	void SetHUDLoadedAmmoText(int32 Ammo);
 	void SetHUDTotalAmmoText(int32 Ammo);
 	void HUDAmmoInfoOn();
 	void HUDAmmoInfoOff();
 
+	// 인벤토리 ui 세팅
+
 	void SetHUDInventoryEquippedWeaponSlotIcon(UTexture2D* Icon);
 	void SetHUDInventoryQuickSlot1Icon(UTexture2D* Icon);
 	void SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon);
+
+	// 아이템 인벤토리 ui 세팅
+
+	void SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon);
 
 protected:
 

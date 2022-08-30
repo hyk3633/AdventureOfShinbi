@@ -14,7 +14,6 @@
 class UImage;
 class AWeapon;
 class UButton;
-class AAOSHUD;
 class UVerticalBox;
 class UTextBlock;
 
