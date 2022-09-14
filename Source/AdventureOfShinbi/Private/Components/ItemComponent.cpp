@@ -417,7 +417,6 @@ int32 UItemComponent::GetItemCount(AItem* Item)
 void UItemComponent::StaminaRecoveryBoostTimeOff()
 {
 	CombatComp->StaminaIncreaseRate = DefaultStaminaIncreaseRate;
-	UE_LOG(LogTemp, Warning, TEXT("End"));
 }
 
 void UItemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

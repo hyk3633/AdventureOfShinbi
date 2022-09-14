@@ -11,6 +11,7 @@
  * 
  */
 
+class AItemAmmo;
 class USoundCue;
 class UTexture2D;
 
@@ -57,6 +58,12 @@ protected:
 
 private:
 
+	AItem* AmmoItem;
+
+	// ÃÑ È¹µæ ½Ã Áö±ÞµÇ´Â Åº¾à
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AItem> AmmoClass;
+
 	FVector2D ViewPortSize;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
@@ -94,6 +101,7 @@ private:
 
 public:
 
+	AItem* GetAmmoItem() const;
 	ERangedWeaponType GetRangedWeaponType() const;
 	EAmmoType GetAmmoType() const;
 	int32 GetMagazine() const;

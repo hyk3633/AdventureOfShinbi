@@ -5,6 +5,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/AOSCharacter.h"
+#include "PhysicsEngine/RadialForceComponent.h"
 
 AProjectile::AProjectile()
 {
@@ -21,9 +22,15 @@ AProjectile::AProjectile()
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
-
 	ProjectileMovementComponent->InitialSpeed = 10000.f;
 	ProjectileMovementComponent->MaxSpeed = 10000.f;
+
+	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
+	RadialForce->SetupAttachment(BoxCollision);
+	RadialForce->Radius = 500.f;
+	RadialForce->bImpulseVelChange = true;
+	RadialForce->bIgnoreOwningActor = true;
+	RadialForce->bAutoActivate = true;
 }
 
 void AProjectile::BeginPlay()
@@ -37,22 +44,18 @@ void AProjectile::BeginPlay()
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
-	if (Causer)
+	if (bIsExplosive)
 	{
-		AController* CauserController = Cast<AController>(Causer->Controller);
-		if (CauserController)
-		{
-			if (bIsExplosive)
-			{
-				UGameplayStatics::ApplyRadialDamage(this, Damage, GetActorLocation(), ExplosionRadius, UDamageType::StaticClass(), IgnoreActors, Causer, CauserController);
-			}
-			else
-			{
-				float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
-				UGameplayStatics::ApplyDamage(OtherActor, Dmg, CauserController, Causer, UDamageType::StaticClass());
-			}
-		}
+		UGameplayStatics::ApplyRadialDamage(this, Damage, GetActorLocation(), ExplosionRadius, UDamageType::StaticClass(), IgnoreActors, GetOwner(), GetOwner()->GetInstigatorController());
+		RadialForce->FireImpulse();
+
+		//OtherComp->AddRadialImpulse(Hit.ImpactNormal, ExplosionRadius, 1000.f, ERadialImpulseFalloff::RIF_Linear);
+	}
+	else
+	{
+		float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
+
+		UGameplayStatics::ApplyPointDamage(OtherActor, Dmg, GetActorLocation(), Hit, GetOwner()->GetInstigatorController(), GetOwner(), UDamageType::StaticClass());
 	}
 }
 

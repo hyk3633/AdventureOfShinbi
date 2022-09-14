@@ -42,7 +42,7 @@ void ARangedHitScanWeapon::Firing()
 		AActor* DamagedActor = Cast<AActor>(MuzzleHitResult.Actor);
 		APawn* OwnerPawn = Cast<APawn>(GetOwner());
 
-		UGameplayStatics::ApplyDamage(DamagedActor, Dmg, OwnerPawn->GetController(), OwnerPawn, UDamageType::StaticClass());
+		UGameplayStatics::ApplyPointDamage(DamagedActor, Dmg, GetActorLocation(), MuzzleHitResult, OwnerPawn->GetInstigatorController(), OwnerPawn, UDamageType::StaticClass());
 	}
 
 	PlayAfterFireEffect();

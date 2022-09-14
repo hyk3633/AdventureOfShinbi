@@ -54,6 +54,8 @@ public:
 
 	void UpdateAmmo(EAmmoType AmmoType);
 
+	void AddAmmoItem(AItem* Item);
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -65,8 +67,6 @@ protected:
 	void InitializeQuickSlotItemArray();
 
 	void AddRecoveryItem(AItem* Item);
-
-	void AddAmmoItem(AItem* Item);
 
 	UFUNCTION()
 	void ItemUseOrEquip(AItem* Item, EItemSlotMenuState State);

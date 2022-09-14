@@ -6,6 +6,7 @@
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Player/AOSCharacter.h"
+#include "Player/AOSAnimInstance.h"
 #include "Player/AOSController.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -20,6 +21,7 @@
 #include "HUD/InventorySlot.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Types/WeaponState.h"
+#include "..\..\Public\Components\CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -35,6 +37,8 @@ void UCombatComponent::InitializeComponent()
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AnimInstance = Cast<UAOSAnimInstance>(Character->GetMesh()->GetAnimInstance());
 
 	CharacterController = Cast<AAOSController>(Character->GetController());
 	if (CharacterController)
@@ -91,8 +95,6 @@ void UCombatComponent::GunFire()
 
 void UCombatComponent::PlayMontageOneHandAttack()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-
 	if (AnimInstance == nullptr || MeleeOneHandAttackMontage == nullptr) return;
 
 	AnimInstance->Montage_Play(MeleeOneHandAttackMontage);
@@ -156,8 +158,6 @@ void UCombatComponent::PlayMontageOneHandAttack()
 
 void UCombatComponent::PlayMontageTwoHandAttack()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-
 	if (AnimInstance == nullptr || MeleeTwoHandAttackMontage == nullptr) return;
 
 	AnimInstance->Montage_Play(MeleeTwoHandAttackMontage);
@@ -173,8 +173,6 @@ void UCombatComponent::PlayMontageTwoHandAttack()
 
 void UCombatComponent::PlayMontageGunFire()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-
 	if (AnimInstance == nullptr || GunFireMontage == nullptr) return;
 
 	AnimInstance->Montage_Play(GunFireMontage);
@@ -183,8 +181,6 @@ void UCombatComponent::PlayMontageGunFire()
 
 void UCombatComponent::PlayMontageGlaveAttack()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-
 	if (AnimInstance == nullptr || GlaveAttackMontage == nullptr) return;
 
 	AnimInstance->Montage_Play(GlaveAttackMontage);
@@ -196,6 +192,23 @@ void UCombatComponent::PlayMontageGlaveAttack()
 	{
 		AnimInstance->Montage_JumpToSection(FName("GlaveB"));
 	}
+}
+
+void UCombatComponent::PlayMontageDeath()
+{
+	if (AnimInstance == nullptr || DeathMontage == nullptr) return;
+
+	AnimInstance->Montage_Play(DeathMontage);
+
+	if (Character->GetWeaponType() == EWeaponType::EWT_None)
+	{
+		AnimInstance->Montage_JumpToSection(FName("UnArmed"));
+	}
+}
+
+void UCombatComponent::OnDeathMontageEnded()
+{
+	Character->GetMesh()->bPauseAnims = true;
 }
 
 void UCombatComponent::RangedWeaponFire()
@@ -296,6 +309,13 @@ void UCombatComponent::UpdateHealth(float Damage)
 	if (CharacterController)
 	{
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
+	}
+
+	if (Health == 0.f)
+	{
+		PlayerDeathDelegate.Broadcast();
+		Character->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		PlayMontageDeath();
 	}
 }
 
@@ -474,6 +494,9 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+
+		Character->GetItemComp()->AddAmmoItem(RangedWeapon->GetAmmoItem());
+
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
 		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()));
 		CharacterController->HUDAmmoInfoOn();

@@ -44,6 +44,7 @@ public:
 
 	OnWeaponStateChangedDelegate WeaponStateChanged;
 
+	UBoxComponent* GetDamageCollision() const;
 	EWeaponType GetWeaponType() const;
 	virtual void SetWeaponState(const EWeaponState State);
 	EWeaponState GetWeaponState() const;

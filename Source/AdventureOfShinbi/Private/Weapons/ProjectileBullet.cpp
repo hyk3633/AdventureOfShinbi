@@ -11,7 +11,7 @@ void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectileBullet::OnHit);
+	
 
 	if (BulletParticle)
 	{

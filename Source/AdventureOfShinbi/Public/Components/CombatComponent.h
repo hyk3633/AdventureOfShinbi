@@ -8,12 +8,15 @@
 #include "CombatComponent.generated.h"
 
 class AAOSCharacter;
+class UAOSAnimInstance;
 class AAOSController;
 class UItemComponent;
 class AAOSHUD;
 class UAnimMontage;
 class AItem;
 class AWeapon;
+
+DECLARE_MULTICAST_DELEGATE(DPlayerDeathDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
@@ -31,6 +34,8 @@ public:
 
 	void GunFire();
 
+	DPlayerDeathDelegate PlayerDeathDelegate;
+
 protected:
 
 	virtual void InitializeComponent() override;
@@ -46,6 +51,11 @@ protected:
 	void PlayMontageGunFire();
 
 	void PlayMontageGlaveAttack();
+
+	void PlayMontageDeath();
+
+	UFUNCTION(BlueprintCallable)
+	void OnDeathMontageEnded();
 
 	// 원거리 무기 타입에 따른 처리 함수
 	void RangedWeaponFire();
@@ -85,6 +95,8 @@ protected:
 private:
 
 	AAOSCharacter* Character;
+
+	UAOSAnimInstance* AnimInstance;
 
 	AAOSController* CharacterController;
 
@@ -138,6 +150,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* GlaveAttackMontage;
+
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* DeathMontage;
 
 	bool IsAnimationPlaying = false;
 

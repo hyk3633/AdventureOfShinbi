@@ -2,6 +2,7 @@
 
 #include "Weapons/Weapon.h"
 #include "Player/AOSCharacter.h"
+#include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
@@ -49,6 +50,11 @@ void AWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent,
 			UGameplayStatics::ApplyDamage(OtherActor, MeleeDamage, CauserController, Causer, UDamageType::StaticClass());
 		}
 	}
+}
+
+UBoxComponent* AWeapon::GetDamageCollision() const
+{
+	return DamageCollision;
 }
 
 EWeaponType AWeapon::GetWeaponType() const
@@ -109,8 +115,7 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
 		DamageCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-		DamageCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+		DamageCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Overlap);
 		
 		break;
 	}

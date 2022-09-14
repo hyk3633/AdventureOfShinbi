@@ -2,6 +2,8 @@
 
 
 #include "Weapons/RangedWeapon.h"
+#include "Components/BoxComponent.h"
+#include "Items/ItemAmmo.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -10,7 +12,7 @@
 
 ARangedWeapon::ARangedWeapon()
 {
-
+	GetDamageCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void ARangedWeapon::BeginPlay()
@@ -20,6 +22,24 @@ void ARangedWeapon::BeginPlay()
 	if (GEngine && GEngine->GameViewport)
 	{
 		GEngine->GameViewport->GetViewportSize(ViewPortSize);
+	}
+
+	if (AmmoClass)
+	{
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			AmmoItem = World->SpawnActor<AItem>(AmmoClass);
+		}
+	}
+
+	if (AmmoItem)
+	{
+		AItemAmmo* IA = Cast<AItemAmmo>(AmmoItem);
+		if (IA)
+		{
+			IA->GetStaticMesh()->SetVisibility(false);
+		}
 	}
 }
 
@@ -70,6 +90,11 @@ void ARangedWeapon::PlayFireEffect()
 	{
 		UGameplayStatics::PlaySound2D(this, FireSound);
 	}
+}
+
+AItem* ARangedWeapon::GetAmmoItem() const
+{
+	return AmmoItem;
 }
 
 ERangedWeaponType ARangedWeapon::GetRangedWeaponType() const

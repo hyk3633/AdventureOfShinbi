@@ -43,6 +43,20 @@ protected:
 	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
 
+	UFUNCTION()
+	void TakePointDamage
+	(
+		AActor* DamagedActor,
+		float DamageReceived,
+		class AController* InstigatedBy,
+		FVector HitLocation,
+		class UPrimitiveComponent* FHitComponent,
+		FName BoneName,
+		FVector ShotFromDirection,
+		const class UDamageType* DamageType,
+		AActor* DamageCauser
+	);
+
 	void SetOverlappingItem();
 
 	void TraceItem(FHitResult& HitItem);

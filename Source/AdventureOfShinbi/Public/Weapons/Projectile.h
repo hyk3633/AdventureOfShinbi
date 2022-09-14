@@ -7,6 +7,7 @@
 
 class UBoxComponent;
 class UProjectileMovementComponent;
+class URadialForceComponent;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AProjectile : public AActor
@@ -45,4 +46,7 @@ protected:
 	float ExplosionRadius = 30.f;
 
 	TArray<AActor*> IgnoreActors;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive"))
+	URadialForceComponent* RadialForce;
 };

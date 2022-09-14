@@ -2,6 +2,7 @@
 
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
+#include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -19,6 +20,10 @@
 AAOSCharacter::AAOSCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetMesh()->SetCollisionObjectType(ECC_Player);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Block);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -51,6 +56,7 @@ void AAOSCharacter::BeginPlay()
 
 	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
 	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
+	//OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 }
 
 void AAOSCharacter::PostInitializeComponents()
@@ -71,9 +77,19 @@ void AAOSCharacter::PostInitializeComponents()
 
 void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
+	UE_LOG(LogTemp, Warning, TEXT("%f"), Damage);
 	if (CombatComp)
 	{
 		CombatComp->UpdateHealth(Damage);
+	}
+}
+
+void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+	if (CombatComp)
+	{
+		CombatComp->UpdateHealth(DamageReceived);
 	}
 }
 
@@ -119,6 +135,8 @@ void AAOSCharacter::Turn(float Value)
 void AAOSCharacter::Jump()
 {
 	if (bIsAnimationPlaying) return;
+
+	MakeNoise(1.f, GetInstigator(), GetActorLocation());
 
 	ACharacter::Jump();
 }
