@@ -727,3 +727,11 @@ AWeapon* UCombatComponent::GetEquippedWeapon() const
 {
 	return EquippedWeapon;
 }
+
+bool UCombatComponent::SpendStamina(float StaminaToSpend)
+{
+	if (Stamina < StaminaToSpend) return false;
+
+	Stamina = FMath::Clamp(Stamina - StaminaToSpend, 0.f, MaxStamina);
+	return true;
+}

@@ -10,10 +10,12 @@
 class UInputComponent;
 class USpringArmComponent;
 class UCameraComponent;
+class UAOSAnimInstance;
 class AWeapon;
 class AItem;
 class UCombatComponent;
 class UItemComponent;
+class UAnimMontage;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -70,7 +72,9 @@ private:
 	void Jump();
 	void RunningButtonPressed();
 	void RunningButtonReleased();
-	void CrouchButtonPressed();
+	void Crouch_DashButtonPressed();
+	void Crouching();
+	void Dash();
 	void EquipButtonPressed();
 	void AttackButtonePressed();
 	void AttackButtoneReleassed();
@@ -92,6 +96,10 @@ private:
 	void StartTimerFire();
 	void FireReturn();
 
+	void PlayDashMotage();
+
+	UFUNCTION(BlueprintCallable)
+	void OnDashMontageEnded();
 
 private:
 
@@ -100,6 +108,8 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* Camera;
+
+	UAOSAnimInstance* AnimInstance;
 
 	int32 OverlappingItemCount = 0;
 
@@ -120,6 +130,8 @@ private:
 	bool bAbleFire = true;
 
 	bool bIsInventoryOn = false;
+
+	bool bDashing = false;
 
 	AItem* OverlappingItem;
 
@@ -143,6 +155,12 @@ private:
 	FTimerHandle FireTimer;
 
 	AItem* OverlappingItemLastFrame = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* DashMontage;
+
+	UPROPERTY(EditAnywhere)
+	float DashPower = 5000.f;
 
 public:
 

@@ -2,6 +2,7 @@
 
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
+#include "Player/AOSAnimInstance.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
@@ -54,6 +55,8 @@ void AAOSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
+
 	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
 	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
 	//OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
@@ -95,7 +98,7 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 
 void AAOSCharacter::MoveForward(float Value)
 {
-	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying || bDashing) return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -105,12 +108,11 @@ void AAOSCharacter::MoveForward(float Value)
 		const FVector Direction(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X));
 		AddMovementInput(Direction, Value);
 	}
-
 }
 
 void AAOSCharacter::MoveRight(float Value)
 {
-	if (bIsAnimationPlaying && WeaponType == EWeaponType::EWT_MAX) return;
+	if (bIsAnimationPlaying || bDashing) return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -159,10 +161,22 @@ void AAOSCharacter::RunningButtonReleased()
 	GetCharacterMovement()->MaxWalkSpeed = 250.f;
 }
 
-void AAOSCharacter::CrouchButtonPressed()
+void AAOSCharacter::Crouch_DashButtonPressed()
 {
-	if (bIsAnimationPlaying || WeaponType != EWeaponType::EWT_None) return;
+	if (bIsAnimationPlaying) return;
 
+	if (WeaponType == EWeaponType::EWT_None)
+	{
+		Crouching();
+	}
+	else
+	{
+		Dash();
+	}
+}
+
+void AAOSCharacter::Crouching()
+{
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -171,6 +185,14 @@ void AAOSCharacter::CrouchButtonPressed()
 	{
 		Crouch();
 	}
+}
+
+void AAOSCharacter::Dash()
+{
+	if (bDashing || !CombatComp->SpendStamina(10.f)) return;
+	bDashing = true;
+	PlayDashMotage();
+	LaunchCharacter(GetLastMovementInputVector() * DashPower, false, false);
 }
 
 void AAOSCharacter::EquipButtonPressed()
@@ -235,6 +257,20 @@ void AAOSCharacter::FireReturn()
 	{
 		Fire();
 	}
+}
+
+void AAOSCharacter::PlayDashMotage()
+{
+	if (DashMontage)
+	{
+		AnimInstance->Montage_Play(DashMontage);
+		//AnimInstance->Montage_JumpToSection(FName("Dash"));
+	}
+}
+
+void AAOSCharacter::OnDashMontageEnded()
+{
+	bDashing = false;
 }
 
 void AAOSCharacter::AimButtonPressed()
@@ -342,7 +378,7 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AAOSCharacter::Jump);
 	PlayerInputComponent->BindAction("Running", IE_Pressed, this, &AAOSCharacter::RunningButtonPressed);
 	PlayerInputComponent->BindAction("Running", IE_Released, this, &AAOSCharacter::RunningButtonReleased);
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AAOSCharacter::CrouchButtonPressed);
+	PlayerInputComponent->BindAction("Crouch/Dash", IE_Pressed, this, &AAOSCharacter::Crouch_DashButtonPressed);
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &AAOSCharacter::EquipButtonPressed);
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AAOSCharacter::AttackButtonePressed);
 	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtoneReleassed);

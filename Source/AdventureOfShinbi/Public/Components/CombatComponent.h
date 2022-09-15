@@ -177,4 +177,5 @@ private:
 public:
 
 	AWeapon* GetEquippedWeapon() const;
+	bool SpendStamina(float StaminaToSpend);
 };
