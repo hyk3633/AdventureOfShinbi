@@ -5,6 +5,11 @@
 #include "Enemy/EnemyCharacter.h"
 #include "Enemy/EnemyAIController.h"
 
+UBTT_ChaseToPlayer::UBTT_ChaseToPlayer()
+{
+
+}
+
 EBTNodeResult::Type UBTT_ChaseToPlayer::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	Super::ExecuteTask(OwnerComp, NodeMemory);

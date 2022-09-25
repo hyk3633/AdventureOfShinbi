@@ -14,6 +14,7 @@
 #include "Components/CombatComponent.h"
 #include "Components/ItemComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "HUD/AOSHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
@@ -24,7 +25,15 @@ AAOSCharacter::AAOSCharacter()
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetCollisionObjectType(ECC_Player);
-	GetMesh()->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyWeapon, ECollisionResponse::ECR_Overlap);
+	GetMesh()->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Overlap);
+	GetMesh()->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerWeapon, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
+
+	GetCapsuleComponent()->SetCollisionObjectType(ECC_Player);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Block);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -58,8 +67,9 @@ void AAOSCharacter::BeginPlay()
 	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
 
 	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
-	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
-	//OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
+	//OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
+	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
+	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 }
 
 void AAOSCharacter::PostInitializeComponents()
@@ -78,16 +88,25 @@ void AAOSCharacter::PostInitializeComponents()
 	}
 }
 
-void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
+void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%f"), Damage);
+	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
 	if (CombatComp)
 	{
-		CombatComp->UpdateHealth(Damage);
+		CombatComp->UpdateHealth(DamageReceived);
 	}
 }
 
 void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+	if (CombatComp)
+	{
+		CombatComp->UpdateHealth(DamageReceived);
+	}
+}
+
+void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
 	if (CombatComp)
@@ -446,7 +465,7 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 		FVector TraceStart = CrosshairWorldPosition;
 		FVector TraceEnd = TraceStart + CrosshairWorldDirection * 10000.f;
 
-		GetWorld()->LineTraceSingleByChannel(HitItem, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+		GetWorld()->LineTraceSingleByChannel(HitItem, TraceStart, TraceEnd, ECC_FindItem);
 
 		// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
 		if (!HitItem.bBlockingHit)

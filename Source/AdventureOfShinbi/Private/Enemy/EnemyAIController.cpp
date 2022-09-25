@@ -12,12 +12,13 @@
 #include "BehaviorTree/Tasks/BTTask_MoveTo.h"
 #include "Player/AOSCharacter.h"
 #include "Components/CombatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
 
 const FName AEnemyAIController::KeyTarget(TEXT("Target"));
-const FName AEnemyAIController::KeyAimedTarget(TEXT("AimedTarget"));
 
 const FName AEnemyAIController::KeyWaitingPosition(TEXT("WaitingPosition"));
+const FName AEnemyAIController::KeyMoveToPoint(TEXT("MoveToPoint"));
 const FName AEnemyAIController::KeyDetectedLocation(TEXT("DetectedLocation"));
 
 const FName AEnemyAIController::KeyTargetIsVisible(TEXT("TargetIsVisible"));
@@ -25,7 +26,6 @@ const FName AEnemyAIController::KeySightStimulusExpired(TEXT("SightStimulusExpir
 const FName AEnemyAIController::KeyTargetIsHeard(TEXT("TargetIsHeard"));
 const FName AEnemyAIController::KeyTargetHitsMe(TEXT("TargetHitsMe"));
 const FName AEnemyAIController::KeyTargetInAttackRange(TEXT("TargetInAttackRange"));
-const FName AEnemyAIController::KeyTargetInChaseRange(TEXT("TargetInChaseRange"));
 const FName AEnemyAIController::KeyStunned(TEXT("Stunned"));
 const FName AEnemyAIController::KeyStiffed(TEXT("Stiffed"));
 const FName AEnemyAIController::KeyKnockUp(TEXT("KnockUp"));
@@ -54,7 +54,6 @@ AEnemyAIController::AEnemyAIController()
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	HearingConfig->SetMaxAge(10.f);
 
-
 	PerceptionComp->ConfigureSense(*SightConfig);
 	PerceptionComp->ConfigureSense(*HearingConfig);
 
@@ -66,7 +65,6 @@ void AEnemyAIController::BeginPlay()
 	Super::BeginPlay();
 
 	PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyAIController::OnDetected);
-
 }
 
 void AEnemyAIController::OnDetected(AActor* Actor, FAIStimulus Stimulus)
@@ -78,13 +76,9 @@ void AEnemyAIController::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 		if (!IsPlayerDeathDelegateBined)
 		{
 			Cha->GetCombatComp()->PlayerDeathDelegate.AddLambda([this]() -> void {
-				UE_LOG(LogTemp, Warning, TEXT("playerdead"));
 				BBComp->SetValueAsBool(KeyIsPlayerDead, true);
 			});
 		}
-
-		BBComp->SetValueAsVector(KeyDetectedLocation, Cha->GetActorLocation());
-		BBComp->SetValueAsObject(KeyTarget, Cha);
 
 		if (Stimulus.Type.Name == FName("Default__AISense_Sight"))
 		{
@@ -92,15 +86,17 @@ void AEnemyAIController::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 			{
 				BBComp->SetValueAsBool(KeyTargetIsVisible, true);
 				BBComp->SetValueAsBool(KeySightStimulusExpired, false);
-				GetWorldTimerManager().SetTimer(SightStimulusExpireTimer, this, &AEnemyAIController::SightStimulusExpire, SightStimulusExpireTime);
+				BBComp->SetValueAsObject(KeyTarget, Cha);
 				if (PossessedCharacter)
 				{
 					PossessedCharacter->SetEnemyState(EEnemyState::EES_Chase);
 				}
+				GetWorldTimerManager().ClearTimer(SightStimulusExpireTimer);
 			}
 			else
 			{
 				BBComp->SetValueAsBool(KeyTargetIsVisible, false);
+				GetWorldTimerManager().SetTimer(SightStimulusExpireTimer, this, &AEnemyAIController::SightStimulusExpire, SightStimulusExpireTime);
 			}
 		}
 		else if (Stimulus.Type.Name == FName("Default__AISense_Hearing"))
@@ -108,6 +104,7 @@ void AEnemyAIController::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 			if (!Stimulus.IsExpired())
 			{
 				BBComp->SetValueAsBool(KeyTargetIsHeard, true);
+				BBComp->SetValueAsVector(KeyDetectedLocation, Cha->GetActorLocation());
 				if (PossessedCharacter)
 				{
 					if (PossessedCharacter->GetEnemyState() == EEnemyState::EES_Patrol)
@@ -132,12 +129,10 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 
 	PossessedCharacter = Cast<AEnemyCharacter>(InPawn);
 
-	if (UseBlackboard(BBAsset, BBComp))
+	if (UseBlackboard(BBAsset, BBComp) && PossessedCharacter)
 	{
 		// TODO : 기본값 세팅
 		BBComp->SetValueAsObject(KeyTarget, nullptr);
-		BBComp->SetValueAsObject(KeyAimedTarget, nullptr);
-		BBComp->SetValueAsVector(KeyWaitingPosition, InPawn->GetActorLocation());
 		BBComp->SetValueAsBool(KeySightStimulusExpired, true);
 	}
 
@@ -157,6 +152,7 @@ void AEnemyAIController::OnUnPossess()
 void AEnemyAIController::SightStimulusExpire()
 {
 	BBComp->SetValueAsBool(KeySightStimulusExpired, true);
+	BBComp->SetValueAsObject(KeyTarget, nullptr);
 
 	CheckNothingStimulus();
 }
@@ -173,7 +169,6 @@ void AEnemyAIController::CheckNothingStimulus()
 			if (PossessedCharacter->GetEnemyState() == EEnemyState::EES_Chase ||
 				PossessedCharacter->GetEnemyState() == EEnemyState::EES_Detected )
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Check to comeback"));
 				PossessedCharacter->SetEnemyState(EEnemyState::EES_Comeback);
 			}
 		}

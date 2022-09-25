@@ -24,6 +24,11 @@ protected:
 
 	virtual void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
+	UFUNCTION(BlueprintCallable)
+	void ActivateDamageCollision2();
+
+	UFUNCTION(BlueprintCallable)
+	void DeactivateDamageCollision2();
 	
 private:
 

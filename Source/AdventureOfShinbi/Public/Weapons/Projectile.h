@@ -31,6 +31,11 @@ protected:
 	bool bIsExplosive = false;
 
 	UPROPERTY(EditAnywhere)
+	bool bIsPlayersProjectile = false;
+
+protected:
+
+	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxCollision;
 
 	UPROPERTY(VisibleAnywhere)

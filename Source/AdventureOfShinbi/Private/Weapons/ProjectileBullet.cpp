@@ -1,7 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/ProjectileBullet.h"
+#include "Player/AOSCharacter.h"
+#include "Enemy/EnemyCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/BoxComponent.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -10,8 +11,6 @@
 void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
-
-	
 
 	if (BulletParticle)
 	{
@@ -32,9 +31,24 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
-	if (HitParticle)
+	AEnemyCharacter* HittedEnemy = Cast<AEnemyCharacter>(OtherActor);
+	AAOSCharacter* HittedPlayer = Cast<AAOSCharacter>(OtherActor);
+
+	if (HittedEnemy)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+		HittedEnemy->PlayHitEffect(Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+	}
+	else if (HittedPlayer)
+	{
+		// TODO 플레이어 전용 히트 이펙트
+	}
+	else
+	{
+		// 캐릭터도 적도 아닌 물체를 맞혔을 때
+		if (HitParticle)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+		}
 	}
 
 	Destroy();

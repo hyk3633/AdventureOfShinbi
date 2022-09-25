@@ -11,45 +11,15 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Sound/SoundCue.h"
 
 AEnemyRanged::AEnemyRanged()
 {
-
-}
-
-void AEnemyRanged::Attack()
-{
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), true);
-	}
-	IsAttacking = true;
-	OnAttackEnd.Broadcast();
-
-	if (bTargetIsInAttackRange)
-	{
-		PlayAttackMontage();
-	}
-	else if (bTargetIsInChaseRange)
-	{
-		RangedAttack();
-	}
 }
 
 void AEnemyRanged::RangedAttack()
 {
-	if (GetCharacterMovement()->IsFalling())
-	{
-		CurrentFireCount = 0;
-		return;
-	}
-	if (AIController)
-	{
-		if (AIController->GetBlackBoard()->GetValueAsBool(FName("IsPlayerDead")))
-		{
-			return;
-		}
-	}
 	CurrentFireCount++;
 	PlayFireMontage();
 	ProjectileFire();
@@ -59,31 +29,7 @@ void AEnemyRanged::BeginPlay()
 {
 	Super::BeginPlay();
 
-	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyRanged::OnFireMontageEnded);
-}
-
-void AEnemyRanged::OnChaseRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnChaseRangeOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	bTargetIsInChaseRange = true;
-}
-
-void AEnemyRanged::OnChaseRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	Super::OnChaseRangeEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-	bTargetIsInChaseRange = false;
-}
-
-void AEnemyRanged::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnChaseRangeOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
-	bTargetIsInAttackRange = true;
-}
-
-void AEnemyRanged::OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	Super::OnChaseRangeEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
-	bTargetIsInAttackRange = false;
+	//EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyRanged::OnFireMontageEnded);
 }
 
 void AEnemyRanged::ProjectileFire()
@@ -134,40 +80,23 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 	FHitResult HitResult;
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams);
-
+	
 	// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
 	if (!HitResult.bBlockingHit)
 	{
 		OutHitPoint = TraceEnd;
-
-		if (AIController)
-		{
-			AIController->GetBlackBoard()->SetValueAsObject(FName("AimedTarget"), nullptr);
-		}
 	}
 	else
 	{
 		OutHitPoint = HitResult.ImpactPoint;
-
-		if (AIController)
-		{
-			AAOSCharacter* Cha = Cast<AAOSCharacter>(HitResult.GetActor());
-			if (Cha)
-			{
-				AIController->GetBlackBoard()->SetValueAsObject(FName("AimedTarget"), Cha);
-			}
-			else
-			{
-				AIController->GetBlackBoard()->SetValueAsObject(FName("AimedTarget"), nullptr);
-			}
-		}
 	}
-	
 }
 
 void AEnemyRanged::PlayFireMontage()
 {
 	if (EnemyAnim == nullptr || FireMontage == nullptr) return;
+
+	bIsAttacking = true;
 
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(FireMontageSectionNameArr.Num());
 
@@ -176,20 +105,38 @@ void AEnemyRanged::PlayFireMontage()
 	EnemyAnim->Montage_JumpToSection(FireMontageSectionNameArr[RandSectionNum]);
 }
 
-void AEnemyRanged::OnFireMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+void AEnemyRanged::OnFireMontageEnded()
 {
-	if (Montage == FireMontage && AIController)
+	if (AIController)
 	{
+		bool bCheckCondition =
+			GetCharacterMovement()->IsFalling() ||
+			AIController->GetBlackBoard()->GetValueAsBool(FName("IsPlayerDead")) ||
+			AIController->GetBlackBoard()->GetValueAsBool(FName("TargetIsVisible")) ? false : true;
+
 		if (CurrentFireCount < FireCount)
 		{
 			RangedAttack();
 		}
-		else
+		else if(CurrentFireCount >= FireCount || bCheckCondition)
 		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), false);
-			CurrentFireCount = 0;
-			IsAttacking = false;
-			OnAttackEnd.Broadcast();
+			FinishFire();
 		}
 	}
+}
+
+void AEnemyRanged::FinishFire()
+{
+	if (AIController)
+	{
+		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), false);
+	}
+	CurrentFireCount = 0;
+	bIsAttacking = false;
+	OnAttackEnd.Broadcast();
+}
+
+AEnemyAIController* AEnemyRanged::GetEnemyController() const
+{
+	return AIController;
 }

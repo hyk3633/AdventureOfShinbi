@@ -59,6 +59,18 @@ protected:
 		AActor* DamageCauser
 	);
 
+	UFUNCTION()
+	void TakeRadialDamage
+	(
+		AActor* DamagedActor,
+		float DamageReceived,
+		const UDamageType* DamageType,
+		FVector Origin,
+		FHitResult HitInfo,
+		AController* InstigatedBy,
+		AActor* DamageCauser
+	);
+
 	void SetOverlappingItem();
 
 	void TraceItem(FHitResult& HitItem);

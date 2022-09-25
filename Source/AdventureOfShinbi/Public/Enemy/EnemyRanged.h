@@ -12,6 +12,8 @@
 
 class AProjectile;
 class UAnimMontage;
+class AEnemyAIController;
+class UParticleSystem;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AEnemyRanged : public AEnemyCharacter
@@ -22,21 +24,11 @@ public:
 
 	AEnemyRanged();
 
-	virtual void Attack() override;
-
 	void RangedAttack();
 
 protected:
 
 	virtual void BeginPlay() override;
-
-	virtual void OnChaseRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
-
-	virtual void OnChaseRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
-
-	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
-
-	virtual void OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 
 	void ProjectileFire();
 
@@ -44,30 +36,32 @@ protected:
 
 	void PlayFireMontage();
 
-	UFUNCTION()
-	void OnFireMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	UFUNCTION(BlueprintCallable)
+	void OnFireMontageEnded();
+
+	void FinishFire();
 
 private:
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Ranged Option")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin=0.f))
+	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin=0.f))
 	float BulletSpread;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montage")
 	UAnimMontage* FireMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montage")
 	TArray<FName> FireMontageSectionNameArr;
-	
-	UPROPERTY(VisibleAnywhere)
-	bool bTargetIsInChaseRange = false;
-	UPROPERTY(VisibleAnywhere)
-	bool bTargetIsInAttackRange = false;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.f))
+	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin = 0.f))
 	uint8 FireCount = 3;
 
 	uint8 CurrentFireCount = 0;
+
+public:
+
+	AEnemyAIController* GetEnemyController() const;
+
 };

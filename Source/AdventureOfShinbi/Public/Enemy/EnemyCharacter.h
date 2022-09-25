@@ -14,18 +14,21 @@ class UAIPerceptionComponent;
 class UAISenseConfig_Sight;
 class UAISenseConfig_Hearing;
 class UWidgetComponent;
+class UParticleSystem;
+class USoundCue;
 
 DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
 
-UENUM()
+UENUM(BlueprintType)
 enum class EEnemyState : uint8
 {   
-	EES_Patrol,
-	EES_Detected,
-	EES_Comeback,
-	EES_Chase,
+	EES_Patrol UMETA(DisplayName = "Patrol"),
+	EES_Detected UMETA(DisplayName = "Detected"),
+	EES_Comeback UMETA(DisplayName = "Comeback"),
+	EES_Chase UMETA(DisplayName = "Chase"),
+	EES_Siege UMETA(DisplayName = "Siege"),
 
-	EES_MAX
+	EES_MAX UMETA(DisplayName = "MAX")
 };
 
 UCLASS()
@@ -37,9 +40,11 @@ public:
 
 	AEnemyCharacter();
 
-	virtual void Attack();
+	void Attack();
 
 	FOnAttackEndDelegate OnAttackEnd;
+
+	void PlayHitEffect(FVector HitLocation, FRotator HitRotation);
 
 protected:
 
@@ -47,10 +52,7 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION()
-	virtual void OnChaseRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION()
-	virtual void OnChaseRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void CheckIsKnockUp();
 
 	UFUNCTION()
 	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -74,13 +76,15 @@ protected:
 		AActor* DamageCauser
 	);
 
+	virtual void HandleStiffAndStun(FName& BoneName);
+
 	void HandleHealthChange(float DamageReceived);
 
 	void PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName);
 
 	virtual void PlayAttackMontage();
 
-	void PlayHitReactMontage();
+	void PlayHitReactionMontage();
 
 	void PlayStunMontage();
 
@@ -90,16 +94,25 @@ protected:
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
-	void OnHitReactMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION(BlueprintCallable)
+	void DeathMontageEnded();
 
 	void ForgetHit();
 
 	void RotateToTarget(float DeltaTime);
 
 	void SetHealthBar();
+
+	UFUNCTION(BlueprintCallable)
+	void ActivateDamageCollision1();
+
+	UFUNCTION(BlueprintCallable)
+	void DeactivateDamageCollision1();
 
 protected:
 
@@ -112,17 +125,18 @@ protected:
 	UEnemyAnimInstance* EnemyAnim;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-	bool IsAttacking;
+	bool bIsAttacking;
 
 	UPROPERTY(VisibleAnywhere)
 	EEnemyState EnemyState = EEnemyState::EES_Patrol;
 
-	EEnemyState EnemyStateBefore = EEnemyState::EES_Patrol;
+	UPROPERTY(EditAnywhere, Category = "AI Settings")
+	float StiffChance = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "AI Settings")
+	float StunChance = 0.2f;
 
 private:
-
-	UPROPERTY(EditAnywhere)
-	USphereComponent* ChaseRange;
 
 	UPROPERTY(EditAnywhere)
 	USphereComponent* AttackRange;
@@ -130,19 +144,19 @@ private:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* DamageCollision1;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* AttackMontage;
 
-	UPROPERTY(EditAnywhere)
-	UAnimMontage* HitReactMontage;
+	UPROPERTY(EditAnywhere, Category = "Montages")
+	UAnimMontage* HitReactionMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* StunMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* DeathMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	TArray<FName> AttackMontageSectionNameArr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (AllowPrivateAccess = "true"))
@@ -153,9 +167,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 	float Defense;
-
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float MovingSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 	float PatrolSpeed = 300.f;
@@ -171,21 +182,35 @@ private:
 	UPROPERTY(EditAnywhere, Category = "AI Settings")
 	float HitMemoryTime = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
-	float StiffChance = 0.35f;
-
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
-	float StunChance = 0.2f;
-
 	UPROPERTY(EditAnywhere)
 	UWidgetComponent* HealthWidget;
 
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> DamageAmountTextClass;
 
+	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
+	FVector PatrolPoint;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* HitParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* DeathParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* HitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* DeathSound;
+
 public:
 
 	float GetAcceptableRaius() const;
 	EEnemyState GetEnemyState() const;
 	void SetEnemyState(EEnemyState State);
+	bool GetIsAttacking() const;
+
+	UFUNCTION(BlueprintCallable)
+	FVector GetPatrolPoint() const;
+
 };

@@ -7,6 +7,7 @@
 #include "Components/TextBlock.h"
 #include "HUD/PickupWidget.h"
 #include "HUD/InventorySlot.h"
+#include "AdventureOfShinbi/AdventureOfShinbi.h"
 
 AItem::AItem()
 {
@@ -14,9 +15,22 @@ AItem::AItem()
 
 	ItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ItemMesh"));
 	SetRootComponent(ItemMesh);
+	ItemMesh->SetVisibility(true);
+	ItemMesh->SetSimulatePhysics(false);
+	ItemMesh->SetEnableGravity(false);
+	ItemMesh->SetCollisionObjectType(ECC_Item);
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	ItemMesh->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
+	ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(ItemMesh);
+	OverlapSphere->SetCollisionObjectType(ECC_ItemRange);
+	OverlapSphere->SetGenerateOverlapEvents(true);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	OverlapSphere->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 	OverlapSphere->SetSphereRadius(100.f);
 
 	Widget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));

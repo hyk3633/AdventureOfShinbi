@@ -3,22 +3,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BehaviorTree/Tasks/BTTask_MoveTo.h"
-#include "BTT_ChaseToPlayer.generated.h"
+#include "BehaviorTree/BTTaskNode.h"
+#include "BTT_SwapPatrolPoint.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ADVENTUREOFSHINBI_API UBTT_ChaseToPlayer : public UBTTask_MoveTo
+class ADVENTUREOFSHINBI_API UBTT_SwapPatrolPoint : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
 
-	UBTT_ChaseToPlayer();
+	UBTT_SwapPatrolPoint();
 
-protected:
-	
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	
 };

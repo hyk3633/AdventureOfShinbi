@@ -13,20 +13,14 @@ AWeapon::AWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	ItemMesh->SetVisibility(true);
-	ItemMesh->SetSimulatePhysics(false);
-	ItemMesh->SetEnableGravity(false);
-	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-
-	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	ItemMesh->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
 
 	DamageCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	DamageCollision->SetupAttachment(RootComponent);
+	DamageCollision->SetCollisionObjectType(ECC_PlayerWeapon);
 	DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	DamageCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Overlap);
 
 	bIsWeapon = true;
 }
@@ -78,7 +72,7 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+		OverlapSphere->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 
 		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);

@@ -43,9 +43,9 @@ protected:
 	void SightStimulusExpire();
 
 	static const FName KeyTarget;
-	static const FName KeyAimedTarget;
 
 	static const FName KeyWaitingPosition;
+	static const FName KeyMoveToPoint;
 	static const FName KeyDetectedLocation;
 
 	static const FName KeyTargetIsVisible;
@@ -53,7 +53,6 @@ protected:
 	static const FName KeyTargetIsHeard;
 	static const FName KeyTargetHitsMe;
 	static const FName KeyTargetInAttackRange;
-	static const FName KeyTargetInChaseRange;
 	static const FName KeyStunned;
 	static const FName KeyStiffed;
 	static const FName KeyKnockUp;
@@ -68,10 +67,8 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionComponent* PerceptionComp;
 
-	UPROPERTY(VisibleAnywhere)
 	UAISenseConfig_Sight* SightConfig;
 
-	UPROPERTY(VisibleAnywhere)
 	UAISenseConfig_Hearing* HearingConfig;
 
 	UPROPERTY(EditAnywhere, Category = "AI")

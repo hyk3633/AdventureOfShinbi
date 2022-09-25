@@ -43,4 +43,6 @@ void UEnemyAnimInstance::UpdateAnimationProperties(float DeltaTime)
 	}
 	
 	EnemyState = EnemyCharacter->GetEnemyState();
+
+	bIsAttacking = EnemyCharacter->GetIsAttacking();
 }

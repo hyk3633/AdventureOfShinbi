@@ -7,6 +7,7 @@
 #include "Sound/SoundCue.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Enemy/EnemyCharacter.h"
 #include "DrawDebugHelpers.h"
 
 void ARangedHitScanWeapon::Firing()
@@ -37,12 +38,21 @@ void ARangedHitScanWeapon::Firing()
 		HitPoint = MuzzleHitResult.ImpactPoint;
 		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
 
-		// 데미지 적용
-		float Dmg = MuzzleHitResult.BoneName == FName("head") ? HeadShotDamage : Damage;
-		AActor* DamagedActor = Cast<AActor>(MuzzleHitResult.Actor);
-		APawn* OwnerPawn = Cast<APawn>(GetOwner());
-
-		UGameplayStatics::ApplyPointDamage(DamagedActor, Dmg, GetActorLocation(), MuzzleHitResult, OwnerPawn->GetInstigatorController(), OwnerPawn, UDamageType::StaticClass());
+		AEnemyCharacter* DamagedActor = Cast<AEnemyCharacter>(MuzzleHitResult.Actor);
+		if (DamagedActor)
+		{
+			float Dmg = MuzzleHitResult.BoneName == FName("head") ? HeadShotDamage : Damage;
+			APawn* OwnerPawn = Cast<APawn>(GetOwner());
+			UGameplayStatics::ApplyPointDamage(DamagedActor, Dmg, GetActorLocation(), MuzzleHitResult, OwnerPawn->GetInstigatorController(), OwnerPawn, UDamageType::StaticClass());
+			DamagedActor->PlayHitEffect(HitPoint, ImpactRotator);
+		}
+		else
+		{
+			if (ImpactParticle)
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, HitPoint, ImpactRotator);
+			}
+		}
 	}
 
 	PlayAfterFireEffect();
@@ -61,10 +71,6 @@ void ARangedHitScanWeapon::PlayAfterFireEffect()
 		{
 			Trail->SetVectorParameter(FName("Target"), HitPoint);
 		}
-	}
-	if (ImpactParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, HitPoint, ImpactRotator);
 	}
 	if (ImpactSound)
 	{
