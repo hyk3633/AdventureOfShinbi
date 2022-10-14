@@ -41,3 +41,10 @@ void UBTT_SiegeModeAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
     }
 }
+
+EBTNodeResult::Type UBTT_SiegeModeAttack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+    Super::AbortTask(OwnerComp, NodeMemory);
+
+    return EBTNodeResult::Aborted;
+}

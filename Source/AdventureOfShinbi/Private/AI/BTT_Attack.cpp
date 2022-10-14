@@ -11,6 +11,8 @@ UBTT_Attack::UBTT_Attack()
 {
     bNotifyTick = true;
 
+    NodeName = TEXT("Attack");
+
     IsAttacking = false;
 }
 
@@ -40,4 +42,11 @@ void UBTT_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
     {
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
     }
+}
+
+EBTNodeResult::Type UBTT_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+    Super::AbortTask(OwnerComp, NodeMemory);
+
+    return EBTNodeResult::Aborted;
 }

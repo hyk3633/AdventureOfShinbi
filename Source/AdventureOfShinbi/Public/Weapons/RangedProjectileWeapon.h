@@ -44,4 +44,5 @@ private:
 public:
 
 	bool GetScatterGun() const;
+
 };

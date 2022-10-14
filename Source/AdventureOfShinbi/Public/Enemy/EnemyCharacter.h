@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +7,6 @@
 
 class AEnemyAIController;
 class USphereComponent;
-class UBoxComponent;
 class UEnemyAnimInstance;
 class UAnimMontage;
 class UAIPerceptionComponent;
@@ -15,6 +14,7 @@ class UAISenseConfig_Sight;
 class UAISenseConfig_Hearing;
 class UWidgetComponent;
 class UParticleSystem;
+class UParticleSystemComponent;
 class USoundCue;
 
 DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
@@ -46,13 +46,23 @@ public:
 
 	void PlayHitEffect(FVector HitLocation, FRotator HitRotation);
 
+	void PlayMeleeAttackEffect(FVector HitLocation, FRotator HitRotation);
+
+	void ActivateHealing(float RecoveryAmount);
+
+	void ActivateDamageUp(float DamageUpRate);
+
 protected:
 
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
 
-	void CheckIsKnockUp();
+	void Weapon1LineTrace();
+
+	virtual void CheckIsKnockUp();
+
+	void Healing(float DeltaTime);
 
 	UFUNCTION()
 	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -60,10 +70,7 @@ protected:
 	virtual void OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION()
-	virtual void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void TakePointDamage
+	virtual void TakePointDamage
 	(
 		AActor* DamagedActor, 
 		float DamageReceived,
@@ -109,10 +116,14 @@ protected:
 	void SetHealthBar();
 
 	UFUNCTION(BlueprintCallable)
-	void ActivateDamageCollision1();
+	void ActivateWeaponTrace1();
 
 	UFUNCTION(BlueprintCallable)
-	void DeactivateDamageCollision1();
+	void StopAttackMontage();
+
+	void DamageUpTimeEnd();
+
+	void PlayBuffParticle();
 
 protected:
 
@@ -136,14 +147,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AI Settings")
 	float StunChance = 0.2f;
 
+	bool bDeath = false;
+
 private:
 
+	// 공격 범위
 	UPROPERTY(EditAnywhere)
 	USphereComponent* AttackRange;
 
-	UPROPERTY(EditAnywhere)
-	UBoxComponent* DamageCollision1;
-
+	// 공격 몽타주
 	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* AttackMontage;
 
@@ -191,17 +203,58 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
 	FVector PatrolPoint;
 
+	/** 이펙트 : 파티클, 사운드 */
+
+	// 근접 공격 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* MeleeHitParticle;
+
+	// 피격 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	UParticleSystem* HitParticle;
 
+	// 사망 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	UParticleSystem* DeathParticle;
 
+	// 버프 파티클
 	UPROPERTY(EditAnywhere, Category = "Effects")
-	USoundCue* HitSound;
+	UParticleSystem* BuffParticle;
 
+	// 버프 스타트 파티클
 	UPROPERTY(EditAnywhere, Category = "Effects")
-	USoundCue* DeathSound;
+	UParticleSystem* BuffStartParticle;
+
+	// 피격 시 캐릭터 음성
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* HitVoice;
+
+	// 사망 시 캐릭터 음성
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* DeathVoice;
+
+	// 근접 공격 시 효과음
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* MeleeHitSound;
+
+	bool bActivateWeaponTrace1 = false;
+
+	bool bHealing = false;
+
+	float HealAmount = 0.f;
+
+	float HealedAmount = 0.f;
+
+	float RecoveryRate = 10.f;
+
+	UPROPERTY(VisibleAnywhere)
+	float OriginDamage = 0.f;
+
+	FTimerHandle DamageUpTimer;
+
+	float DamageUpTime = 30.f;
+
+	UParticleSystemComponent* BuffParticleComponent;
 
 public:
 
@@ -212,5 +265,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetPatrolPoint() const;
+
+	float GetHealthPercentage() const;
+	float GetMaxHealth() const;
+	float GetEnemyDamage() const;
 
 };

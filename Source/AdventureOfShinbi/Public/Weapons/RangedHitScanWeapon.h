@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -21,29 +21,30 @@ public:
 
 protected:
 
-	void PlayAfterFireEffect();
+	void PlayAfterFireEffect(const bool EnemyHit, const bool HitAnything);
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
-	UParticleSystem* ImpactParticle;
+	// 캐릭터 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* TargetHitParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
+	// 캐릭터가 아닌 월드 액터 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* WorldHitParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
 	UParticleSystem* TrailParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
-	USoundCue* ImpactSound;
+	// 적중 시 효과음
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* HitSound;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	float Damage = 5.f;
-	
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	float HeadShotDamage = 10.f;
+	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float BulletSpread = 0.f;
 
 	FVector HitPoint;
 
 	FRotator ImpactRotator;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "100.0"))
-	float BulletSpread = 0.f;
 };

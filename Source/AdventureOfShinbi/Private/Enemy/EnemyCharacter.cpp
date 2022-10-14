@@ -10,14 +10,14 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/BoxComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
-#include "Components/WidgetComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "HUD/EnemyHealthBar.h"
 #include "HUD/DamageAmount.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -32,30 +32,28 @@ AEnemyCharacter::AEnemyCharacter()
 
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetNotifyRigidBodyCollision(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetCollisionObjectType(ECC_Enemy);
-	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerWeapon, ECollisionResponse::ECR_Overlap);
-	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyWeapon, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerWeaponTrace, ECollisionResponse::ECR_Block);
 
-	GetCapsuleComponent()->SetCollisionObjectType(ECC_Enemy);
+	GetCapsuleComponent()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_PlayerWeaponTrace, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyWeaponTrace, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Ignore);
 
 	AttackRange = CreateDefaultSubobject<USphereComponent>(TEXT("AttackRange"));
 	AttackRange->SetupAttachment(RootComponent);
 	AttackRange->SetGenerateOverlapEvents(true);
+	AttackRange->SetCollisionObjectType(ECC_EnemyAttackRange);
 	AttackRange->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	AttackRange->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	AttackRange->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 	AttackRange->SetSphereRadius(200.f);
-
-	DamageCollision1 = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageCollision 1"));
-	DamageCollision1->SetupAttachment(GetMesh(), FName("EnemySocket1"));
-	DamageCollision1->SetCollisionObjectType(ECC_EnemyWeapon);
-	DamageCollision1->SetGenerateOverlapEvents(false);
-	DamageCollision1->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	DamageCollision1->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	DamageCollision1->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = false;
@@ -72,6 +70,8 @@ void AEnemyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	OriginDamage = Damage;
+
 	AIController = Cast<AEnemyAIController>(GetController());
 
 	EnemyAnim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance());
@@ -82,8 +82,6 @@ void AEnemyCharacter::BeginPlay()
 	AttackRange->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlap);
 	AttackRange->OnComponentEndOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeEndOverlap);
 	
-	DamageCollision1->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnDamageCollisionOverlap);
-
 	OnTakePointDamage.AddDynamic(this, &AEnemyCharacter::TakePointDamage);
 
 	const FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(GetActorTransform(), PatrolPoint);
@@ -103,6 +101,42 @@ void AEnemyCharacter::Tick(float DeltaTime)
 	RotateToTarget(DeltaTime);
 
 	CheckIsKnockUp();
+
+	Weapon1LineTrace();
+
+	Healing(DeltaTime);
+}
+
+void AEnemyCharacter::Weapon1LineTrace()
+{
+	if (bActivateWeaponTrace1)
+	{
+		const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
+		if (WeaponTraceStart == nullptr) return;
+		const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
+
+		const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
+		if (WeaponTraceEnd == nullptr) return;
+		const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
+
+		FHitResult WeaponHitResult;
+		FVector TraceStart = SocketTransformStart.GetLocation();
+		FVector TraceEnd = SocketTransformEnd.GetLocation();
+
+		GetWorld()->LineTraceSingleByChannel(WeaponHitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+
+		if (WeaponHitResult.bBlockingHit)
+		{
+			PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
+
+			if (bIsAttacking && AIController)
+			{
+				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, AIController, this, UDamageType::StaticClass());
+			}
+
+			bActivateWeaponTrace1 = false;
+		}
+	}
 }
 
 void AEnemyCharacter::CheckIsKnockUp()
@@ -118,6 +152,30 @@ void AEnemyCharacter::CheckIsKnockUp()
 		{
 			AIController->GetBlackBoard()->SetValueAsBool(FName("KnockUp"), false);
 		}
+	}
+}
+
+void AEnemyCharacter::Healing(float DeltaTime)
+{
+	if (!bHealing) return;
+
+	const float Amount = DeltaTime * RecoveryRate;
+	Health = FMath::Clamp(Health + Amount, 0.f, MaxHealth);
+
+	if (HealthWidget)
+	{
+		SetHealthBar();
+	}
+
+	HealedAmount += Amount;
+	if (FMath::FloorToFloat(HealedAmount) >= HealAmount)
+	{
+		Health = FMath::FloorToFloat(Health);
+		HealAmount = 0.f;
+		HealedAmount = 0.f;
+		bHealing = false;
+		HealthWidget->SetVisibility(false);
+		BuffParticleComponent->Deactivate();
 	}
 }
 
@@ -139,14 +197,33 @@ void AEnemyCharacter::OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedCom
 	}
 }
 
-void AEnemyCharacter::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AEnemyCharacter::PlayMeleeAttackEffect(FVector HitLocation, FRotator HitRotation)
 {
-	AAOSCharacter* PlayerCharacter = Cast<AAOSCharacter>(OtherActor);
-	if (PlayerCharacter && bIsAttacking)
+	if (MeleeHitParticle)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("overlap"));
-		UGameplayStatics::ApplyDamage(PlayerCharacter, Damage, GetController(), this, UDamageType::StaticClass());
+		UGameplayStatics::SpawnEmitterAtLocation(this, MeleeHitParticle, HitLocation, HitRotation);
 	}
+	if (MeleeHitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, MeleeHitSound, HitLocation);
+	}
+}
+
+void AEnemyCharacter::ActivateHealing(float RecoveryAmount)
+{
+	PlayBuffParticle();
+
+	HealAmount = RecoveryAmount;
+	bHealing = true;
+	HealthWidget->SetVisibility(true);
+}
+
+void AEnemyCharacter::ActivateDamageUp(float DamageUpRate)
+{
+	PlayBuffParticle();
+
+	Damage *= DamageUpRate;
+	GetWorldTimerManager().SetTimer(DamageUpTimer, this, &AEnemyCharacter::DamageUpTimeEnd, DamageUpTime);
 }
 
 void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
@@ -167,15 +244,20 @@ void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived
 
 void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 {
-	if (HitParticle && HitSound)
+	if (HitParticle)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitLocation, HitRotation);
-		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
+	}
+	if (HitVoice)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitVoice, HitLocation);
 	}
 }
 
 void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 {
+	if (bDeath || AIController->GetBlackBoard()->GetValueAsBool(FName("IsAttacking"))) return;
+
 	if (BoneName == FName("head"))
 	{
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
@@ -212,6 +294,8 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 
 void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 {
+	if (bDeath) return;
+
 	Health = FMath::Clamp(Health - DamageReceived, 0.f, MaxHealth);
 
 	GetWorldTimerManager().SetTimer(HitForgetTimer, this, &AEnemyCharacter::ForgetHit, HitMemoryTime);
@@ -224,14 +308,16 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 
 	if (Health == 0)
 	{
+		bDeath = true;
+
 		// Á×À½ ÀÌÆåÆ® Àç»ý
 		if (DeathParticle)
 		{
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DeathParticle, GetActorLocation());
 		}
-		if (DeathSound)
+		if (DeathVoice)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(this, DeathVoice, GetActorLocation());
 		}
 		PlayDeathMontage();
 		if (AIController)
@@ -243,6 +329,8 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 
 void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName)
 {
+	if (bDeath) return;
+
 	APlayerController* PlayerController = Cast<APlayerController>(InstigatorController);
 
 	if (PlayerController && DamageAmountTextClass)
@@ -270,6 +358,8 @@ void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController,
 
 void AEnemyCharacter::Attack()
 {
+	if (bDeath) return;
+
 	if (AIController)
 	{
 		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), true);
@@ -344,8 +434,9 @@ void AEnemyCharacter::DeathMontageEnded()
 	{
 		AIController->GetBlackBoard()->SetValueAsBool(FName("IsDead"), true);
 	}
+	HealthWidget->SetVisibility(false);
 	GetMesh()->bPauseAnims = true;
-	Destroy();
+	//Destroy();
 }
 
 void AEnemyCharacter::ForgetHit()
@@ -365,6 +456,7 @@ void AEnemyCharacter::ForgetHit()
 void AEnemyCharacter::RotateToTarget(float DeltaTime)
 {
 	if (
+		!bDeath &&
 		AIController &&
 		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stiffed")) &&
 		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stunned")) &&
@@ -394,14 +486,43 @@ void AEnemyCharacter::SetHealthBar()
 	}
 }
 
-void AEnemyCharacter::ActivateDamageCollision1()
+void AEnemyCharacter::ActivateWeaponTrace1()
 {
-	DamageCollision1->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	bActivateWeaponTrace1 = true;
 }
 
-void AEnemyCharacter::DeactivateDamageCollision1()
+void AEnemyCharacter::StopAttackMontage()
 {
-	DamageCollision1->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (EnemyAnim && AIController && !AIController->GetBlackBoard()->GetValueAsBool(FName("TargetInAttackRange")))
+	{
+		EnemyAnim->Montage_Stop(0.2f, AttackMontage);
+	}
+}
+
+void AEnemyCharacter::DamageUpTimeEnd()
+{
+	Damage = OriginDamage;
+	BuffParticleComponent->Deactivate();
+}
+
+void AEnemyCharacter::PlayBuffParticle()
+{
+	if (BuffStartParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BuffStartParticle, GetActorLocation(), GetActorRotation(), true);
+	}
+	if (BuffParticle)
+	{
+		BuffParticleComponent = UGameplayStatics::SpawnEmitterAttached
+		(
+			BuffParticle,
+			GetMesh(),
+			FName(),
+			FVector::UpVector * 50.f,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset
+		);
+	}
 }
 
 void AEnemyCharacter::SetEnemyState(EEnemyState State)
@@ -428,6 +549,21 @@ bool AEnemyCharacter::GetIsAttacking() const
 FVector AEnemyCharacter::GetPatrolPoint() const
 {
 	return PatrolPoint;
+}
+
+float AEnemyCharacter::GetHealthPercentage() const
+{
+	return Health / MaxHealth;
+}
+
+float AEnemyCharacter::GetMaxHealth() const
+{
+	return MaxHealth;
+}
+
+float AEnemyCharacter::GetEnemyDamage() const
+{
+	return Damage;
 }
 
 float AEnemyCharacter::GetAcceptableRaius() const

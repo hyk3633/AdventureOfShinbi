@@ -22,16 +22,13 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
+	void Weapon2LineTrace();
 
 	UFUNCTION(BlueprintCallable)
-	void ActivateDamageCollision2();
+	void ActivateWeaponTrace2();
 
-	UFUNCTION(BlueprintCallable)
-	void DeactivateDamageCollision2();
-	
 private:
 
-	UPROPERTY(EditAnywhere)
-	UBoxComponent* DamageCollision2;
+	bool bActivateWeaponTrace2 = false;
+
 };

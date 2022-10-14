@@ -310,6 +310,8 @@ void UItemComponent::PlayQuickSlotAnimation()
 
 void UItemComponent::UseRecoveryItem(AItem* Item)
 {
+	if (CombatComp->GetHealBanActivated()) return;
+
 	AItemRecovery* IR = Cast<AItemRecovery>(Item);
 	if(IR)
 	{
@@ -366,6 +368,13 @@ void UItemComponent::Recovery(float DeltaTime)
 {
 	if (bDoRecoveryHealth)
 	{
+		if (CombatComp->GetHealBanActivated())
+		{
+			CombatComp->Health = FMath::FloorToFloat(CombatComp->Health);
+			bDoRecoveryHealth = false;
+			RecoveredHealthAmount = 0.f;
+		}
+
 		float Increase = HealthRecoveryRate * DeltaTime;
 		RecoveredHealthAmount += Increase;
 		if (RecoveredHealthAmount <= HealthRecoveryAmount)

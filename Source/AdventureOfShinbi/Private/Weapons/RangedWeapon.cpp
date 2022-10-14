@@ -12,7 +12,7 @@
 
 ARangedWeapon::ARangedWeapon()
 {
-	GetDamageCollision()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 }
 
 void ARangedWeapon::BeginPlay()
@@ -100,6 +100,11 @@ AItem* ARangedWeapon::GetAmmoItem() const
 ERangedWeaponType ARangedWeapon::GetRangedWeaponType() const
 {
 	return RangedWeaponType;
+}
+
+float ARangedWeapon::GetHeadShotDamage()
+{
+	return GetWeaponDamage() * DamageMultiplier;
 }
 
 EAmmoType ARangedWeapon::GetAmmoType() const

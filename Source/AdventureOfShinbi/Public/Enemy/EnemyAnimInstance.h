@@ -21,7 +21,7 @@ class ADVENTUREOFSHINBI_API UEnemyAnimInstance : public UAnimInstance
 public:
 
 	UFUNCTION(BlueprintCallable)
-	void UpdateAnimationProperties(float DeltaTime);
+	virtual void UpdateAnimationProperties(float DeltaTime);
 
 	virtual void NativeInitializeAnimation() override;
 

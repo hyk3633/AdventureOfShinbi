@@ -16,6 +16,8 @@ class AItem;
 class UCombatComponent;
 class UItemComponent;
 class UAnimMontage;
+class UParticleSystem;
+class USoundCue;
 
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
@@ -31,6 +33,7 @@ class ADVENTUREOFSHINBI_API AAOSCharacter : public ACharacter
 {
 	GENERATED_BODY()
 public:
+
 	AAOSCharacter();
 
 	virtual void Tick(float DeltaTime) override;
@@ -38,6 +41,7 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 protected:
+
 	virtual void BeginPlay() override;
 
 	virtual void PostInitializeComponents() override;
@@ -113,6 +117,8 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void OnDashMontageEnded();
 
+	void PlayHitEffect(FVector HitLocation, FRotator HitRotation);
+
 private:
 
 	UPROPERTY(EditAnywhere)
@@ -173,6 +179,12 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	float DashPower = 5000.f;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UParticleSystem* HitParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	USoundCue* HitSound;
 
 public:
 

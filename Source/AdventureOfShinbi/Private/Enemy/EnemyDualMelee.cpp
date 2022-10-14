@@ -2,44 +2,63 @@
 
 
 #include "Enemy/EnemyDualMelee.h"
+#include "Enemy/EnemyAIController.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
-#include "Components/BoxComponent.h"
 
 AEnemyDualMelee::AEnemyDualMelee()
 {
 
-	DamageCollision2 = CreateDefaultSubobject<UBoxComponent>(TEXT("DamageCollision 2"));
-	DamageCollision2->SetupAttachment(GetMesh(), FName("EnemySocket2"));
-	DamageCollision2->SetCollisionObjectType(ECC_EnemyWeapon);
-	DamageCollision2->SetGenerateOverlapEvents(false);
-	DamageCollision2->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	DamageCollision2->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	DamageCollision2->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 }
 
 void AEnemyDualMelee::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DamageCollision2->OnComponentBeginOverlap.AddDynamic(this, &AEnemyDualMelee::OnDamageCollisionOverlap);
 }
 
 void AEnemyDualMelee::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
 
+	Weapon2LineTrace();
 }
 
-void AEnemyDualMelee::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AEnemyDualMelee::Weapon2LineTrace()
 {
-	Super::OnDamageCollisionOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+	if (bActivateWeaponTrace2)
+	{
+		const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon2TraceStart");
+		if (WeaponTraceStart == nullptr) return;
+		const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
+
+		const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon2TraceEnd");
+		if (WeaponTraceEnd == nullptr) return;
+		const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
+
+		FHitResult WeaponHitResult;
+		FVector TraceStart = SocketTransformStart.GetLocation();
+		FVector TraceEnd = SocketTransformEnd.GetLocation();
+
+		GetWorld()->LineTraceSingleByChannel(WeaponHitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+
+		if (WeaponHitResult.bBlockingHit)
+		{
+			PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
+
+			if (bIsAttacking && AIController)
+			{
+				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, AIController, this, UDamageType::StaticClass());
+			}
+
+			bActivateWeaponTrace2 = false;
+		}
+	}
 }
 
-void AEnemyDualMelee::ActivateDamageCollision2()
+void AEnemyDualMelee::ActivateWeaponTrace2()
 {
-	DamageCollision2->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	bActivateWeaponTrace2 = true;
 }
 
-void AEnemyDualMelee::DeactivateDamageCollision2()
-{
-	DamageCollision2->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-}

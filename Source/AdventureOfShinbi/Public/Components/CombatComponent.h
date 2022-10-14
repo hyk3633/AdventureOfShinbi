@@ -22,6 +22,7 @@ UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
 {
 	GENERATED_BODY()
+
 public:
 
 	friend AAOSCharacter;
@@ -35,6 +36,10 @@ public:
 	void GunFire();
 
 	DPlayerDeathDelegate PlayerDeathDelegate;
+
+	void HealBan(float HealBanDurationTime);
+
+	void DecreaseDamage(float DmgDecreaDurationTime);
 
 protected:
 
@@ -91,6 +96,10 @@ protected:
 	void WeaponToQuickSlot2(AWeapon* Weapon);
 
 	void DiscardWeapon(AWeapon* Weapon);
+
+	void DmgDebuffEnd();
+
+	void HealBanEnd();
 
 private:
 
@@ -174,8 +183,18 @@ private:
 
 	TArray<AWeapon*> AcquiredWeapons;
 
+	FTimerHandle DamageDebuffTimer;
+	FTimerHandle HealBanTimer;
+
+	bool bDmgDebuffActivated = false;
+	bool bHealBanActivated = false;
+
 public:
 
 	AWeapon* GetEquippedWeapon() const;
+	float GetHealthPercentage() const;
 	bool SpendStamina(float StaminaToSpend);
+	bool GetDmgDebuffActivated() const;
+	bool GetHealBanActivated() const;
+
 };

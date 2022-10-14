@@ -3,6 +3,7 @@
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
 #include "Player/AOSAnimInstance.h"
+#include "Enemy/EnemyCharacter.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
@@ -17,6 +18,8 @@
 #include "Components/CapsuleComponent.h"
 #include "HUD/AOSHUD.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "Sound/SoundCue.h"
 #include "DrawDebugHelpers.h"
 
 AAOSCharacter::AAOSCharacter()
@@ -25,15 +28,18 @@ AAOSCharacter::AAOSCharacter()
 
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetCollisionObjectType(ECC_Player);
-	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyWeapon, ECollisionResponse::ECR_Overlap);
-	GetMesh()->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Overlap);
-	GetMesh()->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerWeapon, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyWeaponTrace, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_EnemyAttackRange, ECollisionResponse::ECR_Overlap);
 
-	GetCapsuleComponent()->SetCollisionObjectType(ECC_Player);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Block);
+	GetCapsuleComponent()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_PlayerWeaponTrace, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyWeaponTrace, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyAttackRange, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Overlap);
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -72,6 +78,13 @@ void AAOSCharacter::BeginPlay()
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 }
 
+void AAOSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	SetOverlappingItem();
+}
+
 void AAOSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -99,10 +112,23 @@ void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, co
 
 void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
 	if (CombatComp)
 	{
 		CombatComp->UpdateHealth(DamageReceived);
+	}
+
+	PlayHitEffect(HitLocation, ShotFromDirection.Rotation());
+}
+
+void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
+{
+	if (HitParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticle, HitLocation, HitRotation);
+	}
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitLocation);
 	}
 }
 
@@ -226,6 +252,7 @@ void AAOSCharacter::EquipButtonPressed()
 	if (OverlappingItem)
 	{
 		CombatComp->PickingUpItem(OverlappingItem);
+		OverlappingItem = nullptr;
 	}
 }
 
@@ -476,13 +503,6 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 		DrawDebugLine(GetWorld(), TraceStart+FVector(0.f,0.f,-30.f), HitItem.ImpactPoint, FColor::Blue, false, -1.f, 0U, 2.f);
 	}
 
-}
-
-void AAOSCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	SetOverlappingItem();
 }
 
 UCameraComponent* AAOSCharacter::GetCamera() const

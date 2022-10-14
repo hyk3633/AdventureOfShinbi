@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -12,6 +12,7 @@
 
 class UParticleSystem;
 class UParticleSystemComponent;
+class USoundCue;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AProjectileBullet : public AProjectile
@@ -19,6 +20,8 @@ class ADVENTUREOFSHINBI_API AProjectileBullet : public AProjectile
 	GENERATED_BODY()
 	
 public:
+	
+	AProjectileBullet();
 
 protected:
 
@@ -26,16 +29,35 @@ protected:
 
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
+	void PlayNoHitParticle();
+
 private:
 
 	UPROPERTY(EditAnywhere)
+	UParticleSystemComponent* BodyParticleComponent;
+
+	// 투사체 몸체 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
 	UParticleSystem* BulletParticle;
 
-	UPROPERTY(EditAnywhere)
-	UParticleSystem* HitParticle;
+	// 타겟 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* TargetHitParticle;
 
-	UParticleSystemComponent* BulletComponent;
+	// 타겟이 아닌 물체 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* WorldHitParticle;
+
+	// 무엇도 적중하지 않을 경우의 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* NoHitParticle;
+
+	// 적중 사운드
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	USoundCue* HitSound;
 
 	UPROPERTY(EditAnywhere)
-	float LifeSpan = 3.f;
+	float LifeSpan = 7.f;
+
+	FTimerHandle NoHitTimer;
 };

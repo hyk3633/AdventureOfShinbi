@@ -1,6 +1,8 @@
 
 
 #include "Weapons/Projectile.h"
+#include "Weapons/RangedWeapon.h"
+#include "Enemy/EnemyCharacter.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,9 +18,7 @@ AProjectile::AProjectile()
 	BoxCollision->SetGenerateOverlapEvents(true);
 	BoxCollision->SetNotifyRigidBodyCollision(true);
 	BoxCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	BoxCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	BoxCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	BoxCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+	BoxCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	BoxCollision->SetEnableGravity(false);
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
@@ -38,6 +38,22 @@ AProjectile::AProjectile()
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ARangedWeapon* RW = Cast<ARangedWeapon>(GetOwner());
+	if (RW)
+	{
+		Damage = RW->GetWeaponDamage();
+		HeadShotDamage = RW->GetHeadShotDamage();
+	}
+	else
+	{
+		AEnemyCharacter* EC = Cast<AEnemyCharacter>(GetOwner());
+		if (EC)
+		{
+			Damage = EC->GetEnemyDamage();
+			HeadShotDamage = EC->GetEnemyDamage();
+		}
+	}
 	
 	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
 

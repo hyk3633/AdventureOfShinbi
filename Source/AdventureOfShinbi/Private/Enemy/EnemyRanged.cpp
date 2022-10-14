@@ -18,13 +18,6 @@ AEnemyRanged::AEnemyRanged()
 {
 }
 
-void AEnemyRanged::RangedAttack()
-{
-	CurrentFireCount++;
-	PlayFireMontage();
-	ProjectileFire();
-}
-
 void AEnemyRanged::BeginPlay()
 {
 	Super::BeginPlay();
@@ -32,7 +25,20 @@ void AEnemyRanged::BeginPlay()
 	//EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyRanged::OnFireMontageEnded);
 }
 
-void AEnemyRanged::ProjectileFire()
+void AEnemyRanged::RangedAttack()
+{
+	CurrentFireCount++;
+
+	bIsAttacking = true;
+	if (AIController)
+	{
+		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), true);
+	}
+
+	GetWorldTimerManager().SetTimer(FireDelayTimer, this, &AEnemyRanged::AfterFireDelay, FireDelayTime);
+}
+
+void AEnemyRanged::ProjectileFire(TSubclassOf<AProjectile> Projectile)
 {
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);
@@ -44,7 +50,7 @@ void AEnemyRanged::ProjectileFire()
 	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 	FRotator TargetRotation = ToTarget.Rotation();
 
-	if (ProjectileClass)
+	if (Projectile)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = GetOwner();
@@ -53,7 +59,7 @@ void AEnemyRanged::ProjectileFire()
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
+			World->SpawnActor<AProjectile>(Projectile, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
 		}
 	}
 }
@@ -96,8 +102,6 @@ void AEnemyRanged::PlayFireMontage()
 {
 	if (EnemyAnim == nullptr || FireMontage == nullptr) return;
 
-	bIsAttacking = true;
-
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(FireMontageSectionNameArr.Num());
 
 	EnemyAnim->Montage_Play(FireMontage);
@@ -134,6 +138,12 @@ void AEnemyRanged::FinishFire()
 	CurrentFireCount = 0;
 	bIsAttacking = false;
 	OnAttackEnd.Broadcast();
+}
+
+void AEnemyRanged::AfterFireDelay()
+{
+	PlayFireMontage();
+	ProjectileFire(ProjectileClass);
 }
 
 AEnemyAIController* AEnemyRanged::GetEnemyController() const

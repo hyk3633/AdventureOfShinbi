@@ -6,21 +6,13 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 
 AWeapon::AWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
-
-	ItemMesh->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
-
-	DamageCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
-	DamageCollision->SetupAttachment(RootComponent);
-	DamageCollision->SetCollisionObjectType(ECC_PlayerWeapon);
-	DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	DamageCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Overlap);
 
 	bIsWeapon = true;
 }
@@ -29,22 +21,21 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	DamageCollision->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnDamageCollisionOverlap);
 
 }
 
-void AWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
-	if (Causer)
-	{
-		AController* CauserController = Cast<AController>(Causer->Controller);
-		if (CauserController)
-		{
-			UGameplayStatics::ApplyDamage(OtherActor, MeleeDamage, CauserController, Causer, UDamageType::StaticClass());
-		}
-	}
-}
+//void AWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+//{
+//	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
+//	if (Causer)
+//	{
+//		AController* CauserController = Cast<AController>(Causer->Controller);
+//		if (CauserController)
+//		{
+//			UGameplayStatics::ApplyDamage(OtherActor, MeleeDamage, CauserController, Causer, UDamageType::StaticClass());
+//		}
+//	}
+//}
 
 UBoxComponent* AWeapon::GetDamageCollision() const
 {
@@ -70,12 +61,16 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		ItemMesh->SetEnableGravity(true);
 		ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+		ItemMesh->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyWeaponTrace, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_PlayerWeaponTrace, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyAttackRange, ECollisionResponse::ECR_Ignore);
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		OverlapSphere->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
-
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
 		Widget->SetVisibility(false);
 		break;
@@ -91,9 +86,6 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		DamageCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		
 		Widget->SetVisibility(false);
 		break;
@@ -107,9 +99,6 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-
-		DamageCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		DamageCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Overlap);
 		
 		break;
 	}
@@ -118,4 +107,23 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 EWeaponState AWeapon::GetWeaponState() const
 {
 	return WeaponState;
+}
+
+float AWeapon::GetWeaponDamage()
+{
+	AAOSCharacter* AC = Cast<AAOSCharacter>(GetOwner());
+	if (AC)
+	{
+		if (AC->GetCombatComp()->GetDmgDebuffActivated())
+		{
+			return Damage - FMath::RoundToFloat(Damage * 0.3);
+		}
+		else
+		{
+			return Damage;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Failed"));
+	return Damage;
 }

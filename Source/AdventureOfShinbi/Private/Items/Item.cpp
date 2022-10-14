@@ -19,9 +19,8 @@ AItem::AItem()
 	ItemMesh->SetSimulatePhysics(false);
 	ItemMesh->SetEnableGravity(false);
 	ItemMesh->SetCollisionObjectType(ECC_Item);
-	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	ItemMesh->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
 	ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));

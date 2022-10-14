@@ -30,7 +30,7 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	void ProjectileFire();
+	void ProjectileFire(TSubclassOf<AProjectile> Projectile);
 
 	void CrosshairLineTrace(FVector& OutHitPoint);
 
@@ -41,6 +41,8 @@ protected:
 
 	void FinishFire();
 
+	void AfterFireDelay();
+
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Option")
@@ -49,16 +51,21 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin=0.f))
 	float BulletSpread;
 
-	UPROPERTY(EditAnywhere, Category = "Montage")
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* FireMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Montage")
+	UPROPERTY(EditAnywhere, Category = "Montages")
 	TArray<FName> FireMontageSectionNameArr;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin = 0.f))
 	uint8 FireCount = 3;
 
 	uint8 CurrentFireCount = 0;
+
+	FTimerHandle FireDelayTimer;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Option")
+	float FireDelayTime = 0.01f;
 
 public:
 

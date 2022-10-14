@@ -21,20 +21,20 @@ public:
 	AWeapon();
 
 protected:
+
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	void OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+protected:
+
+	UPROPERTY(EditAnywhere)
+	float Damage = 20.f;
 
 private:
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
 	UBoxComponent* DamageCollision;
 
-	UPROPERTY(EditAnywhere)
-	float MeleeDamage = 20.f;
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Attributes")
 	EWeaponType WeaponType = EWeaponType::EWT_MAX;
 
 	UPROPERTY(VisibleAnywhere)
@@ -48,5 +48,5 @@ public:
 	EWeaponType GetWeaponType() const;
 	virtual void SetWeaponState(const EWeaponState State);
 	EWeaponState GetWeaponState() const;
-
+	float GetWeaponDamage();
 };

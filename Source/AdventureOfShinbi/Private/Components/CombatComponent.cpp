@@ -93,6 +93,24 @@ void UCombatComponent::GunFire()
 	RangedWeaponFire();
 }
 
+void UCombatComponent::HealBan(float HealBanDurationTime)
+{
+	bHealBanActivated = true;
+
+	// ÀÌÆåÆ® Àç»ý
+
+	Character->GetWorldTimerManager().SetTimer(HealBanTimer, this, &UCombatComponent::HealBanEnd, HealBanDurationTime);
+}
+
+void UCombatComponent::DecreaseDamage(float DmgDecreaDurationTime)
+{
+	bDmgDebuffActivated = true;
+
+	// ÀÌÆåÆ® Àç»ý
+
+	Character->GetWorldTimerManager().SetTimer(DamageDebuffTimer, this, &UCombatComponent::DmgDebuffEnd, DmgDecreaDurationTime);
+}
+
 void UCombatComponent::PlayMontageOneHandAttack()
 {
 	if (AnimInstance == nullptr || MeleeOneHandAttackMontage == nullptr) return;
@@ -723,9 +741,30 @@ void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
 	Weapon->WeaponStateChanged.RemoveAll(this);
 }
 
+void UCombatComponent::DmgDebuffEnd()
+{
+	if (bDmgDebuffActivated)
+	{
+		bDmgDebuffActivated = false;
+	}
+}
+
+void UCombatComponent::HealBanEnd()
+{
+	if (bHealBanActivated)
+	{
+		bHealBanActivated = false;
+	}
+}
+
 AWeapon* UCombatComponent::GetEquippedWeapon() const
 {
 	return EquippedWeapon;
+}
+
+float UCombatComponent::GetHealthPercentage() const
+{
+	return Health / MaxHealth;
 }
 
 bool UCombatComponent::SpendStamina(float StaminaToSpend)
@@ -734,4 +773,14 @@ bool UCombatComponent::SpendStamina(float StaminaToSpend)
 
 	Stamina = FMath::Clamp(Stamina - StaminaToSpend, 0.f, MaxStamina);
 	return true;
+}
+
+bool UCombatComponent::GetDmgDebuffActivated() const
+{
+	return bDmgDebuffActivated;
+}
+
+bool UCombatComponent::GetHealBanActivated() const
+{
+	return bHealBanActivated;
 }

@@ -72,5 +72,5 @@ void AProjectileHoming::DestroyProjectile()
 
 void AProjectileHoming::ParticleOff()
 {
-	BodyParticleComponent->SetVisibility(false);
+	BodyParticleComponent->Deactivate();
 }

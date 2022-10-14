@@ -33,32 +33,28 @@ void ARangedHitScanWeapon::Firing()
 
 	GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleTraceStart, MuzzleTraceEnd, ECollisionChannel::ECC_Visibility);
 
+	bool bEnemyHit = false;
 	if (MuzzleHitResult.bBlockingHit)
 	{
 		HitPoint = MuzzleHitResult.ImpactPoint;
 		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
 
-		AEnemyCharacter* DamagedActor = Cast<AEnemyCharacter>(MuzzleHitResult.Actor);
+		ACharacter* DamagedActor = Cast<ACharacter>(MuzzleHitResult.Actor);
 		if (DamagedActor)
 		{
-			float Dmg = MuzzleHitResult.BoneName == FName("head") ? HeadShotDamage : Damage;
+			float Dmg = MuzzleHitResult.BoneName == FName("head") ? GetHeadShotDamage() : GetWeaponDamage();
 			APawn* OwnerPawn = Cast<APawn>(GetOwner());
 			UGameplayStatics::ApplyPointDamage(DamagedActor, Dmg, GetActorLocation(), MuzzleHitResult, OwnerPawn->GetInstigatorController(), OwnerPawn, UDamageType::StaticClass());
-			DamagedActor->PlayHitEffect(HitPoint, ImpactRotator);
-		}
-		else
-		{
-			if (ImpactParticle)
-			{
-				UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, HitPoint, ImpactRotator);
-			}
+			
+			bEnemyHit = true;
+			//DamagedActor->PlayHitEffect(HitPoint, ImpactRotator);
 		}
 	}
 
-	PlayAfterFireEffect();
+	PlayAfterFireEffect(bEnemyHit, MuzzleHitResult.bBlockingHit);
 }
 
-void ARangedHitScanWeapon::PlayAfterFireEffect()
+void ARangedHitScanWeapon::PlayAfterFireEffect(const bool EnemyHit, const bool HitAnything)
 {
 	if (TrailParticle)
 	{
@@ -72,8 +68,22 @@ void ARangedHitScanWeapon::PlayAfterFireEffect()
 			Trail->SetVectorParameter(FName("Target"), HitPoint);
 		}
 	}
-	if (ImpactSound)
+	if (EnemyHit)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, HitPoint);
+		if (TargetHitParticle)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(this, TargetHitParticle, HitPoint, ImpactRotator);
+		}
+	}
+	else
+	{
+		if (WorldHitParticle)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(this, WorldHitParticle, HitPoint, ImpactRotator);
+		}
+	}
+	if (HitSound && HitAnything)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitPoint);
 	}
 }

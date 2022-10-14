@@ -42,10 +42,10 @@ protected:
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	float Damage = 5.f;
+	float Damage = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
-	float HeadShotDamage = 10.f;
+	float HeadShotDamage = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
 	float ExplosionRadius = 30.f;
@@ -54,4 +54,5 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive"))
 	URadialForceComponent* RadialForce;
+
 };

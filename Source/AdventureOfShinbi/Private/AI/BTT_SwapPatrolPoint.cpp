@@ -25,3 +25,10 @@ EBTNodeResult::Type UBTT_SwapPatrolPoint::ExecuteTask(UBehaviorTreeComponent& Ow
 
     return EBTNodeResult::Succeeded;
 }
+
+EBTNodeResult::Type UBTT_SwapPatrolPoint::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+    Super::AbortTask(OwnerComp, NodeMemory);
+
+    return EBTNodeResult::Aborted;
+}

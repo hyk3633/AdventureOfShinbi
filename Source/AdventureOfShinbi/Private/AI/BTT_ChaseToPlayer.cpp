@@ -22,3 +22,10 @@ EBTNodeResult::Type UBTT_ChaseToPlayer::ExecuteTask(UBehaviorTreeComponent& Owne
 
 	return EBTNodeResult::InProgress;
 }
+
+EBTNodeResult::Type UBTT_ChaseToPlayer::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	Super::AbortTask(OwnerComp, NodeMemory);
+
+	return EBTNodeResult::Aborted;
+}

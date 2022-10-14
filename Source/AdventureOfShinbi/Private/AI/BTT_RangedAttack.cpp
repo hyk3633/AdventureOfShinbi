@@ -42,3 +42,10 @@ void UBTT_RangedAttack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
     }
 }
+
+EBTNodeResult::Type UBTT_RangedAttack::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+    Super::AbortTask(OwnerComp, NodeMemory);
+
+    return EBTNodeResult::Aborted;
+}
