@@ -63,5 +63,9 @@ private:
 	UAnimMontage* SiegeModeHitReactionMontage;
 
 	bool bSiegeMode = false;
+
+public:
+
+	bool GetSiegeMode() const;
 	
 };

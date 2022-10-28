@@ -24,19 +24,6 @@ void AWeapon::BeginPlay()
 
 }
 
-//void AWeapon::OnDamageCollisionOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-//{
-//	AAOSCharacter* Causer = Cast<AAOSCharacter>(GetOwner());
-//	if (Causer)
-//	{
-//		AController* CauserController = Cast<AController>(Causer->Controller);
-//		if (CauserController)
-//		{
-//			UGameplayStatics::ApplyDamage(OtherActor, MeleeDamage, CauserController, Causer, UDamageType::StaticClass());
-//		}
-//	}
-//}
-
 UBoxComponent* AWeapon::GetDamageCollision() const
 {
 	return DamageCollision;
@@ -99,6 +86,8 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+
+
 		
 		break;
 	}

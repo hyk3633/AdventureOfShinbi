@@ -19,15 +19,17 @@ class ADVENTUREOFSHINBI_API ARangedProjectileWeapon : public ARangedWeapon
 	
 public:
 
-	void Firing();
+	virtual void Firing();
 
 	void ScatterFiring();
 
 protected:
 
+	void SpawnProjectile(TSubclassOf<AProjectile> Projectile);
+
 private:
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Ranged Option")
 	TSubclassOf<AProjectile> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Scatter Attribute")

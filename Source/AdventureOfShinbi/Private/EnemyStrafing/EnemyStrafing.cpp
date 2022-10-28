@@ -21,7 +21,6 @@ void AEnemyStrafing::StartStrafing()
 
 void AEnemyStrafing::EndStrafing()
 {
-	UE_LOG(LogTemp, Warning, TEXT("End"));
 	bStrafing = false;
 	GetWorldTimerManager().ClearTimer(StrafingTimer);
 }
@@ -46,18 +45,10 @@ void AEnemyStrafing::Tick(float DeltaTime)
 
 void AEnemyStrafing::DoStrafing()
 {
-	if (
-		!bDeath &&
-		bStrafing && 
-		!bIsAttacking && 
-		StrafingDir != EStrafingDirection::ESD_Stop && 
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("TargetInAttackRange")) &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stunned")) &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stiffed")) &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("KnockUp"))
-		)
+	const bool StrafingCondition = CheckStrafingCondition();
+	if (StrafingCondition)
 	{
-		const AActor* Target = Cast<AActor>(AIController->GetBlackBoard()->GetValueAsObject(FName("Target")));
+		const AActor* Target = Cast<AActor>(AiInfo.TargetPlayer);
 		if (Target)
 		{
 			const FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation());
@@ -70,17 +61,27 @@ void AEnemyStrafing::DoStrafing()
 
 		StrafingValue = StrafingDir == EStrafingDirection::ESD_Back ? -180.f : UKismetMathLibrary::NormalizeAxis((WorldDirection.Rotation() - GetControlRotation()).Yaw);
 
-		JogAnimRate = 0.6f;
-		GetCharacterMovement()->MaxWalkSpeed = 150.f;
+		JogAnimRate = StrafingAnimRate;
+		GetCharacterMovement()->MaxWalkSpeed = StrafingSpeed;
 	}
 	else
 	{
 		StrafingValue = 0.f;
-		JogAnimRate = 1.f;
-		GetCharacterMovement()->MaxWalkSpeed = 450.f;
+		JogAnimRate = ChaseAnimRate;
+		GetCharacterMovement()->MaxWalkSpeed = ChaseSpeed;
 	}
+}
 
-	GEngine->AddOnScreenDebugMessage(1, 0.f, FColor::Green, FString::Printf(TEXT("%f"), StrafingValue));
+bool AEnemyStrafing::CheckStrafingCondition()
+{
+	return bDeath == false &&
+		bStrafing &&
+		bIsAttacking == false &&
+		StrafingDir != EStrafingDirection::ESD_Stop &&
+		AiInfo.bTargetInAttackRange == false &&
+		AiInfo.bStunned == false &&
+		AiInfo.bStiffed == false &&
+		AiInfo.bIsKnockUp == false;
 }
 
 void AEnemyStrafing::ChangeStrafingDirection()
@@ -91,33 +92,28 @@ void AEnemyStrafing::ChangeStrafingDirection()
 	{
 	case 0:
 		StrafingDir = EStrafingDirection::ESD_Front;
-		StrafingTime = 1.f;
 		break;
 	case 1:
 		StrafingDir = EStrafingDirection::ESD_Left;
-		StrafingTime = 2.f;
 		break;
 	case 2:
 		StrafingDir = EStrafingDirection::ESD_Right;
-		StrafingTime = 3.f;
 		break;
 	case 3:
 		StrafingDir = EStrafingDirection::ESD_Back;
-		StrafingTime = 4.f;
 		break;
 	case 4:
 		StrafingDir = EStrafingDirection::ESD_RDiagonal;
-		StrafingTime = 5.f;
 		break;
 	case 5:
 		StrafingDir = EStrafingDirection::ESD_LDiagonal;
-		StrafingTime = 6.f;
 		break;
 	case 6:
 		StrafingDir = EStrafingDirection::ESD_Stop;
-		StrafingTime = 7.f;
 		break;
 	}
+
+	StrafingTime = 3.f + FMath::RandRange(1.f, 5.f);
 
 	GetWorldTimerManager().SetTimer(StrafingTimer, this, &AEnemyStrafing::ChangeStrafingDirection, StrafingTime);
 }
@@ -155,17 +151,14 @@ void AEnemyStrafing::CheckIsKnockUp()
 		if (GetCharacterMovement()->IsFalling())
 		{
 			EnemyAnim->StopAllMontages(0.2f);
-			AIController->GetBlackBoard()->SetValueAsBool(FName("KnockUp"), true);
+			AiInfo.bIsKnockUp = true;
 		}
 	}
 }
 
 void AEnemyStrafing::KnockUpEnd()
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("KnockUp"), false);
-	}
+	AiInfo.bIsKnockUp = false;
 }
 
 float AEnemyStrafing::GetStrafingValue() const
@@ -176,5 +169,10 @@ float AEnemyStrafing::GetStrafingValue() const
 float AEnemyStrafing::GetJogAnimRate() const
 {
 	return JogAnimRate;
+}
+
+bool AEnemyStrafing::GetStrafing() const
+{
+	return bStrafing;
 }
 

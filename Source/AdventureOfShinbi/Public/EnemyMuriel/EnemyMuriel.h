@@ -118,6 +118,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Main Option")
 	bool bWhite = true;
 
+	bool bIsCasting = false;
+
 	/** 버프 옵션 */
 
 	UPROPERTY(EditAnywhere, Category = "Buff Option")
@@ -128,7 +130,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Buff Option")
 	float BuffCoolTime = 60.f;
 
-	bool bAbleBuff = true;
+	bool bBuffCoolTimeEnd = true;
 
 	/** 소환 옵션 */
 
@@ -152,7 +154,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Summon Option")
 	float SummonCoolTime = 60.f;
 
-	bool bAbleSummon = true;
+	bool bSummonCoolTimeEnd = true;
 
 	/** 스킬 샷 옵션 */
 
@@ -173,7 +175,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "SkillShot Option")
 	float SkillShotCoolTime = 60.f;
 
-	bool bAbleSkillShot = true;
+	bool bSkillShotCoolTimeEnd = true;
 
 	/** 텔레포트 옵션 : 뮤리엘이 공격당했을 경우 0.1 확률로 미니언 텔레포트, 쿨타임은 1분 */
 
@@ -202,13 +204,14 @@ private:
 	float TeleportCoolTime = 40.f;
 
 	bool bAbleTeleportMinion = true;
+	bool bTeleportMinionCoolTimeEnd = true;
 
 public:
 
 	bool GetMurielType() const;
 	FName GetFriendlyTag() const;
-	bool GetAbleBuff() const;
-	bool GetAbleSummon() const;
-	bool GetAbleSkillShot() const;
+	bool GetBuffCoolTimeEnd() const;
+	bool GetSummonCoolTimeEnd() const;
+	bool GetSkillShotCoolTimeEnd() const;
 	float GetSkillShotDurationTime() const;
 };

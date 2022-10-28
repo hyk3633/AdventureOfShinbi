@@ -45,7 +45,7 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
         }
     }
 
-    if (AlliesNearbyCount < 2 && ControllingEnemy->GetAbleSummon())
+    if (AlliesNearbyCount < 2 && ControllingEnemy->GetSummonCoolTimeEnd())
     {
         OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("LackOfAllies"), true);
     }
@@ -54,7 +54,7 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
         OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("LackOfAllies"), false);
     }
     
-    if (LowHealthCount >= 2 && ControllingEnemy->GetAbleBuff())
+    if (LowHealthCount >= 2 && ControllingEnemy->GetBuffCoolTimeEnd())
     {
         OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("ProvideBuff"), true);
     }

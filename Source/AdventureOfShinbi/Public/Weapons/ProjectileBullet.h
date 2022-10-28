@@ -29,12 +29,19 @@ protected:
 
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
+	void PlayHitEffect(const FHitResult& Hit, AActor* OtherActor);
+
 	void PlayNoHitParticle();
 
-private:
+protected:
 
 	UPROPERTY(EditAnywhere)
 	UParticleSystemComponent* BodyParticleComponent;
+
+	UPROPERTY(EditAnywhere)
+	float LifeSpan = 7.f;
+
+private:
 
 	// 투사체 몸체 파티클
 	UPROPERTY(EditAnywhere, Category = "Effects")
@@ -55,9 +62,6 @@ private:
 	// 적중 사운드
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	USoundCue* HitSound;
-
-	UPROPERTY(EditAnywhere)
-	float LifeSpan = 7.f;
 
 	FTimerHandle NoHitTimer;
 };

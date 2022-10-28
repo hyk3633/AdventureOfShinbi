@@ -34,25 +34,27 @@ protected:
 
 	void CrosshairLineTrace(FVector& OutHitPoint);
 
-	void PlayFireMontage();
+	virtual void PlayFireMontage();
 
 	UFUNCTION(BlueprintCallable)
-	void OnFireMontageEnded();
+	virtual void OnFireMontageEnded();
 
 	void FinishFire();
 
 	void AfterFireDelay();
 
-private:
+protected:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Option")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin=0.f))
-	float BulletSpread;
-
 	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* FireMontage;
+
+private:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin=0.f))
+	float BulletSpread;
 
 	UPROPERTY(EditAnywhere, Category = "Montages")
 	TArray<FName> FireMontageSectionNameArr;

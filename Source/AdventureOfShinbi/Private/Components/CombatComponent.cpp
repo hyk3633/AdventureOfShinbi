@@ -592,6 +592,8 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 			CharacterController->SetHUDInventoryQuickSlot2Icon(nullptr);
 		}
 	}
+
+	Character->SetWalkingSpeed(EWalkingState::EWS_Armed);
 }
 
 void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
@@ -606,6 +608,8 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 		CharacterController->SetHUDEquippedWeaponIcon(nullptr);
 		CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(nullptr);
 		Character->SetWeaponType(EWeaponType::EWT_None);
+
+		Character->SetWalkingSpeed(EWalkingState::EWS_UnArmed);
 	}
 	else if (Weapon == QuickSlot1Weapon)
 	{

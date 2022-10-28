@@ -19,6 +19,9 @@ class UAnimMontage;
 class UParticleSystem;
 class USoundCue;
 
+DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
+DECLARE_DELEGATE_OneParam(OnAimButtonPressedDelegate, bool bPress);
+
 UENUM(BlueprintType)
 enum class ECharacterState : uint8
 {
@@ -26,6 +29,15 @@ enum class ECharacterState : uint8
 	ECS_Attacking UMETA(DisplayName = "Attacking"),
 
 	ECT_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
+enum class EWalkingState : uint8
+{
+	EWS_UnArmed,
+	EWS_Armed,
+	EWS_Slowed,
+
+	EWS_MAX
 };
 
 UCLASS()
@@ -39,6 +51,10 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
+	OnAttackButtonPressedDelegate DAttackButtonPressed;
+
+	OnAimButtonPressedDelegate DAimButtonPressed;
 
 protected:
 
@@ -92,8 +108,8 @@ private:
 	void Crouching();
 	void Dash();
 	void EquipButtonPressed();
-	void AttackButtonePressed();
-	void AttackButtoneReleassed();
+	void AttackButtonPressed();
+	void AttackButtonReleassed();
 	void AimButtonPressed();
 	void AimButtonReleased();
 	void ReloadButtonPressed();
@@ -186,6 +202,30 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	USoundCue* HitSound;
 
+	UPROPERTY(VisibleAnywhere, Category = "Moving Speed")
+	float CurrentRunningSpeed = 1000.f; // 600
+	UPROPERTY(VisibleAnywhere, Category = "Moving Speed")
+	float CurrentWalkingSpeed = 350.f;
+
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float OriginRunningSpeed = 1000.f; // 600
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float OriginWalkingSpeed = 350.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float OriginCrouchedSpeed = 250.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float ArmedRunningSpeed = 700.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float ArmedWalkingSpeed = 550.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float SlowedRunningSpeed = 250.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float SlowedWalkingSpeed = 150.f;
+	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	float SlowedCroucedSpeed = 100.f;
+
+	bool bIsFreezed = false;
+	
 public:
 
 	UCameraComponent* GetCamera() const;
@@ -203,4 +243,6 @@ public:
 	void SetGunRecoil(float Recoil);
 	UCombatComponent* GetCombatComp() const;
 	UItemComponent* GetItemComp() const;
+	void SetWalkingSpeed(EWalkingState State);
+	void ActivateFreezing(bool IsActivate);
 };

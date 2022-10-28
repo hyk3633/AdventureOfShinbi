@@ -58,8 +58,8 @@ AAOSCharacter::AAOSCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
-	GetCharacterMovement()->MaxWalkSpeed = 250.f;
-	GetCharacterMovement()->MaxWalkSpeedCrouched = 150.f;
+	GetCharacterMovement()->MaxWalkSpeed = OriginWalkingSpeed;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = OriginCrouchedSpeed;
 
 	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 
@@ -103,7 +103,7 @@ void AAOSCharacter::PostInitializeComponents()
 
 void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+	UE_LOG(LogTemp, Warning, TEXT("any damage %f"), DamageReceived);
 	if (CombatComp)
 	{
 		CombatComp->UpdateHealth(DamageReceived);
@@ -112,6 +112,7 @@ void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, co
 
 void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
+	UE_LOG(LogTemp, Warning, TEXT("point damage %f"), DamageReceived);
 	if (CombatComp)
 	{
 		CombatComp->UpdateHealth(DamageReceived);
@@ -134,7 +135,7 @@ void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 
 void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+	UE_LOG(LogTemp, Warning, TEXT("radial %f"), DamageReceived);
 	if (CombatComp)
 	{
 		CombatComp->UpdateHealth(DamageReceived);
@@ -143,7 +144,8 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 
 void AAOSCharacter::MoveForward(float Value)
 {
-	if (bIsAnimationPlaying || bDashing) return;
+	if (bIsAnimationPlaying || bDashing || bIsFreezed) 
+		return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -157,7 +159,8 @@ void AAOSCharacter::MoveForward(float Value)
 
 void AAOSCharacter::MoveRight(float Value)
 {
-	if (bIsAnimationPlaying || bDashing) return;
+	if (bIsAnimationPlaying || bDashing || bIsFreezed) 
+		return;
 
 	bIsMoving = Value != 0.f ? true : false;
 
@@ -181,7 +184,8 @@ void AAOSCharacter::Turn(float Value)
 
 void AAOSCharacter::Jump()
 {
-	if (bIsAnimationPlaying) return;
+	if (bIsAnimationPlaying || bIsFreezed) 
+		return;
 
 	MakeNoise(1.f, GetInstigator(), GetActorLocation());
 
@@ -190,11 +194,11 @@ void AAOSCharacter::Jump()
 
 void AAOSCharacter::RunningButtonPressed()
 {
-	if (bIsAnimationPlaying || bCanRunning == false || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f) return;
+	if (bIsAnimationPlaying || bCanRunning == false || bIsFreezed || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f) return;
 
 	bIsRunning = true;
 
-	GetCharacterMovement()->MaxWalkSpeed = 700.f;
+	GetCharacterMovement()->MaxWalkSpeed = CurrentRunningSpeed;
 }
 
 void AAOSCharacter::RunningButtonReleased()
@@ -203,12 +207,12 @@ void AAOSCharacter::RunningButtonReleased()
 
 	bIsRunning = false;
 
-	GetCharacterMovement()->MaxWalkSpeed = 250.f;
+	GetCharacterMovement()->MaxWalkSpeed = CurrentWalkingSpeed;
 }
 
 void AAOSCharacter::Crouch_DashButtonPressed()
 {
-	if (bIsAnimationPlaying) return;
+	if (bIsAnimationPlaying || bIsFreezed) return;
 
 	if (WeaponType == EWeaponType::EWT_None)
 	{
@@ -242,12 +246,11 @@ void AAOSCharacter::Dash()
 
 void AAOSCharacter::EquipButtonPressed()
 {
-	if (OverlappingItem == nullptr || CombatComp == nullptr) return;
+	if (OverlappingItem == nullptr || CombatComp == nullptr || bIsFreezed) return;
 
 	// 무기 장착시에 설정하고 무기 빼면 원상복구하기
 	bUseControllerRotationYaw = true;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-	// TODO : 무기 장착 시 걷기랑 뛰기 속도 값 증가
 
 	if (OverlappingItem)
 	{
@@ -256,11 +259,16 @@ void AAOSCharacter::EquipButtonPressed()
 	}
 }
 
-void AAOSCharacter::AttackButtonePressed()
+void AAOSCharacter::AttackButtonPressed()
 {
-	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX) return;
+	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX || bIsFreezed) return;
 
 	bAttackButtonPressing = true;
+
+	if (CombatComp->EquippedWeapon)
+	{
+		DAttackButtonPressed.ExecuteIfBound();
+	}
 
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
@@ -272,7 +280,7 @@ void AAOSCharacter::AttackButtonePressed()
 	}
 }
 
-void AAOSCharacter::AttackButtoneReleassed()
+void AAOSCharacter::AttackButtonReleassed()
 {
 	bAttackButtonPressing = false;
 }
@@ -321,6 +329,14 @@ void AAOSCharacter::OnDashMontageEnded()
 
 void AAOSCharacter::AimButtonPressed()
 {
+	if (bIsFreezed)
+		return;
+
+	if (CombatComp->EquippedWeapon)
+	{
+		DAimButtonPressed.ExecuteIfBound(true);
+	}
+
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
 		bIsAiming = true;
@@ -329,6 +345,11 @@ void AAOSCharacter::AimButtonPressed()
 
 void AAOSCharacter::AimButtonReleased()
 {
+	if (CombatComp->EquippedWeapon)
+	{
+		DAimButtonPressed.ExecuteIfBound(false);
+	}
+
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
 		bIsAiming = false;
@@ -337,6 +358,9 @@ void AAOSCharacter::AimButtonReleased()
 
 void AAOSCharacter::ReloadButtonPressed()
 {
+	if (bIsFreezed)
+		return;
+
 	if (WeaponType == EWeaponType::EWT_Gun)
 	{
 		CombatComp->Reload();
@@ -345,6 +369,9 @@ void AAOSCharacter::ReloadButtonPressed()
 
 void AAOSCharacter::InventoryKeyPressed()
 {
+	if (bIsFreezed)
+		return;
+
 	bIsInventoryOn = bIsInventoryOn ? false : true;
 
 	AAOSController* AC = Cast<AAOSController>(Controller);
@@ -356,6 +383,9 @@ void AAOSCharacter::InventoryKeyPressed()
 
 void AAOSCharacter::WeaponQuickSwapKeyPressed()
 {
+	if (bIsFreezed)
+		return;
+
 	if (CombatComp)
 	{
 		CombatComp->WeaponQuickSwap();
@@ -364,6 +394,9 @@ void AAOSCharacter::WeaponQuickSwapKeyPressed()
 
 void AAOSCharacter::UseItemKeyPressed()
 {
+	if (bIsFreezed)
+		return;
+
 	if (ItemComp)
 	{
 		ItemComp->UseActivatedQuickSlotItem();
@@ -372,6 +405,9 @@ void AAOSCharacter::UseItemKeyPressed()
 
 void AAOSCharacter::ItemChangeKeyPressed()
 {
+	if (bIsFreezed)
+		return;
+
 	if (ItemComp)
 	{
 		ItemComp->ItemChange();
@@ -413,6 +449,47 @@ UItemComponent* AAOSCharacter::GetItemComp() const
 	return ItemComp;
 }
 
+void AAOSCharacter::SetWalkingSpeed(EWalkingState State)
+{
+	if (State == EWalkingState::EWS_Armed)
+	{
+		CurrentRunningSpeed = ArmedRunningSpeed;
+		CurrentWalkingSpeed = ArmedWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = ArmedWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeedCrouched = OriginCrouchedSpeed;
+
+	}
+	else if (State == EWalkingState::EWS_Slowed)
+	{
+		CurrentRunningSpeed = SlowedRunningSpeed;
+		CurrentWalkingSpeed = SlowedWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = SlowedWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeedCrouched = SlowedCroucedSpeed;
+	}
+	else
+	{
+		CurrentRunningSpeed = OriginRunningSpeed;
+		CurrentWalkingSpeed = OriginWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = OriginWalkingSpeed;
+		GetCharacterMovement()->MaxWalkSpeedCrouched = OriginCrouchedSpeed;
+	}
+}
+
+void AAOSCharacter::ActivateFreezing(bool IsActivate)
+{
+	if (IsActivate)
+	{
+		GetMesh()->bPauseAnims = true;
+		bIsFreezed = true;
+		// effect
+	}
+	else
+	{
+		GetMesh()->bPauseAnims = false;
+		bIsFreezed = false;
+	}
+}
+
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -426,8 +503,8 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Running", IE_Released, this, &AAOSCharacter::RunningButtonReleased);
 	PlayerInputComponent->BindAction("Crouch/Dash", IE_Pressed, this, &AAOSCharacter::Crouch_DashButtonPressed);
 	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &AAOSCharacter::EquipButtonPressed);
-	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AAOSCharacter::AttackButtonePressed);
-	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtoneReleassed);
+	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AAOSCharacter::AttackButtonPressed);
+	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtonReleassed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AAOSCharacter::AimButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);

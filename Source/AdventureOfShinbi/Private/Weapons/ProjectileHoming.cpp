@@ -38,7 +38,7 @@ void AProjectileHoming::BeginPlay()
 		AEnemyRanged* ER = Cast<AEnemyRanged>(GetInstigator());
 		if (ER)
 		{
-			AAOSCharacter* Cha = Cast<AAOSCharacter>(ER->GetEnemyController()->GetBlackBoard()->GetValueAsObject(FName("Target")));
+			AAOSCharacter* Cha = Cast<AAOSCharacter>(ER->GetAiInfo().TargetPlayer);
 			if (Cha)
 			{
 				ProjectileMovementComponent->HomingTargetComponent = Cha->GetCapsuleComponent();

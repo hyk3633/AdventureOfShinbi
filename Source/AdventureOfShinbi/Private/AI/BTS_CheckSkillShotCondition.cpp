@@ -23,8 +23,9 @@ void UBTS_CheckSkillShotCondition::TickNode(UBehaviorTreeComponent& OwnerComp, u
     AEnemyMuriel* ControllingEnemy = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
     if (ControllingEnemy == nullptr) return;
 
-    if (ControllingEnemy->GetAbleSkillShot() == false)
+    if (ControllingEnemy->GetSkillShotCoolTimeEnd() == false)
     {
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), false);
         return;
     }
 

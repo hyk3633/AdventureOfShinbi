@@ -47,10 +47,12 @@ protected:
 
 	void DoStrafing();
 
+	virtual bool CheckStrafingCondition();
+
 	UFUNCTION()
 	void EndStrafing();
 
-	void ChangeStrafingDirection();
+	virtual void ChangeStrafingDirection();
 
 	FVector WorldDirectionForStrafing();
 
@@ -59,7 +61,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void KnockUpEnd();
 
-private:
+protected:
 
 	UPROPERTY(VisibleAnywhere)
 	EStrafingDirection StrafingDir = EStrafingDirection::ESD_Front;
@@ -69,15 +71,22 @@ private:
 
 	float StrafingValue = 0.f;
 
+	float JogAnimRate = 1.f;
+
+	float StrafingAnimRate = 0.6f;
+	float ChaseAnimRate = 1.f;
+	float StrafingSpeed = 150.f;
+	float ChaseSpeed = 450.f;
+
 	FTimerHandle StrafingTimer;
 
 	float StrafingTime = 2.f;
-
-	float JogAnimRate = 1.f;
 
 public:
 
 	float GetStrafingValue() const;
 
 	float GetJogAnimRate() const;
+
+	bool GetStrafing() const;
 };

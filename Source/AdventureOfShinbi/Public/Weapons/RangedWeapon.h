@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -54,7 +53,24 @@ protected:
 
 	void CrosshairLineTrace(FVector& OutHit);
 
-	void PlayFireEffect();
+	void PlayFireEffect(UParticleSystem* Particle, USoundCue* Sound);
+
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
+	UParticleSystem* MuzzleFlashParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
+	USoundCue* FireSound;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	bool bAutomaticFire = false;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "5.0", EditCondition = "bAutomaticFire"))
+	float FireRate = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GunRecoil = 0.35f;
 
 private:
 
@@ -68,12 +84,6 @@ private:
 	int8 DamageMultiplier = 5;
 
 	FVector2D ViewPortSize;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
-	UParticleSystem* MuzzleFlashParticle;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
-	USoundCue* FireSound;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
 	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
@@ -89,15 +99,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
 	int32 AmmoConsumption = 1;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GunRecoil = 0.35f;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
-	bool bAutomaticFire = false;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bAutomaticFire"))
-	float FireRate = 1.f;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "100.0"))
 	float ZoomScope = 30.f;

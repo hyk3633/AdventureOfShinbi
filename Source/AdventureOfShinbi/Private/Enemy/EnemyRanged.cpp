@@ -30,10 +30,6 @@ void AEnemyRanged::RangedAttack()
 	CurrentFireCount++;
 
 	bIsAttacking = true;
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), true);
-	}
 
 	GetWorldTimerManager().SetTimer(FireDelayTimer, this, &AEnemyRanged::AfterFireDelay, FireDelayTime);
 }
@@ -115,8 +111,8 @@ void AEnemyRanged::OnFireMontageEnded()
 	{
 		bool bCheckCondition =
 			GetCharacterMovement()->IsFalling() ||
-			AIController->GetBlackBoard()->GetValueAsBool(FName("IsPlayerDead")) ||
-			AIController->GetBlackBoard()->GetValueAsBool(FName("TargetIsVisible")) ? false : true;
+			GetAiInfo().bIsPlayerDead ||
+			GetAiInfo().bTargetIsVisible == false;
 
 		if (CurrentFireCount < FireCount)
 		{
@@ -131,10 +127,6 @@ void AEnemyRanged::OnFireMontageEnded()
 
 void AEnemyRanged::FinishFire()
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), false);
-	}
 	CurrentFireCount = 0;
 	bIsAttacking = false;
 	OnAttackEnd.Broadcast();

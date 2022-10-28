@@ -3,6 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "EnemyCharacter.generated.h"
 
 class AEnemyAIController;
@@ -31,6 +32,40 @@ enum class EEnemyState : uint8
 	EES_MAX UMETA(DisplayName = "MAX")
 };
 
+USTRUCT(Atomic)
+struct FAiInfo 
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	FVector WorldPatrolPoint = FVector::ZeroVector;
+	UPROPERTY()
+	FVector DetectedLocation = FVector::ZeroVector;
+
+	UPROPERTY()
+	AActor* TargetPlayer = nullptr;
+	UPROPERTY()
+	bool bTargetIsVisible = false;
+	UPROPERTY()
+	bool bTargetIsHeard = false;
+	UPROPERTY()
+	bool bSightStimulusExpired = true;
+
+	UPROPERTY()
+	bool bIsKnockUp = false;
+	UPROPERTY()
+	bool bStunned = false;
+	UPROPERTY()
+	bool bStiffed = false;
+	UPROPERTY()
+	bool bTargetInAttackRange = false;
+	UPROPERTY()
+	bool bTargetHitsMe = false;
+
+	UPROPERTY()
+	bool bIsPlayerDead = false;
+};
+
 UCLASS()
 class ADVENTUREOFSHINBI_API AEnemyCharacter : public ACharacter
 {
@@ -52,22 +87,30 @@ public:
 
 	void ActivateDamageUp(float DamageUpRate);
 
+	void CheckNothingStimulus();
+
+	UFUNCTION(BlueprintCallable)
+	void SetStateToPatrol();
+
 protected:
 
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaTime) override;
 
-	void Weapon1LineTrace();
+	virtual void Weapon1LineTrace();
+
+	virtual void GetLineTraceHitResult(FHitResult& HitResult);
 
 	virtual void CheckIsKnockUp();
 
 	void Healing(float DeltaTime);
 
 	UFUNCTION()
-	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnDetected(AActor* Actor, FAIStimulus Stimulus);
+
 	UFUNCTION()
-	virtual void OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	virtual void TakePointDamage
@@ -98,7 +141,7 @@ protected:
 	void PlayDeathMontage();
 
 	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -111,7 +154,7 @@ protected:
 
 	void ForgetHit();
 
-	void RotateToTarget(float DeltaTime);
+	virtual void RotateToTarget(float DeltaTime);
 
 	void SetHealthBar();
 
@@ -119,15 +162,23 @@ protected:
 	void ActivateWeaponTrace1();
 
 	UFUNCTION(BlueprintCallable)
-	void StopAttackMontage();
+	void DeactivateWeaponTrace1();
+
+	UFUNCTION(BlueprintCallable)
+	virtual void StopAttackMontage();
 
 	void DamageUpTimeEnd();
 
 	void PlayBuffParticle();
 
+	void SightStimulusExpire();
+
 protected:
 
 	AEnemyAIController* AIController;
+
+	UPROPERTY(VisibleAnywhere)
+	UAIPerceptionComponent* PerceptionComp;
 
 	UPROPERTY(EditAnywhere, Category = "Stats")
 	float Damage;
@@ -135,8 +186,14 @@ protected:
 	UPROPERTY()
 	UEnemyAnimInstance* EnemyAnim;
 
+	// 공격 몽타주
+	UPROPERTY(EditAnywhere, Category = "Montages")
+	UAnimMontage* AttackMontage;
+
+	bool bActivateWeaponTrace1 = false;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-	bool bIsAttacking;
+	bool bIsAttacking = false;
 
 	UPROPERTY(VisibleAnywhere)
 	EEnemyState EnemyState = EEnemyState::EES_Patrol;
@@ -149,15 +206,17 @@ protected:
 
 	bool bDeath = false;
 
+	FAiInfo AiInfo;
+
 private:
+
+	UAISenseConfig_Sight* SightConfig;
+
+	UAISenseConfig_Hearing* HearingConfig;
 
 	// 공격 범위
 	UPROPERTY(EditAnywhere)
 	USphereComponent* AttackRange;
-
-	// 공격 몽타주
-	UPROPERTY(EditAnywhere, Category = "Montages")
-	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Montages")
 	UAnimMontage* HitReactionMontage;
@@ -237,8 +296,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	USoundCue* MeleeHitSound;
 
-	bool bActivateWeaponTrace1 = false;
-
 	bool bHealing = false;
 
 	float HealAmount = 0.f;
@@ -256,12 +313,22 @@ private:
 
 	UParticleSystemComponent* BuffParticleComponent;
 
+	/** ai */
+
+	FTimerHandle SightStimulusExpireTimer;
+
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float SightStimulusExpireTime = 10.f;
+
+	bool IsPlayerDeathDelegateBined = false;
+
 public:
 
 	float GetAcceptableRaius() const;
 	EEnemyState GetEnemyState() const;
 	void SetEnemyState(EEnemyState State);
 	bool GetIsAttacking() const;
+	bool GetIsDead() const;
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetPatrolPoint() const;
@@ -270,4 +337,5 @@ public:
 	float GetMaxHealth() const;
 	float GetEnemyDamage() const;
 
+	FAiInfo GetAiInfo() const;
 };

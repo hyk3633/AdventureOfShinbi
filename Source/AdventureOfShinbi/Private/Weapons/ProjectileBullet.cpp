@@ -41,6 +41,13 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
+	PlayHitEffect(Hit, OtherActor);
+
+	Destroy();
+}
+
+void AProjectileBullet::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
+{
 	if (TargetHitParticle)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetHitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
@@ -70,8 +77,6 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
 	}
-
-	Destroy();
 }
 
 void AProjectileBullet::PlayNoHitParticle()

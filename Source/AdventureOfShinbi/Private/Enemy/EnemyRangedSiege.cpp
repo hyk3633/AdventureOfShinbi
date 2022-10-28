@@ -31,7 +31,7 @@ void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
 		if (StunChance > Chances)
 		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("Stunned"), true);
+			AiInfo.bStunned = true;
 			PlayStunMontage();
 		}
 		else
@@ -47,7 +47,7 @@ void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
 		if (StiffChance > Chances)
 		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("Stiffed"), true);
+			AiInfo.bStiffed = true;
 			EnemyState == EEnemyState::EES_Siege ? PlaySiegeModeHitReactionMontage() : PlayHitReactionMontage();
 		}
 		else
@@ -88,21 +88,15 @@ void AEnemyRangedSiege::SiegeModeProjectileFire()
 
 void AEnemyRangedSiege::ConvertSiegeMode()
 {
-	if (AIController)
-	{
-		EnemyState = EEnemyState::EES_Siege;
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("SiegeMode"), true);
-	}
+	EnemyState = EEnemyState::EES_Siege;
+	bSiegeMode = true;
 	// 방어력 증가
 }
 
 void AEnemyRangedSiege::ReleaseSiegeMode()
 {
-	if (AIController)
-	{
-		SetEnemyState(EEnemyState::EES_Comeback);
-		AIController->GetBlackboardComponent()->SetValueAsBool(FName("SiegeMode"), false);
-	}
+	SetEnemyState(EEnemyState::EES_Comeback);
+	bSiegeMode = false;
 	// 방어력 복구
 }
 
@@ -128,22 +122,18 @@ void AEnemyRangedSiege::PlaySiegeModeHitReactionMontage()
 	EnemyAnim->Montage_JumpToSection(FName("HitFront"));
 }
 
-
 void AEnemyRangedSiege::OnSiegeModeFireMontageEnded()
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), false);
-
-		bIsAttacking = false;
-		OnAttackEnd.Broadcast();
-	}
+	bIsAttacking = false;
+	OnAttackEnd.Broadcast();
 }
 
 void AEnemyRangedSiege::OnSiegeModeHitReactionMontageEnded()
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("Stiffed"), false);
-	}
+	AiInfo.bStiffed = false;
+}
+
+bool AEnemyRangedSiege::GetSiegeMode() const
+{
+	return bSiegeMode;
 }

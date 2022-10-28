@@ -12,7 +12,7 @@
 
 void ARangedHitScanWeapon::Firing()
 {
-	PlayFireEffect();
+	PlayFireEffect(MuzzleFlashParticle, FireSound);
 
 	CrosshairLineTrace(HitPoint);
 

@@ -4,6 +4,7 @@
 #include "Enemy/EnemyAIController.h"
 #include "Enemy/EnemyAnimInstance.h"
 #include "Player/AOSCharacter.h"
+#include "Components/CombatComponent.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -31,7 +32,7 @@ AEnemyCharacter::AEnemyCharacter()
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 	GetMesh()->SetGenerateOverlapEvents(true);
-	GetMesh()->SetNotifyRigidBodyCollision(true);
+	GetMesh()->SetNotifyRigidBodyCollision(false);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	GetMesh()->SetCollisionObjectType(ECC_Enemy);
 	GetMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -64,6 +65,32 @@ AEnemyCharacter::AEnemyCharacter()
 	HealthWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
 	HealthWidget->SetupAttachment(RootComponent);
 	HealthWidget->SetVisibility(false);
+
+	/** Perception Component */
+
+	PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AI Perception Component"));
+
+	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+	SightConfig->SightRadius = 1250.0f;
+	SightConfig->LoseSightRadius = 1280.0f;
+	SightConfig->PeripheralVisionAngleDegrees = 90.0f;
+
+	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	SightConfig->SetMaxAge(5.f);
+
+	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
+	HearingConfig->HearingRange = 1500.f;
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	HearingConfig->SetMaxAge(10.f);
+
+	PerceptionComp->ConfigureSense(*SightConfig);
+	PerceptionComp->ConfigureSense(*HearingConfig);
+
+	PerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
 }
 
 void AEnemyCharacter::BeginPlay()
@@ -72,7 +99,7 @@ void AEnemyCharacter::BeginPlay()
 
 	OriginDamage = Damage;
 
-	AIController = Cast<AEnemyAIController>(GetController());
+	PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyCharacter::OnDetected);
 
 	EnemyAnim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance());
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnAttackMontageEnded);
@@ -80,18 +107,20 @@ void AEnemyCharacter::BeginPlay()
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnStunMontageEnded);
 
 	AttackRange->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlap);
-	AttackRange->OnComponentEndOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeEndOverlap);
 	
 	OnTakePointDamage.AddDynamic(this, &AEnemyCharacter::TakePointDamage);
 
-	const FVector WorldPatrolPoint = UKismetMathLibrary::TransformLocation(GetActorTransform(), PatrolPoint);
-
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsVector(FName("WaitingPosition"), WorldPatrolPoint);
-		AIController->GetBlackBoard()->SetValueAsVector(FName("MoveToPoint"), GetActorLocation());
-	}
-
+	AiInfo.WorldPatrolPoint = UKismetMathLibrary::TransformLocation(GetActorTransform(), PatrolPoint);
+	AiInfo.DetectedLocation = FVector::ZeroVector;
+	AiInfo.TargetPlayer = nullptr;
+	AiInfo.bTargetIsVisible = false;
+	AiInfo.bTargetIsHeard = false;
+	AiInfo.bSightStimulusExpired = true;
+	AiInfo.bIsKnockUp = false;
+	AiInfo.bStunned = false;
+	AiInfo.bStiffed = false;
+	AiInfo.bTargetInAttackRange = false;
+	AiInfo.bTargetHitsMe = false;
 }
 
 void AEnemyCharacter::Tick(float DeltaTime)
@@ -111,27 +140,16 @@ void AEnemyCharacter::Weapon1LineTrace()
 {
 	if (bActivateWeaponTrace1)
 	{
-		const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
-		if (WeaponTraceStart == nullptr) return;
-		const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
-
-		const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
-		if (WeaponTraceEnd == nullptr) return;
-		const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
-
 		FHitResult WeaponHitResult;
-		FVector TraceStart = SocketTransformStart.GetLocation();
-		FVector TraceEnd = SocketTransformEnd.GetLocation();
-
-		GetWorld()->LineTraceSingleByChannel(WeaponHitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+		GetLineTraceHitResult(WeaponHitResult);
 
 		if (WeaponHitResult.bBlockingHit)
 		{
 			PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
 
-			if (bIsAttacking && AIController)
+			if (bIsAttacking)
 			{
-				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, AIController, this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
 			}
 
 			bActivateWeaponTrace1 = false;
@@ -139,19 +157,32 @@ void AEnemyCharacter::Weapon1LineTrace()
 	}
 }
 
+void AEnemyCharacter::GetLineTraceHitResult(FHitResult& HitResult)
+{
+	const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
+	if (WeaponTraceStart == nullptr) return;
+	const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
+
+	const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
+	if (WeaponTraceEnd == nullptr) return;
+	const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
+
+	FVector TraceStart = SocketTransformStart.GetLocation();
+	FVector TraceEnd = SocketTransformEnd.GetLocation();
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+}
+
 void AEnemyCharacter::CheckIsKnockUp()
 {
-	if (AIController)
+	if (GetCharacterMovement()->IsFalling())
 	{
-		if (GetCharacterMovement()->IsFalling())
-		{
-			EnemyAnim->StopAllMontages(0.2f);
-			AIController->GetBlackBoard()->SetValueAsBool(FName("KnockUp"), true);
-		}
-		else
-		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("KnockUp"), false);
-		}
+		EnemyAnim->StopAllMontages(0.2f);
+		AiInfo.bIsKnockUp = true;
+	}
+	else
+	{
+		AiInfo.bIsKnockUp = false;
 	}
 }
 
@@ -179,21 +210,65 @@ void AEnemyCharacter::Healing(float DeltaTime)
 	}
 }
 
-void AEnemyCharacter::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 {
-	AAOSCharacter* Cha = Cast<AAOSCharacter>(OtherActor);
-	if (Cha && AIController)
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(Actor);
+	if (Cha == nullptr) return;
+
+	if (IsPlayerDeathDelegateBined == false)
 	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("TargetInAttackRange"), true);
+		Cha->GetCombatComp()->PlayerDeathDelegate.AddLambda([this]() -> void {
+			AiInfo.bIsPlayerDead = true;
+		});
 	}
+
+	if (Stimulus.Type.Name == FName("Default__AISense_Sight"))
+	{
+		if (Stimulus.WasSuccessfullySensed())
+		{
+			AiInfo.bTargetIsVisible = true;
+			AiInfo.TargetPlayer = Cha;
+
+			SetEnemyState(EEnemyState::EES_Chase);
+
+			GetWorldTimerManager().ClearTimer(SightStimulusExpireTimer);
+		}
+		else
+		{
+			AiInfo.bTargetIsVisible = false;
+			GetWorldTimerManager().SetTimer(SightStimulusExpireTimer, this, &AEnemyCharacter::SightStimulusExpire, SightStimulusExpireTime);
+		}
+	}
+	else if (Stimulus.Type.Name == FName("Default__AISense_Hearing"))
+	{
+		if (!Stimulus.IsExpired())
+		{
+			AiInfo.bTargetIsHeard = true;
+			AiInfo.DetectedLocation = Cha->GetActorLocation();
+
+			if (EnemyState == EEnemyState::EES_Patrol)
+			{
+				SetEnemyState(EEnemyState::EES_Detected);
+			}
+		}
+		else
+		{
+			AiInfo.bTargetIsHeard = false;
+		}
+	}
+
+	CheckNothingStimulus();
 }
 
-void AEnemyCharacter::OnAttackRangeEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AEnemyCharacter::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (bIsAttacking)
+		return;
+
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(OtherActor);
-	if (Cha && AIController)
+	if (Cha)
 	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("TargetInAttackRange"), false);
+		AiInfo.bTargetInAttackRange = true;
 	}
 }
 
@@ -226,19 +301,35 @@ void AEnemyCharacter::ActivateDamageUp(float DamageUpRate)
 	GetWorldTimerManager().SetTimer(DamageUpTimer, this, &AEnemyCharacter::DamageUpTimeEnd, DamageUpTime);
 }
 
+void AEnemyCharacter::CheckNothingStimulus()
+{
+	if (AiInfo.bTargetIsVisible == false &&
+		AiInfo.bSightStimulusExpired &&
+		AiInfo.bTargetIsHeard == false &&
+		AiInfo.bTargetHitsMe == false)
+	{
+		if (EnemyState == EEnemyState::EES_Chase || EnemyState == EEnemyState::EES_Detected)
+		{
+			SetEnemyState(EEnemyState::EES_Comeback);
+		}
+	}
+}
+
+void AEnemyCharacter::SetStateToPatrol()
+{
+	if (EnemyState == EEnemyState::EES_Comeback)
+	{
+		SetEnemyState(EEnemyState::EES_Patrol);
+	}
+}
+
 void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("TargetHitsMe"), true);
+	AiInfo.bTargetHitsMe = true;
+	AiInfo.DetectedLocation = DamageCauser->GetActorLocation();
 
-		HandleStiffAndStun(BoneName);
-
-		AIController->GetBlackBoard()->SetValueAsVector(FName("DetectedLocation"), DamageCauser->GetActorLocation());
-	}
-
+	HandleStiffAndStun(BoneName);
 	HandleHealthChange(DamageReceived);
-
 	PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, BoneName);
 }
 
@@ -256,14 +347,14 @@ void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 
 void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 {
-	if (bDeath || AIController->GetBlackBoard()->GetValueAsBool(FName("IsAttacking"))) return;
+	if (bDeath || bIsAttacking) return;
 
 	if (BoneName == FName("head"))
 	{
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
 		if (StunChance > Chances)
 		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("Stunned"), true);
+			AiInfo.bStunned = true;
 			PlayStunMontage();
 		}
 		else
@@ -279,7 +370,7 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
 		if (StiffChance > Chances)
 		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("Stiffed"), true);
+			AiInfo.bStiffed = true;
 			PlayHitReactionMontage();
 		}
 		else
@@ -320,10 +411,6 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 			UGameplayStatics::PlaySoundAtLocation(this, DeathVoice, GetActorLocation());
 		}
 		PlayDeathMontage();
-		if (AIController)
-		{
-			AIController->GetBlackBoard()->SetValueAsBool(FName("IsEnemyDead"), true);
-		}
 	}
 }
 
@@ -360,10 +447,6 @@ void AEnemyCharacter::Attack()
 {
 	if (bDeath) return;
 
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), true);
-	}
 	bIsAttacking = true;
 	PlayAttackMontage();
 }
@@ -404,36 +487,32 @@ void AEnemyCharacter::PlayDeathMontage()
 
 void AEnemyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == AttackMontage && AIController)
+	if (Montage == AttackMontage)
 	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsAttacking"), false);
 		bIsAttacking = false;
+		AiInfo.bTargetInAttackRange = false;
 		OnAttackEnd.Broadcast();
 	}
 }
 
 void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == HitReactionMontage && AIController)
+	if (Montage == HitReactionMontage)
 	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("Stiffed"), false);
+		AiInfo.bStiffed = false;
 	}
 }
 
 void AEnemyCharacter::OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == StunMontage && AIController)
+	if (Montage == StunMontage)
 	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("Stunned"), false);
+		AiInfo.bStunned = false;
 	}
 }
 
 void AEnemyCharacter::DeathMontageEnded()
 {
-	if(AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("IsDead"), true);
-	}
 	HealthWidget->SetVisibility(false);
 	GetMesh()->bPauseAnims = true;
 	//Destroy();
@@ -441,12 +520,10 @@ void AEnemyCharacter::DeathMontageEnded()
 
 void AEnemyCharacter::ForgetHit()
 {
-	if (AIController)
-	{
-		AIController->GetBlackBoard()->SetValueAsBool(FName("TargetHitsMe"), false);
-		AIController->CheckNothingStimulus();
-	}
+	AiInfo.bTargetHitsMe = false;
 
+	CheckNothingStimulus();
+	
 	if (HealthWidget)
 	{
 		HealthWidget->SetVisibility(false);
@@ -456,14 +533,14 @@ void AEnemyCharacter::ForgetHit()
 void AEnemyCharacter::RotateToTarget(float DeltaTime)
 {
 	if (
-		!bDeath &&
-		AIController &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stiffed")) &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("Stunned")) &&
-		AIController->GetBlackBoard()->GetValueAsObject(FName("Target")) &&
-		!AIController->GetBlackBoard()->GetValueAsBool(FName("IsPlayerDead")))
+		bDeath == false &&
+		AiInfo.bStiffed == false &&
+		AiInfo.bStunned == false &&
+		AiInfo.TargetPlayer != nullptr &&
+		AiInfo.bIsPlayerDead == false
+		)
 	{
-		AActor* Target = Cast<AActor>(AIController->GetBlackBoard()->GetValueAsObject(FName("Target")));
+		AActor* Target = Cast<AActor>(AiInfo.TargetPlayer);
 
 		FRotator Rotation = GetActorRotation();
 
@@ -491,11 +568,20 @@ void AEnemyCharacter::ActivateWeaponTrace1()
 	bActivateWeaponTrace1 = true;
 }
 
+void AEnemyCharacter::DeactivateWeaponTrace1()
+{
+	bActivateWeaponTrace1 = false;
+}
+
 void AEnemyCharacter::StopAttackMontage()
 {
-	if (EnemyAnim && AIController && !AIController->GetBlackBoard()->GetValueAsBool(FName("TargetInAttackRange")))
+	if (bActivateWeaponTrace1)
 	{
-		EnemyAnim->Montage_Stop(0.2f, AttackMontage);
+		bActivateWeaponTrace1 = false;
+		if (EnemyAnim)
+		{
+			EnemyAnim->Montage_Stop(0.2f, AttackMontage);
+		}
 	}
 }
 
@@ -523,6 +609,14 @@ void AEnemyCharacter::PlayBuffParticle()
 			EAttachLocation::KeepRelativeOffset
 		);
 	}
+}
+
+void AEnemyCharacter::SightStimulusExpire()
+{
+	AiInfo.bSightStimulusExpired = true;
+	AiInfo.TargetPlayer = nullptr;
+
+	CheckNothingStimulus();
 }
 
 void AEnemyCharacter::SetEnemyState(EEnemyState State)
@@ -559,6 +653,16 @@ float AEnemyCharacter::GetHealthPercentage() const
 float AEnemyCharacter::GetMaxHealth() const
 {
 	return MaxHealth;
+}
+
+FAiInfo AEnemyCharacter::GetAiInfo() const
+{
+	return AiInfo;
+}
+
+bool AEnemyCharacter::GetIsDead() const
+{
+	return bDeath;
 }
 
 float AEnemyCharacter::GetEnemyDamage() const

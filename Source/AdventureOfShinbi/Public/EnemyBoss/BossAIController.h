@@ -1,28 +1,31 @@
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "EnemyAIController.generated.h"
+#include "BossAIController.generated.h"
 
 /**
  * 
  */
 
-class AEnemyCharacter;
+class AEnemyBoss;
 class UBehaviorTreeComponent;
 class UBehaviorTree;
 class UBlackboardComponent;
 class UBlackboardData;
 
 UCLASS()
-class ADVENTUREOFSHINBI_API AEnemyAIController : public AAIController
+class ADVENTUREOFSHINBI_API ABossAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+
 public:
 
-	AEnemyAIController();
+	ABossAIController();
+
+	void SetBlackboardKey();
 
 protected:
 
@@ -36,7 +39,7 @@ protected:
 
 private:
 
-	AEnemyCharacter* PossessedCharacter;
+	AEnemyBoss* PossessedCharacter;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
 	UBehaviorTree* BTAsset;
@@ -47,5 +50,4 @@ private:
 	UBehaviorTreeComponent* BTComp;
 
 	UBlackboardComponent* BBComp;
-
 };

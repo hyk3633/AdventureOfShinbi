@@ -1,7 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/RangedWeapon.h"
+#include "EnemyBoss/EnemyBoss.h"
+#include "Player/AOSCharacter.h"
 #include "Components/BoxComponent.h"
 #include "Items/ItemAmmo.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -70,25 +71,35 @@ void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
 		else
 		{
 			OutHitPoint = HitResult.ImpactPoint;
+
+			/*AEnemyBoss* Boss = Cast<AEnemyBoss>(HitResult.GetActor());
+			if (Boss)
+			{
+				AAOSCharacter* WeaponOwner = Cast<AAOSCharacter>(GetOwner());
+				if (WeaponOwner)
+				{
+					WeaponOwner->DAttackButtonPressed.ExecuteIfBound();
+					UE_LOG(LogTemp, Warning, TEXT("target hit"));
+				}
+			}*/
 		}
 	}
 }
 
-void ARangedWeapon::PlayFireEffect()
+void ARangedWeapon::PlayFireEffect(UParticleSystem* Flash, USoundCue* Sound)
 {
-
-	if (MuzzleFlashParticle)
+	if (Flash)
 	{
 		const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 		if (MuzzleSocket)
 		{
 			const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), MuzzleFlashParticle, SocketTransform);
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Flash, SocketTransform);
 		}
 	}
-	if (FireSound)
+	if (Sound)
 	{
-		UGameplayStatics::PlaySound2D(this, FireSound);
+		UGameplayStatics::PlaySound2D(this, Sound);
 	}
 }
 

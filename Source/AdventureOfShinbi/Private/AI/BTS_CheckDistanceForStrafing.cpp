@@ -26,13 +26,15 @@ void UBTS_CheckDistanceForStrafing::TickNode(UBehaviorTreeComponent& OwnerComp, 
     Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
     AEnemyStrafing* ControllingEnemy = Cast<AEnemyStrafing>(OwnerComp.GetAIOwner()->GetPawn());
-    if (ControllingEnemy == nullptr) return;
+    if (ControllingEnemy == nullptr) 
+        return;
 
     UWorld* World = ControllingEnemy->GetWorld();
     FVector Center = ControllingEnemy->GetActorLocation();
     float DetectRadius = 1000.0f;
 
-    if (World == nullptr) return;
+    if (World == nullptr) 
+        return;
 
     TArray<FOverlapResult> OverlapResults;
     FCollisionQueryParams CollisionQueryParam(NAME_None, false, ControllingEnemy);
