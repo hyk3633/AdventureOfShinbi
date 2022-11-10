@@ -10,60 +10,59 @@ void ARangedProjectileWeapon::Firing()
 {
 	PlayFireEffect(MuzzleFlashParticle, FireSound);
 
-	SpawnProjectile(ProjectileClass);
+	if (bScatterGun)
+	{
+		ScatterFiring(ProjectileClass);
+	}
+	else
+	{
+		SingleFiring(ProjectileClass);
+	}
+
+	ConsumeAmmo();
 }
 
-void ARangedProjectileWeapon::ScatterFiring()
+void ARangedProjectileWeapon::ScatterFiring(TSubclassOf<AProjectile> Projectile)
 {
-	PlayFireEffect(MuzzleFlashParticle, FireSound);
+	if (Projectile == nullptr)
+		return;
 
-	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
-	if (MuzzleSocket == nullptr) return;
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
+	FVector LocationToSpawn;
+	GetSpawnLocation(LocationToSpawn);
 
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);
 
+	TArray<FRotator> ShotRotator;
 	for (int8 i = 0; i < NumberOfShots; i++)
 	{
-		FVector ToTarget = HitPoint - SocketTransform.GetLocation();
-		FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, ScatterRange);
+		const FVector ToTarget = HitPoint - LocationToSpawn;
+		const FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, ScatterRange);
 		ShotRotator.Add(RandomUnitVector.Rotation());
 	}
 
-	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
-
-	if (ProjectileClass && InstigatorPawn)
+	for (int8 i = 0; i < NumberOfShots; i++)
 	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
-		SpawnParams.Instigator = InstigatorPawn;
-
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			for (int8 i = 0; i < NumberOfShots; i++)
-			{
-				World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), ShotRotator[i], SpawnParams);
-			}
-		}
+		SpawnProjectile(Projectile, LocationToSpawn, ShotRotator[i]);
 	}
-
-	ShotRotator.Empty();
 }
 
-void ARangedProjectileWeapon::SpawnProjectile(TSubclassOf<AProjectile> Projectile)
+void ARangedProjectileWeapon::SingleFiring(TSubclassOf<AProjectile> Projectile)
 {
-	FVector HitPoint;
-	CrosshairLineTrace(HitPoint);
+	if (Projectile == nullptr)
+		return;
 
-	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
-	if (MuzzleSocket == nullptr) return;
-	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
+	FVector LocationToSpawn;
+	GetSpawnLocation(LocationToSpawn);
 
-	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
-	FRotator TargetRotation = ToTarget.Rotation();
+	FRotator RotationToSpawn;
+	GetSpawnRotation(LocationToSpawn, RotationToSpawn);
 
+	SpawnProjectile(Projectile, LocationToSpawn, RotationToSpawn);
+}
+
+void ARangedProjectileWeapon::SpawnProjectile(TSubclassOf<AProjectile> Projectile, const FVector& LocToSpawn, const FRotator& RotToSpawn)
+{
 	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 	if (InstigatorPawn == nullptr)
 		return;
@@ -77,12 +76,25 @@ void ARangedProjectileWeapon::SpawnProjectile(TSubclassOf<AProjectile> Projectil
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			World->SpawnActor<AProjectile>(Projectile, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
+			World->SpawnActor<AProjectile>(Projectile, LocToSpawn, RotToSpawn, SpawnParams);
 		}
 	}
 }
 
-bool ARangedProjectileWeapon::GetScatterGun() const
+void ARangedProjectileWeapon::GetSpawnLocation(FVector& ProjLoc)
 {
-	return bScatterGun;
+	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
+	if (MuzzleSocket == nullptr) return;
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
+
+	ProjLoc = SocketTransform.GetLocation();
+}
+
+void ARangedProjectileWeapon::GetSpawnRotation(const FVector& ProjLoc, FRotator& ProjRot)
+{
+	FVector HitPoint;
+	CrosshairLineTrace(HitPoint);
+
+	FVector ToTarget = HitPoint - ProjLoc;
+	ProjRot = ToTarget.Rotation();
 }

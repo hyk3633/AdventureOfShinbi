@@ -15,6 +15,7 @@ class AAOSHUD;
 class UAnimMontage;
 class AItem;
 class AWeapon;
+class UCurveFloat;
 
 DECLARE_MULTICAST_DELEGATE(DPlayerDeathDelegate);
 
@@ -35,11 +36,23 @@ public:
 
 	void GunFire();
 
+	void WeaponRightClickSkill();
+
+	void WeaponSkill1();
+
+	void WeaponSkill2();
+
+	void WeaponSkill3();
+
 	DPlayerDeathDelegate PlayerDeathDelegate;
 
 	void HealBan(float HealBanDurationTime);
 
 	void DecreaseDamage(float DmgDecreaDurationTime);
+
+	void CirclingWolvesEnd();
+
+	void UltimateWolfRushEnd();
 
 protected:
 
@@ -49,31 +62,79 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	/** 신비의 검 몽타주 */
+
 	void PlayMontageOneHandAttack();
+
+	void PlayMontageWolfAttack();
+
+	UFUNCTION()
+	void WolfAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted);
+
+	void WolfAttackCoolTimeEnd();
+
+	void PlayMontageCirclingWolves();
+
+	void CirclingWolvesCoolTimeEnd();
+
+	void PlayMontageUltimateWolfRush();
+
+	void UltimateWolfRushCoolTimeEnd();
+
+	/**  */
 
 	void PlayMontageTwoHandAttack();
 
+	/** 총기류 */
+
+	void PlayReloadMontage();
+
+	UFUNCTION()
+	void OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	void PlayMontageGunFire();
 
-	void PlayMontageGlaveAttack();
-
-	void PlayMontageDeath();
-
-	UFUNCTION(BlueprintCallable)
-	void OnDeathMontageEnded();
-
-	// 원거리 무기 타입에 따른 처리 함수
 	void RangedWeaponFire();
-
-	void ResetCombo();
 
 	void Zoom(float DeltaTime);
 
 	void Reload();
 
+	/** 글레이브 몽타주 */
+
+	void GlaiveAttack();
+
+	void PlayMontageSickleAttack();
+	void PlayMontageGlaiveAttack();
+	void PlayMontageGlaiveUltimateAttack(FName Version);
+
+	void MovingCamera(float DeltaTime);
+
+	void CameraMoveEnd();
+
+	bool CheckAbleGlaiveUltiSkill();
+
+	UFUNCTION()
+	void GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted);
+
+	void PlayMontageDeath();
+
+	UFUNCTION(BlueprintCallable)
+	void ActivateWeaponTrace();
+
+	UFUNCTION(BlueprintCallable)
+	void DeactivateWeaponTrace();
+
+	UFUNCTION(BlueprintCallable)
+	void OnDeathMontageEnded();
+
+	void ResetCombo();
+
 	// 플레이어 스탯 처리
 
 	void UpdateHealth(float Damage);
+
+	void UpdateMana(float ManaToSpend);
 
 	void UpdateStamina(float DeltaTime);
 
@@ -135,6 +196,7 @@ private:
 
 	float StaminaIncreaseRate = 20.f;
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	AWeapon* EquippedWeapon = nullptr;
 
 	AWeapon* QuickSlot1Weapon = nullptr;
@@ -148,17 +210,67 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	float ComboTime = 2.0f;
 
-	UPROPERTY(EditAnywhere)
+	/** 신비의 검 변수들 */
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
 	UAnimMontage* MeleeOneHandAttackMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UAnimMontage* WolfAttackMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UAnimMontage* CirclingWolvesMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UAnimMontage* UltimateWolfRushMontage;
+
+	bool bAbleWolfAttack = true;
+
+	FTimerHandle WolfAttackCoolTimer;
+	float WolfAttackCoolTime = 1.f;
+
+	bool bAbleCirclingWolves = true;
+
+	FTimerHandle CirclingWolvesCoolTimer;
+	float CirclingWolvesCoolTime = 11.f;
+
+	bool bAbleUltimateWolfRush = true;
+
+	FTimerHandle UltimateWolfRushCoolTimer;
+	float UltimateWolfRushCoolTime = 20.f;
+
+	/**  */
 
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* MeleeTwoHandAttackMontage;
 
-	UPROPERTY(EditAnywhere)
+	/** 총기류 */
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Guns")
+	UAnimMontage* GunReloadMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Guns")
 	UAnimMontage* GunFireMontage;
 
-	UPROPERTY(EditAnywhere)
-	UAnimMontage* GlaveAttackMontage;
+	/** 글레이브 */
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UAnimMontage* SickleAttackMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UAnimMontage* GlaiveAttackMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UAnimMontage* GlaiveUltimateMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UCurveFloat* CameraCurve;
+
+	FTimerHandle MovingCameraTimer;
+
+	bool bMovingCamera = false;
+
+	/**  */
 
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* DeathMontage;
@@ -189,12 +301,17 @@ private:
 	bool bDmgDebuffActivated = false;
 	bool bHealBanActivated = false;
 
+	bool bEnableCheck = true;
+
 public:
 
 	AWeapon* GetEquippedWeapon() const;
 	float GetHealthPercentage() const;
 	bool SpendStamina(float StaminaToSpend);
+	bool SpendMana(float ManaToSpend);
 	bool GetDmgDebuffActivated() const;
 	bool GetHealBanActivated() const;
+	bool GetEnableCheck() const;
+	void SetEnableCheck(bool bCheck);
 
 };

@@ -14,76 +14,116 @@ void ARangedHitScanWeapon::Firing()
 {
 	PlayFireEffect(MuzzleFlashParticle, FireSound);
 
+	if (bScatter)
+	{
+		ScatterFiring();
+	}
+	else
+	{
+		SingleFiring();
+	}
+
+	ConsumeAmmo();
+}
+
+void ARangedHitScanWeapon::ScatterFiring()
+{
+	FVector TraceStart;
+	GetTraceStart(TraceStart);
+
+	TArray<FVector> TraceEnd;
+	for (int8 i = 0; i < NumberOfShots; i++)
+	{
+		TraceEnd.Add(GetTraceEnd(TraceStart));
+
+		FHitResult TraceHitResult;
+		GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd[i], ECollisionChannel::ECC_Visibility);
+
+		DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint, TraceHitResult.ImpactNormal);
+		ProcessHitResult(TraceHitResult);
+	}
+}
+
+void ARangedHitScanWeapon::SingleFiring()
+{
+	FVector TraceStart;
+	GetTraceStart(TraceStart);
+
+	FVector TraceEnd = GetTraceEnd(TraceStart);
+
+	FHitResult TraceHitResult;
+	GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
+
+	DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint, TraceHitResult.ImpactNormal);
+	ProcessHitResult(TraceHitResult);
+}
+
+void ARangedHitScanWeapon::GetTraceStart(FVector& Start)
+{
 	CrosshairLineTrace(HitPoint);
 
 	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
-	FHitResult MuzzleHitResult;
-	FVector MuzzleTraceStart = SocketTransform.GetLocation();
-	FVector MuzzleTraceEnd = MuzzleTraceStart + (HitPoint - MuzzleTraceStart) * 1.25f;
-
-	if (BulletSpread > 0.f)
-	{
-		FVector ToTarget = HitPoint - SocketTransform.GetLocation();
-		FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
-		MuzzleTraceEnd = MuzzleTraceStart + (RandomUnitVector * 5000.f);
-	}
-
-	GetWorld()->LineTraceSingleByChannel(MuzzleHitResult, MuzzleTraceStart, MuzzleTraceEnd, ECollisionChannel::ECC_Visibility);
-
-	bool bEnemyHit = false;
-	if (MuzzleHitResult.bBlockingHit)
-	{
-		HitPoint = MuzzleHitResult.ImpactPoint;
-		ImpactRotator = MuzzleHitResult.ImpactNormal.Rotation();
-
-		ACharacter* DamagedActor = Cast<ACharacter>(MuzzleHitResult.Actor);
-		if (DamagedActor)
-		{
-			float Dmg = MuzzleHitResult.BoneName == FName("head") ? GetHeadShotDamage() : GetWeaponDamage();
-			APawn* OwnerPawn = Cast<APawn>(GetOwner());
-			UGameplayStatics::ApplyPointDamage(DamagedActor, Dmg, GetActorLocation(), MuzzleHitResult, OwnerPawn->GetInstigatorController(), OwnerPawn, UDamageType::StaticClass());
-			
-			bEnemyHit = true;
-			//DamagedActor->PlayHitEffect(HitPoint, ImpactRotator);
-		}
-	}
-
-	PlayAfterFireEffect(bEnemyHit, MuzzleHitResult.bBlockingHit);
+	Start = SocketTransform.GetLocation();
 }
 
-void ARangedHitScanWeapon::PlayAfterFireEffect(const bool EnemyHit, const bool HitAnything)
+FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 {
-	if (TrailParticle)
+	if (BulletSpread > 0.f)
 	{
-		const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
-		if (MuzzleSocket == nullptr) return;
-		const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
-
-		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, SocketTransform);
-		if (Trail)
-		{
-			Trail->SetVectorParameter(FName("Target"), HitPoint);
-		}
-	}
-	if (EnemyHit)
-	{
-		if (TargetHitParticle)
-		{
-			UGameplayStatics::SpawnEmitterAtLocation(this, TargetHitParticle, HitPoint, ImpactRotator);
-		}
+		const FVector ToTarget = HitPoint - Start;
+		const FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
+		return Start + (RandomUnitVector * 5000.f);
 	}
 	else
 	{
-		if (WorldHitParticle)
+		return Start + (HitPoint - Start) * 1.25f;
+	}
+}
+
+void ARangedHitScanWeapon::DrawTrailParticle(const FVector StartPoint, const FVector EndPoint, const FVector EndNormal)
+{
+	if (TrailParticle)
+	{
+		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, StartPoint, EndNormal.Rotation());
+		if (Trail)
 		{
-			UGameplayStatics::SpawnEmitterAtLocation(this, WorldHitParticle, HitPoint, ImpactRotator);
+			FVector Direction = StartPoint - EndPoint;
+			Direction.Normalize();
+			Trail->SetVectorParameter(FName("Target"), Direction);
 		}
 	}
-	if (HitSound && HitAnything)
+}
+
+void ARangedHitScanWeapon::ProcessHitResult(const FHitResult& HitResult)
+{
+	if (HitResult.bBlockingHit)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitPoint);
+		ACharacter* DamagedActor = Cast<ACharacter>(HitResult.Actor);
+		if (DamagedActor)
+		{
+			float Dmg = HitResult.BoneName == FName("head") ? GetHeadShotDamage() : GetWeaponDamage();
+			APawn* OwnerPawn = Cast<APawn>(GetOwner());
+			UGameplayStatics::ApplyPointDamage(DamagedActor,Dmg,HitResult.ImpactNormal,HitResult,OwnerPawn->GetInstigatorController(),OwnerPawn,UDamageType::StaticClass());
+		
+			if (TargetHitParticle)
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(this, TargetHitParticle, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
+			}
+		}
+		else
+		{
+			if (WorldHitParticle)
+			{
+				UGameplayStatics::SpawnEmitterAtLocation(this, WorldHitParticle, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
+			}
+		}
+
+		if (HitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitResult.ImpactPoint);
+		}
 	}
 }

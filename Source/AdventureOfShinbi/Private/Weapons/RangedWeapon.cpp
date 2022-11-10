@@ -16,6 +16,11 @@ ARangedWeapon::ARangedWeapon()
 
 }
 
+void ARangedWeapon::Firing()
+{
+	// 자식 클래스에서 재정의
+}
+
 void ARangedWeapon::BeginPlay()
 {
 	Super::BeginPlay();

@@ -17,31 +17,48 @@ class ADVENTUREOFSHINBI_API ARangedHitScanWeapon : public ARangedWeapon
 
 public:
 
-	void Firing();
+	virtual void Firing() override;
 
 protected:
 
-	void PlayAfterFireEffect(const bool EnemyHit, const bool HitAnything);
+	void ScatterFiring();
+
+	void SingleFiring();
+
+	void GetTraceStart(FVector& Start);
+
+	FVector GetTraceEnd(const FVector& Start);
+
+	void DrawTrailParticle(const FVector StartPoint, const FVector EndPoint, const FVector EndNormal);
+
+	void ProcessHitResult(const FHitResult& HitResult);
 
 private:
 
 	// 캐릭터 적중 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
 	UParticleSystem* TargetHitParticle;
 
 	// 캐릭터가 아닌 월드 액터 적중 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
 	UParticleSystem* WorldHitParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	// 탄 궤적
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
 	UParticleSystem* TrailParticle;
 
 	// 적중 시 효과음
-	UPROPERTY(EditAnywhere, Category = "Effects")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
 	USoundCue* HitSound;
 
-	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Attributes", meta = (ClampMin = "0.0", ClampMax = "100.0"))
 	float BulletSpread = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Attributes")
+	bool bScatter = false;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Attributes", meta = (EditCondition = "bScatterGun", ClampMin = "1", ClampMax = "50"))
+	int8 NumberOfShots = 10;
 
 	FVector HitPoint;
 

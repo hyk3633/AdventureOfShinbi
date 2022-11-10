@@ -5,8 +5,8 @@
 #include "Player/AOSCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "Sound/SoundCue.h"
-#include "Camera/CameraComponent.h"
 
 AWraith::AWraith()
 {
@@ -57,7 +57,9 @@ void AWraith::Firing()
 		PlayFireEffect(AimedSmokeParticle, nullptr);
 		PlayFireEffect(AimedStabilizerParticle, nullptr);
 
-		SpawnProjectile(AimingProjectileClass);
+		SingleFiring(AimingProjectileClass);
+
+		ConsumeAmmo();
 	}
 	else
 	{
@@ -102,19 +104,7 @@ void AWraith::FormChange(bool bSniperMode)
 		}
 		if (WeaponOwner)
 		{
-			if (ScopeParticle)
-			{
-				ScopeParticleComp = UGameplayStatics::SpawnEmitterAttached
-				(
-					ScopeParticle,
-					WeaponOwner->GetCamera(),
-					NAME_None,
-					FVector(65.f,0.f,-11.5f),
-					FRotator::ZeroRotator,
-					EAttachLocation::KeepRelativeOffset, 
-					false
-				);
-			}
+			ActivateScopeParticle();
 		}
 	}
 	else
@@ -132,15 +122,24 @@ void AWraith::FormChange(bool bSniperMode)
 	}
 }
 
-void AWraith::PlaySniperModeParticle(bool bSniperMode)
+void AWraith::ActivateScopeParticle()
 {
-	if (bSniperMode)
-	{
+	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("ScopeSocket");
+	if (MuzzleSocket == nullptr) return;
+	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
-	}
-	else
+	if (ScopeParticle)
 	{
-
+		ScopeParticleComp = UGameplayStatics::SpawnEmitterAttached
+		(
+			ScopeParticle,
+			ItemMesh,
+			NAME_None,
+			SocketTransform.GetLocation(),
+			SocketTransform.GetRotation().Rotator(),
+			EAttachLocation::KeepWorldPosition,
+			false
+		);
 	}
 }
 

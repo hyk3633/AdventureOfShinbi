@@ -160,11 +160,13 @@ void AEnemyCharacter::Weapon1LineTrace()
 void AEnemyCharacter::GetLineTraceHitResult(FHitResult& HitResult)
 {
 	const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
-	if (WeaponTraceStart == nullptr) return;
+	if (WeaponTraceStart == nullptr)
+		return;
 	const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
 
 	const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
-	if (WeaponTraceEnd == nullptr) return;
+	if (WeaponTraceEnd == nullptr) 
+		return;
 	const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
 
 	FVector TraceStart = SocketTransformStart.GetLocation();
@@ -175,7 +177,7 @@ void AEnemyCharacter::GetLineTraceHitResult(FHitResult& HitResult)
 
 void AEnemyCharacter::CheckIsKnockUp()
 {
-	if (GetCharacterMovement()->IsFalling())
+	if (GetCharacterMovement()->IsFalling() && bDeath == false)
 	{
 		EnemyAnim->StopAllMontages(0.2f);
 		AiInfo.bIsKnockUp = true;
@@ -188,7 +190,8 @@ void AEnemyCharacter::CheckIsKnockUp()
 
 void AEnemyCharacter::Healing(float DeltaTime)
 {
-	if (!bHealing) return;
+	if (!bHealing) 
+		return;
 
 	const float Amount = DeltaTime * RecoveryRate;
 	Health = FMath::Clamp(Health + Amount, 0.f, MaxHealth);
@@ -213,7 +216,8 @@ void AEnemyCharacter::Healing(float DeltaTime)
 void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 {
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(Actor);
-	if (Cha == nullptr) return;
+	if (Cha == nullptr) 
+		return;
 
 	if (IsPlayerDeathDelegateBined == false)
 	{
@@ -347,7 +351,8 @@ void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 
 void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 {
-	if (bDeath || bIsAttacking) return;
+	if (bDeath || bIsAttacking) 
+		return;
 
 	if (BoneName == FName("head"))
 	{
@@ -385,7 +390,8 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 
 void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 {
-	if (bDeath) return;
+	if (bDeath) 
+		return;
 
 	Health = FMath::Clamp(Health - DamageReceived, 0.f, MaxHealth);
 
@@ -416,7 +422,8 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 
 void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName)
 {
-	if (bDeath) return;
+	if (bDeath) 
+		return;
 
 	APlayerController* PlayerController = Cast<APlayerController>(InstigatorController);
 
@@ -445,7 +452,8 @@ void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController,
 
 void AEnemyCharacter::Attack()
 {
-	if (bDeath) return;
+	if (bDeath) 
+		return;
 
 	bIsAttacking = true;
 	PlayAttackMontage();
@@ -453,7 +461,8 @@ void AEnemyCharacter::Attack()
 
 void AEnemyCharacter::PlayAttackMontage()
 {
-	if (EnemyAnim == nullptr || AttackMontage == nullptr) return;
+	if (EnemyAnim == nullptr || AttackMontage == nullptr) 
+		return;
 
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(AttackMontageSectionNameArr.Num());
 
@@ -464,7 +473,8 @@ void AEnemyCharacter::PlayAttackMontage()
 
 void AEnemyCharacter::PlayHitReactionMontage()
 {
-	if (EnemyAnim == nullptr || HitReactionMontage == nullptr) return;
+	if (EnemyAnim == nullptr || HitReactionMontage == nullptr) 
+		return;
 
 	EnemyAnim->Montage_Play(HitReactionMontage);
 
@@ -473,14 +483,16 @@ void AEnemyCharacter::PlayHitReactionMontage()
 
 void AEnemyCharacter::PlayStunMontage()
 {
-	if (EnemyAnim == nullptr || StunMontage == nullptr) return;
+	if (EnemyAnim == nullptr || StunMontage == nullptr) 
+		return;
 
 	EnemyAnim->Montage_Play(StunMontage);
 }
 
 void AEnemyCharacter::PlayDeathMontage()
 {
-	if (EnemyAnim == nullptr || DeathMontage == nullptr) return;
+	if (EnemyAnim == nullptr || DeathMontage == nullptr) 
+		return;
 
 	EnemyAnim->Montage_Play(DeathMontage);
 }

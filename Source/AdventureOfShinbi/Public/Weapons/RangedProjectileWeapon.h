@@ -19,32 +19,34 @@ class ADVENTUREOFSHINBI_API ARangedProjectileWeapon : public ARangedWeapon
 	
 public:
 
-	virtual void Firing();
+	virtual void Firing() override;
 
-	void ScatterFiring();
+	void ScatterFiring(TSubclassOf<AProjectile> Projectile);
+
+	void SingleFiring(TSubclassOf<AProjectile> Projectile);
 
 protected:
 
-	void SpawnProjectile(TSubclassOf<AProjectile> Projectile);
+	void SpawnProjectile(TSubclassOf<AProjectile> Projectile, const FVector& LocToSpawn, const FRotator& RotToSpawn);
+
+	void GetSpawnLocation(FVector& ProjLoc);
+
+	void GetSpawnRotation(const FVector& ProjLoc, FRotator& ProjRot);
+
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Scatter")
+	bool bScatterGun = false;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Scatter", meta = (EditCondition = "bScatterGun", ClampMin = "1", ClampMax = "50"))
+	int8 NumberOfShots = 10;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Scatter", meta = (EditCondition = "bScatterGun", ClampMin = "0.1", ClampMax = "10.0"))
+	float ScatterRange = 1.0f;
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Projectile")
 	TSubclassOf<AProjectile> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Scatter Attribute")
-	bool bScatterGun = false;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Scatter Attribute", meta = (EditCondition = "bScatterGun", ClampMin = "1", ClampMax = "50"))
-	int8 NumberOfShots = 10;
-
-	TArray<FRotator> ShotRotator;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Scatter Attribute", meta = (EditCondition = "bScatterGun", ClampMin = "0.1", ClampMax = "10.0"))
-	float ScatterRange = 1.0f;
-
-public:
-
-	bool GetScatterGun() const;
 
 };

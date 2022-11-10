@@ -12,6 +12,8 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Particles/ParticleSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Sound/SoundCue.h"
 
@@ -19,9 +21,12 @@ AProjectileHoming::AProjectileHoming()
 {
 	ProjectileMovementComponent->bIsHomingProjectile = true;
 
-	BodyParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("BodyParticle"));
-	BodyParticleComponent->SetupAttachment(RootComponent);
-	
+	BodyParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("BodyParticle"));
+	BodyParticleComp->SetupAttachment(RootComponent);
+
+	BodyNiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("BodyNiagara"));
+	BodyNiagaraComp->SetupAttachment(RootComponent);
+
 	bIsExplosive = true;
 }
 
@@ -31,7 +36,7 @@ void AProjectileHoming::BeginPlay()
 
 	if (bIsPlayersProjectile)
 	{
-		// TODO : getalloverlapactors
+		GetWorldTimerManager().SetTimer(CheckEnemyTimer, this, &AProjectileHoming::CheckNearbyEnemy, CheckEnemyTime, true);
 	}
 	else
 	{
@@ -45,24 +50,63 @@ void AProjectileHoming::BeginPlay()
 			}
 		}
 	}
+
+	GetWorldTimerManager().SetTimer(NoHitTimer, this, &AProjectileHoming::PlayNoHitParticle, LifeSpan - 2.f);
+
+	SetLifeSpan(LifeSpan);
 }
 
 void AProjectileHoming::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
-	if (ImpactParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, Hit.ImpactPoint, NormalImpulse.Rotation());
-	}
+	PlayHitEffect(Hit, OtherActor);
 
-	if (ImpactSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
-	}
-
-	GetWorldTimerManager().SetTimer(ParticleOffTimer, this, &AProjectileHoming::ParticleOff, ParticleOffTime);
 	GetWorldTimerManager().SetTimer(DestroyTimer, this, &AProjectileHoming::DestroyProjectile, DestroyTime);
+}
+
+void AProjectileHoming::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
+{
+	if (TargetHitParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetHitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+	}
+
+	AEnemyCharacter* HittedEnemy = Cast<AEnemyCharacter>(OtherActor);
+	AAOSCharacter* HittedPlayer = Cast<AAOSCharacter>(OtherActor);
+
+	if (HittedEnemy)
+	{
+		HittedEnemy->PlayHitEffect(Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
+	}
+	else if (HittedPlayer)
+	{
+		// TODO 플레이어 전용 히트 이펙트
+	}
+	else
+	{
+		// 캐릭터도 적도 아닌 물체를 맞혔을 때
+		if (WorldHitParticle)
+		{
+			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), WorldHitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+		}
+	}
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
+}
+
+void AProjectileHoming::PlayNoHitParticle()
+{
+	BodyParticleComp->Deactivate();
+	BodyNiagaraComp->Deactivate();
+
+	if (NoHitParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), NoHitParticle, GetActorLocation(), GetActorRotation(), false);
+	}
 }
 
 void AProjectileHoming::DestroyProjectile()
@@ -70,7 +114,29 @@ void AProjectileHoming::DestroyProjectile()
 	Destroy();
 }
 
-void AProjectileHoming::ParticleOff()
+void AProjectileHoming::CheckNearbyEnemy()
 {
-	BodyParticleComponent->Deactivate();
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
+	if (Enemies.Num() > 0)
+	{
+		float Dist = 3000.f;
+		AActor* Target = nullptr;
+		for (AActor* Enemy : Enemies)
+		{
+			const float DistToEnemy = GetDistanceTo(Enemy);
+			if (DistToEnemy < Dist)
+			{
+				Dist = DistToEnemy;
+				Target = Enemy;
+			}
+		}
+
+		if (Target)
+		{
+			GetWorldTimerManager().ClearTimer(CheckEnemyTimer);
+			AEnemyCharacter* EC = Cast<AEnemyCharacter>(Target);
+			ProjectileMovementComponent->HomingTargetComponent = EC->GetCapsuleComponent();
+		}
+	}
 }

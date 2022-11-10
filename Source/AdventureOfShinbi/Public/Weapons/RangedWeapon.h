@@ -32,19 +32,21 @@ public:
 
 	ARangedWeapon();
 
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	virtual void Firing();
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	UTexture2D* CrosshairCenter;
 
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	UTexture2D* CrosshairLeft;
 
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	UTexture2D* CrosshairRight;
 
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	UTexture2D* CrosshairTop;
 	
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	UTexture2D* CrosshairBottom;
 
 protected:
@@ -57,19 +59,19 @@ protected:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effect")
 	UParticleSystem* MuzzleFlashParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Effect")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effect")
 	USoundCue* FireSound;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status")
 	bool bAutomaticFire = false;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "5.0", EditCondition = "bAutomaticFire"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "0.0", ClampMax = "5.0", EditCondition = "bAutomaticFire"))
 	float FireRate = 1.f;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GunRecoil = 0.35f;
 
 private:
@@ -80,28 +82,30 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AItem> AmmoClass;
 
-	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (ClampMin = "1", ClampMax = "100"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "1", ClampMax = "100"))
 	int8 DamageMultiplier = 5;
 
 	FVector2D ViewPortSize;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
 	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
 	EAmmoType AmmoType = EAmmoType::EAT_MAX;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute" , meta = (ClampMin = "20", ClampMax = "1000"))
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+	float ZoomScope = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info" , meta = (ClampMin = "1", ClampMax = "1000"))
 	int32 Magazine = 30;
 	
-	UPROPERTY(VisibleAnywhere, Category = "Ranged Attribute")
+	UPROPERTY(VisibleAnywhere, Category = "Ranged Weapon | Info")
 	int32 LoadedAmmo = 0;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
 	int32 AmmoConsumption = 1;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "0.0", ClampMax = "100.0"))
-	float ZoomScope = 30.f;
 
 public:
 

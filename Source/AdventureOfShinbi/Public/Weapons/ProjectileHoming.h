@@ -12,6 +12,8 @@
 
 class UParticleSystem;
 class USoundCue;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AProjectileHoming : public AProjectile
@@ -28,31 +30,53 @@ protected:
 
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
+	void PlayHitEffect(const FHitResult& Hit, AActor* OtherActor);
+
+	void PlayNoHitParticle();
+
 	void DestroyProjectile();
 
-	void ParticleOff();
+	void CheckNearbyEnemy();
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Effect")
-	UParticleSystemComponent* BodyParticleComponent;
+	UPROPERTY(EditAnywhere)
+	float LifeSpan = 5.f;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
-	UParticleSystem* ImpactParticle;
+	UParticleSystemComponent* BodyParticleComp;
+
+	UPROPERTY(EditAnywhere, Category = "Effect")
+	UNiagaraComponent* BodyNiagaraComp;
+
+	// 타겟 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* TargetHitParticle;
+
+	// 타겟이 아닌 물체 적중 시 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* WorldHitParticle;
+
+	// 무엇도 적중하지 않을 경우의 파티클
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UParticleSystem* NoHitParticle;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	USoundCue* FlyingSound;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
-	USoundCue* ImpactSound;
+	USoundCue* HitSound;
 
 	FTimerHandle DestroyTimer;
-	FTimerHandle ParticleOffTimer;
+	FTimerHandle NoHitTimer;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	float DestroyTime = 1.f;
 
 	UPROPERTY(EditAnywhere, Category = "Effect")
 	float ParticleOffTime = 0.5f;
+
+	FTimerHandle CheckEnemyTimer;
+	float CheckEnemyTime = 0.1f;
 	
 };

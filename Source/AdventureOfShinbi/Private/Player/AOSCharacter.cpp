@@ -76,6 +76,7 @@ void AAOSCharacter::BeginPlay()
 	//OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
+
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
@@ -244,18 +245,22 @@ void AAOSCharacter::Dash()
 	LaunchCharacter(GetLastMovementInputVector() * DashPower, false, false);
 }
 
-void AAOSCharacter::EquipButtonPressed()
+void AAOSCharacter::Equip_Skill1ButtonPressed()
 {
-	if (OverlappingItem == nullptr || CombatComp == nullptr || bIsFreezed) return;
-
-	// 무기 장착시에 설정하고 무기 빼면 원상복구하기
-	bUseControllerRotationYaw = true;
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	if (bIsAnimationPlaying || bIsFreezed) return;
 
 	if (OverlappingItem)
 	{
+		// 무기 장착시에 설정하고 무기 빼면 원상복구하기
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+
 		CombatComp->PickingUpItem(OverlappingItem);
 		OverlappingItem = nullptr;
+	}
+	else if (CombatComp->EquippedWeapon)
+	{
+		CombatComp->WeaponSkill1();
 	}
 }
 
@@ -335,11 +340,15 @@ void AAOSCharacter::AimButtonPressed()
 	if (CombatComp->EquippedWeapon)
 	{
 		DAimButtonPressed.ExecuteIfBound(true);
-	}
 
-	if (WeaponType == EWeaponType::EWT_Gun)
-	{
-		bIsAiming = true;
+		if (WeaponType == EWeaponType::EWT_Gun)
+		{
+			bIsAiming = true;
+		}
+		else if (WeaponType == EWeaponType::EWT_MeleeOneHand)
+		{
+			CombatComp->WeaponRightClickSkill();
+		}
 	}
 }
 
@@ -356,15 +365,12 @@ void AAOSCharacter::AimButtonReleased()
 	}
 }
 
-void AAOSCharacter::ReloadButtonPressed()
+void AAOSCharacter::Reload_Skill2ButtonPressed()
 {
-	if (bIsFreezed)
+	if (bIsAnimationPlaying || bIsFreezed)
 		return;
 
-	if (WeaponType == EWeaponType::EWT_Gun)
-	{
-		CombatComp->Reload();
-	}
+	CombatComp->WeaponSkill2();
 }
 
 void AAOSCharacter::InventoryKeyPressed()
@@ -411,6 +417,17 @@ void AAOSCharacter::ItemChangeKeyPressed()
 	if (ItemComp)
 	{
 		ItemComp->ItemChange();
+	}
+}
+
+void AAOSCharacter::Skill3ButtonPressed()
+{
+	if (bIsFreezed || bIsAnimationPlaying)
+		return;
+
+	if (CombatComp->EquippedWeapon)
+	{
+		CombatComp->WeaponSkill3();
 	}
 }
 
@@ -502,16 +519,17 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Running", IE_Pressed, this, &AAOSCharacter::RunningButtonPressed);
 	PlayerInputComponent->BindAction("Running", IE_Released, this, &AAOSCharacter::RunningButtonReleased);
 	PlayerInputComponent->BindAction("Crouch/Dash", IE_Pressed, this, &AAOSCharacter::Crouch_DashButtonPressed);
-	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &AAOSCharacter::EquipButtonPressed);
+	PlayerInputComponent->BindAction("Equip/Skill1", IE_Pressed, this, &AAOSCharacter::Equip_Skill1ButtonPressed);
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &AAOSCharacter::AttackButtonPressed);
 	PlayerInputComponent->BindAction("Attack", IE_Released, this, &AAOSCharacter::AttackButtonReleassed);
 	PlayerInputComponent->BindAction("Aim", IE_Pressed, this, &AAOSCharacter::AimButtonPressed);
 	PlayerInputComponent->BindAction("Aim", IE_Released, this, &AAOSCharacter::AimButtonReleased);
-	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &AAOSCharacter::ReloadButtonPressed);
+	PlayerInputComponent->BindAction("Reload/Skill2", IE_Pressed, this, &AAOSCharacter::Reload_Skill2ButtonPressed);
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &AAOSCharacter::InventoryKeyPressed);
 	PlayerInputComponent->BindAction("WeaponQuickSwap", IE_Pressed, this, &AAOSCharacter::WeaponQuickSwapKeyPressed);
 	PlayerInputComponent->BindAction("UseItem", IE_Pressed, this, &AAOSCharacter::UseItemKeyPressed);
 	PlayerInputComponent->BindAction("ItemChange", IE_Pressed, this, &AAOSCharacter::ItemChangeKeyPressed);
+	PlayerInputComponent->BindAction("Skill3", IE_Pressed, this, &AAOSCharacter::Skill3ButtonPressed);
 }
 
 void AAOSCharacter::SetOverlappingItem()
@@ -587,6 +605,11 @@ UCameraComponent* AAOSCharacter::GetCamera() const
 	return Camera;
 }
 
+USpringArmComponent* AAOSCharacter::GetSpringArm() const
+{
+	return SpringArm;
+}
+
 bool AAOSCharacter::GetIsRunning() const
 {
 	return bIsRunning;
@@ -610,6 +633,11 @@ bool AAOSCharacter::GetIsMoving() const
 bool AAOSCharacter::GetIsAiming() const
 {
 	return bIsAiming;
+}
+
+void AAOSCharacter::DeactivateAiming()
+{
+	AimButtonReleased();
 }
 
 bool AAOSCharacter::GetAttackButtonPressing() const

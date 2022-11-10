@@ -3,7 +3,6 @@
 #include "Weapons/Weapon.h"
 #include "Player/AOSCharacter.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
-#include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/CombatComponent.h"
@@ -21,12 +20,6 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-
-}
-
-UBoxComponent* AWeapon::GetDamageCollision() const
-{
-	return DamageCollision;
 }
 
 EWeaponType AWeapon::GetWeaponType() const
@@ -87,8 +80,6 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
-
-		
 		break;
 	}
 }

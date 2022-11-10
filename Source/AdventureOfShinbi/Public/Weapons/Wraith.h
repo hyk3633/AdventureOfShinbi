@@ -12,7 +12,7 @@
 
 class AAOSCharacter;
 
-USTRUCT(BlueprintType, Atomic)
+USTRUCT(BlueprintType)
 struct FWeaponPartsLocation
 {
 	GENERATED_USTRUCT_BODY()
@@ -55,7 +55,7 @@ protected:
 	UFUNCTION()
 	void FormChange(bool bSniperMode);
 
-	void PlaySniperModeParticle(bool bSniperMode);
+	void ActivateScopeParticle();
 
 	void InitializingWeaponPartsLocation();
 

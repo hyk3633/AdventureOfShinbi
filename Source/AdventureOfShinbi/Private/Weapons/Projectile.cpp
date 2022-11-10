@@ -25,6 +25,7 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->InitialSpeed = 10000.f;
 	ProjectileMovementComponent->MaxSpeed = 10000.f;
+	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
 
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
 	RadialForce->SetupAttachment(BoxCollision);
@@ -75,16 +76,32 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 {
 	if (bIsExplosive)
 	{
-		UGameplayStatics::ApplyRadialDamage(this, Damage, GetActorLocation(), ExplosionRadius, UDamageType::StaticClass(), IgnoreActors, GetOwner(), GetOwner()->GetInstigatorController());
-		
+		UGameplayStatics::ApplyRadialDamage
+		(
+			this, 
+			Damage, 
+			GetActorLocation(), 
+			ExplosionRadius, 
+			UDamageType::StaticClass(), 
+			IgnoreActors, 
+			GetOwner(), 
+			GetOwner()->GetInstigatorController()
+		);
 		RadialForce->FireImpulse();
-
-		//OtherComp->AddRadialImpulse(Hit.ImpactNormal, ExplosionRadius, 1000.f, ERadialImpulseFalloff::RIF_Linear);
 	}
 	else
 	{
 		float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
-		UGameplayStatics::ApplyPointDamage(OtherActor, Dmg, GetActorLocation(), Hit, GetOwner()->GetInstigatorController(), GetOwner(), UDamageType::StaticClass());
+		UGameplayStatics::ApplyPointDamage
+		(
+			OtherActor, 
+			Dmg, 
+			GetActorLocation(), 
+			Hit,
+			GetOwner()->GetInstigatorController(), 
+			GetOwner(), 
+			UDamageType::StaticClass()
+		);
 	}
 }
 

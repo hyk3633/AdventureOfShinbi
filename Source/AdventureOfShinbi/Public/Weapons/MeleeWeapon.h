@@ -10,6 +10,8 @@
  * 
  */
 
+class UParticleSystem;
+class USoundCue;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AMeleeWeapon : public AWeapon
@@ -24,8 +26,31 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaTime) override;
+
+	virtual bool WeaponCapsuleTrace();
+
+	bool GetCapsuleTraceHitResult(TArray<FHitResult>& HitResults);
+
+	void PlayAttackEffect(const FVector& Location, const FRotator& Rotation);
+
+	float CapsuleRadius = 0.f;
+
+	float CapsuleHalfHeight = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Melee Weapon")
+	UParticleSystem* ImpactParticle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Melee Weapon")
+	USoundCue* ImpactSound;
+
 private:
 
+	bool bActivateWeaponTrace = false;
+
 public:
+
+	void ActivateWeaponTrace();
+	void DeactivateWeaponTrace();
 
 };

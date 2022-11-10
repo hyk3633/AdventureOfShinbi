@@ -107,16 +107,17 @@ private:
 	void Crouch_DashButtonPressed();
 	void Crouching();
 	void Dash();
-	void EquipButtonPressed();
+	void Equip_Skill1ButtonPressed();
 	void AttackButtonPressed();
 	void AttackButtonReleassed();
 	void AimButtonPressed();
 	void AimButtonReleased();
-	void ReloadButtonPressed();
+	void Reload_Skill2ButtonPressed();
 	void InventoryKeyPressed();
 	void WeaponQuickSwapKeyPressed();
 	void UseItemKeyPressed();
 	void ItemChangeKeyPressed();
+	void Skill3ButtonPressed();
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
@@ -136,6 +137,14 @@ private:
 	void PlayHitEffect(FVector HitLocation, FRotator HitRotation);
 
 private:
+
+	TArray<FColor> color;
+	TArray<float> AngleOffset;
+	TArray<float> AngleAxis;
+	FVector AxisVector;
+
+	FVector Right;
+	FVector Forward;
 
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* SpringArm;
@@ -229,11 +238,13 @@ private:
 public:
 
 	UCameraComponent* GetCamera() const;
+	USpringArmComponent* GetSpringArm() const;
 	bool GetIsRunning() const;
 	void SetCanRunning(bool IsCapable);
 	bool GetIsAnimationPlaying() const;
 	bool GetIsMoving() const;
 	bool GetIsAiming() const;
+	void DeactivateAiming();
 	bool GetAttackButtonPressing() const;
 	void SetOverlappingItemCount(int8 Quantity);
 	EWeaponType GetWeaponType() const;

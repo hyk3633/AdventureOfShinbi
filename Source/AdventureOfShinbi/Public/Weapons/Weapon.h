@@ -29,13 +29,10 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float Damage = 20.f;
 
-private:
-
-	UPROPERTY(EditAnywhere, Category = "Attributes", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	UBoxComponent* DamageCollision;
-
 	UPROPERTY(EditAnywhere, Category = "Attributes")
 	EWeaponType WeaponType = EWeaponType::EWT_MAX;
+
+private:
 
 	UPROPERTY(VisibleAnywhere)
 	EWeaponState WeaponState = EWeaponState::EWS_MAX;
@@ -44,7 +41,6 @@ public:
 
 	OnWeaponStateChangedDelegate WeaponStateChanged;
 
-	UBoxComponent* GetDamageCollision() const;
 	EWeaponType GetWeaponType() const;
 	virtual void SetWeaponState(const EWeaponState State);
 	EWeaponState GetWeaponState() const;

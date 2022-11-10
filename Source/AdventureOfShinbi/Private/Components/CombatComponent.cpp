@@ -9,9 +9,12 @@
 #include "Player/AOSAnimInstance.h"
 #include "Player/AOSController.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Items/Item.h"
 #include "Weapons/Weapon.h"
+#include "Weapons/MeleeWeapon.h"
+#include "Weapons/Glaive.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/RangedHitScanWeapon.h"
 #include "Weapons/RangedProjectileWeapon.h"
@@ -39,6 +42,12 @@ void UCombatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	AnimInstance = Cast<UAOSAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (AnimInstance)
+	{
+		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::WolfAttackMontageEnd);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::GlaiveUltimateAttackMontageEnd);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::OnReloadMontageEnded);
+	}
 
 	CharacterController = Cast<AAOSController>(Character->GetController());
 	if (CharacterController)
@@ -62,26 +71,30 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	UpdateStamina(DeltaTime);
 
 	SpreadCrosshair(DeltaTime);
+
+	MovingCamera(DeltaTime);
 }
 
 void UCombatComponent::MeleeAttack()
 {
-	if (Character->GetIsAnimationPlaying()) return;
+	if (Character->GetIsAnimationPlaying()) 
+		return;
 
 	if (EquippedWeapon)
 	{
+		Character->GetWorldTimerManager().ClearTimer(ComboTimer);
+		Character->GetWorldTimerManager().SetTimer(ComboTimer, this, &UCombatComponent::ResetCombo, ComboTime);
+
 		switch (EquippedWeapon->GetWeaponType())
 		{
 		case EWeaponType::EWT_MeleeOneHand:
-			Character->GetWorldTimerManager().ClearTimer(ComboTimer);
-			Character->GetWorldTimerManager().SetTimer(ComboTimer, this, &UCombatComponent::ResetCombo, ComboTime);
 			PlayMontageOneHandAttack();
 			break;
 		case EWeaponType::EWT_MeleeTwoHand:
 			PlayMontageTwoHandAttack();
 			break;
 		case EWeaponType::EWT_Glave:
-			PlayMontageGlaveAttack();
+			GlaiveAttack();
 			break;
 		}
 	}
@@ -89,8 +102,67 @@ void UCombatComponent::MeleeAttack()
 
 void UCombatComponent::GunFire()
 {
-	PlayMontageGunFire();
 	RangedWeaponFire();
+}
+
+void UCombatComponent::WeaponRightClickSkill()
+{
+	if (bAbleWolfAttack)
+	{
+		PlayMontageWolfAttack();
+	}
+}
+
+void UCombatComponent::WeaponSkill1()
+{
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	{
+		if (bAbleCirclingWolves)
+		{
+			PlayMontageCirclingWolves();
+		}
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	{
+		if (CheckAbleGlaiveUltiSkill())
+		{
+			PlayMontageGlaiveUltimateAttack(FName("U1"));
+		}
+	}
+}
+
+void UCombatComponent::WeaponSkill2()
+{
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	{
+		if (bAbleUltimateWolfRush)
+		{
+			PlayMontageUltimateWolfRush();
+		}
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	{
+		if (CheckAbleGlaiveUltiSkill())
+		{
+			PlayMontageGlaiveUltimateAttack(FName("U2"));
+		}
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+		if (RW)
+		{
+			if (RW->GetLoadedAmmo() < RW->GetMagazine() && ItemComp->GetAmmo(RW->GetAmmoType()) > 0)
+			{
+				PlayReloadMontage();
+			}
+		}
+	}
+}
+
+void UCombatComponent::WeaponSkill3()
+{
+
 }
 
 void UCombatComponent::HealBan(float HealBanDurationTime)
@@ -113,7 +185,8 @@ void UCombatComponent::DecreaseDamage(float DmgDecreaDurationTime)
 
 void UCombatComponent::PlayMontageOneHandAttack()
 {
-	if (AnimInstance == nullptr || MeleeOneHandAttackMontage == nullptr) return;
+	if (AnimInstance == nullptr || MeleeOneHandAttackMontage == nullptr) 
+		return;
 
 	AnimInstance->Montage_Play(MeleeOneHandAttackMontage);
 	if (Character->GetCharacterMovement()->IsFalling())
@@ -174,6 +247,67 @@ void UCombatComponent::PlayMontageOneHandAttack()
 	}
 }
 
+void UCombatComponent::PlayMontageWolfAttack()
+{
+	if (AnimInstance == nullptr || WolfAttackMontage == nullptr)
+		return;
+
+	bAbleWolfAttack = false;
+
+	AnimInstance->Montage_Play(WolfAttackMontage);
+}
+
+void UCombatComponent::WolfAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == WolfAttackMontage)
+	{
+		Character->GetWorldTimerManager().SetTimer(WolfAttackCoolTimer, this, &UCombatComponent::WolfAttackCoolTimeEnd, WolfAttackCoolTime);
+	}
+}
+
+void UCombatComponent::WolfAttackCoolTimeEnd()
+{
+	bAbleWolfAttack = true;
+}
+
+void UCombatComponent::PlayMontageCirclingWolves()
+{
+	if (AnimInstance == nullptr || CirclingWolvesMontage == nullptr)
+		return;
+
+	bAbleCirclingWolves = false;
+
+	AnimInstance->Montage_Play(CirclingWolvesMontage);
+}
+
+void UCombatComponent::CirclingWolvesEnd()
+{
+	Character->GetWorldTimerManager().SetTimer(CirclingWolvesCoolTimer, this, &UCombatComponent::CirclingWolvesCoolTimeEnd, CirclingWolvesCoolTime);
+}
+
+void UCombatComponent::CirclingWolvesCoolTimeEnd()
+{
+	bAbleCirclingWolves = true;
+}
+
+void UCombatComponent::PlayMontageUltimateWolfRush()
+{
+	if (AnimInstance == nullptr || UltimateWolfRushMontage == nullptr)
+		return;
+
+	AnimInstance->Montage_Play(UltimateWolfRushMontage);
+}
+
+void UCombatComponent::UltimateWolfRushEnd()
+{
+	Character->GetWorldTimerManager().SetTimer(UltimateWolfRushCoolTimer, this, &UCombatComponent::UltimateWolfRushCoolTimeEnd, UltimateWolfRushCoolTime);
+}
+
+void UCombatComponent::UltimateWolfRushCoolTimeEnd()
+{
+	bAbleUltimateWolfRush = true;
+}
+
 void UCombatComponent::PlayMontageTwoHandAttack()
 {
 	if (AnimInstance == nullptr || MeleeTwoHandAttackMontage == nullptr) return;
@@ -189,6 +323,24 @@ void UCombatComponent::PlayMontageTwoHandAttack()
 	}
 }
 
+void UCombatComponent::PlayReloadMontage()
+{
+	if (GunReloadMontage == nullptr)
+		return;
+
+	Character->SetGunRecoil(1.f);
+
+	AnimInstance->Montage_Play(GunReloadMontage);
+}
+
+void UCombatComponent::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage != GunReloadMontage)
+		return;
+
+	Reload();
+}
+
 void UCombatComponent::PlayMontageGunFire()
 {
 	if (AnimInstance == nullptr || GunFireMontage == nullptr) return;
@@ -197,73 +349,27 @@ void UCombatComponent::PlayMontageGunFire()
 	AnimInstance->Montage_JumpToSection(FName("GunFireFast"));
 }
 
-void UCombatComponent::PlayMontageGlaveAttack()
-{
-	if (AnimInstance == nullptr || GlaveAttackMontage == nullptr) return;
-
-	AnimInstance->Montage_Play(GlaveAttackMontage);
-	if (Character->GetCharacterMovement()->IsFalling())
-	{
-		AnimInstance->Montage_JumpToSection(FName(""));
-	}
-	else
-	{
-		AnimInstance->Montage_JumpToSection(FName("GlaveB"));
-	}
-}
-
-void UCombatComponent::PlayMontageDeath()
-{
-	if (AnimInstance == nullptr || DeathMontage == nullptr) return;
-
-	AnimInstance->Montage_Play(DeathMontage);
-
-	if (Character->GetWeaponType() == EWeaponType::EWT_None)
-	{
-		AnimInstance->Montage_JumpToSection(FName("UnArmed"));
-	}
-}
-
-void UCombatComponent::OnDeathMontageEnded()
-{
-	Character->GetMesh()->bPauseAnims = true;
-}
-
 void UCombatComponent::RangedWeaponFire()
 {
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
+	if (RangedWeapon == nullptr)
+		return;
 
 	if (RangedWeapon->GetLoadedAmmo() > 0)
 	{
-		RangedWeapon->ConsumeAmmo();
-	}
-
-	ERangedWeaponType ERWT = RangedWeapon->GetRangedWeaponType();
-	if (ERWT == ERangedWeaponType::ERWT_HitScan)
-	{
-		ARangedHitScanWeapon* HitScanWeapon = Cast<ARangedHitScanWeapon>(EquippedWeapon);
-		HitScanWeapon->Firing();
-	}
-	else
-	{
-		ARangedProjectileWeapon* ProjectileWeapon = Cast<ARangedProjectileWeapon>(EquippedWeapon);
-		ProjectileWeapon->GetScatterGun() == true ? ProjectileWeapon->ScatterFiring() : ProjectileWeapon->Firing();
-	}
-
-	if (CharacterController)
-	{
-		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+		PlayMontageGunFire();
+		RangedWeapon->Firing();
 	}
 
 	if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()) > 0)
 	{
 		Reload();
 	}
-}
 
-void UCombatComponent::ResetCombo()
-{
-	MeleeAttackComboCount = 0;
+	if (CharacterController)
+	{
+		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
+	}
 }
 
 void UCombatComponent::Zoom(float DeltaTime)
@@ -291,34 +397,232 @@ void UCombatComponent::Zoom(float DeltaTime)
 
 void UCombatComponent::Reload()
 {
-	if (Character->GetItemComp() == nullptr) return;
+	if (ItemComp == nullptr) 
+		return;
 
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
-	{
-		int32 TotalAmmo = Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType());
-		if (TotalAmmo == 0) return;
+	int32 TotalAmmo = ItemComp->GetAmmo(RangedWeapon->GetAmmoType());
+	if (TotalAmmo == 0) 
+		return;
 
-		int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
-		if (AmmoToReload < TotalAmmo)
-		{
-			RangedWeapon->SetLoadedAmmo(RangedWeapon->GetMagazine());
-			Character->GetItemComp()->SetAmmo(RangedWeapon->GetAmmoType(), TotalAmmo - AmmoToReload);
-		}
-		else
-		{
-			RangedWeapon->SetLoadedAmmo(RangedWeapon->GetLoadedAmmo() + TotalAmmo);
-			Character->GetItemComp()->SetAmmo(RangedWeapon->GetAmmoType(), 0);
-		}
+	int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
+	if (AmmoToReload < TotalAmmo)
+	{
+		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetMagazine());
+		ItemComp->SetAmmo(RangedWeapon->GetAmmoType(), TotalAmmo - AmmoToReload);
+	}
+	else
+	{
+		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetLoadedAmmo() + TotalAmmo);
+		ItemComp->SetAmmo(RangedWeapon->GetAmmoType(), 0);
 	}
 
 	if (CharacterController)
 	{
 		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()));
-		Character->GetItemComp()->UpdateAmmo(RangedWeapon->GetAmmoType());
+		CharacterController->SetHUDTotalAmmoText(ItemComp->GetAmmo(RangedWeapon->GetAmmoType()));
+		ItemComp->UpdateAmmo(RangedWeapon->GetAmmoType());
 	}
+}
+
+void UCombatComponent::GlaiveAttack()
+{
+	if (AnimInstance == nullptr) 
+		return;
+
+	AGlaive* Glaive = Cast<AGlaive>(EquippedWeapon);
+	if (Glaive == nullptr)
+		return;
+
+	if (Glaive->GetSickleMode())
+	{
+		PlayMontageSickleAttack();
+	}
+	else
+	{
+		PlayMontageGlaiveAttack();
+	}
+}
+
+void UCombatComponent::PlayMontageSickleAttack()
+{
+	if (SickleAttackMontage == nullptr)
+		return;
+
+	AnimInstance->Montage_Play(SickleAttackMontage);
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		AnimInstance->Montage_JumpToSection(FName("Air"));
+	}
+	else
+	{
+		if (MeleeAttackComboCount == 0)
+		{
+			AnimInstance->Montage_JumpToSection(FName("A"));
+			MeleeAttackComboCount++;
+		}
+		else if (MeleeAttackComboCount == 1)
+		{
+			AnimInstance->Montage_JumpToSection(FName("B"));
+			MeleeAttackComboCount++;
+		}
+		else if (MeleeAttackComboCount == 2)
+		{
+			AnimInstance->Montage_JumpToSection(FName("C"));
+			MeleeAttackComboCount++;
+		}
+		else
+		{
+			AnimInstance->Montage_JumpToSection(FName("D"));
+			ResetCombo();
+		}
+	}
+}
+
+void UCombatComponent::PlayMontageGlaiveAttack()
+{
+	if (GlaiveAttackMontage == nullptr)
+		return;
+
+	AnimInstance->Montage_Play(GlaiveAttackMontage);
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		return;
+	}
+	else
+	{
+		if (MeleeAttackComboCount == 0)
+		{
+			AnimInstance->Montage_JumpToSection(FName("A"));
+			MeleeAttackComboCount++;
+		}
+		else if (MeleeAttackComboCount == 1)
+		{
+			AnimInstance->Montage_JumpToSection(FName("C"));
+			MeleeAttackComboCount++;
+		}
+		else
+		{
+			AnimInstance->Montage_JumpToSection(FName("B"));
+			ResetCombo();
+		}
+	}
+}
+
+void UCombatComponent::PlayMontageGlaiveUltimateAttack(FName Version)
+{
+	if (AnimInstance == nullptr || GlaiveUltimateMontage == nullptr)
+		return;
+
+	AGlaive* Glaive = Cast<AGlaive>(EquippedWeapon);
+	if (Glaive == nullptr)
+		return;
+
+	SpendMana(Glaive->GetUltiSkillMana());
+
+	AnimInstance->Montage_Play(GlaiveUltimateMontage);
+	AnimInstance->Montage_JumpToSection(Version);
+
+	Character->GetCamera()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	Character->GetWorldTimerManager().SetTimer(MovingCameraTimer, this, &UCombatComponent::CameraMoveEnd, 0.8f);
+	bMovingCamera = true;
+
+	if (Version == FName("U1"))
+	{
+
+	}
+	else if (Version == FName("U2"))
+	{
+
+	}
+}
+
+void UCombatComponent::MovingCamera(float DeltaTime)
+{
+	if (bMovingCamera == false || CameraCurve == nullptr)
+		return;
+
+	float Sign = 1.f;
+
+	const float ElapsedTime = Character->GetWorldTimerManager().GetTimerElapsed(MovingCameraTimer);
+	
+	if (ElapsedTime > 0.3f && ElapsedTime < 0.6f)
+		return;
+	else if (ElapsedTime >= 0.6f)
+	{
+		Sign *= -1.f;
+	}
+
+	const float CurveValue = CameraCurve->GetFloatValue(ElapsedTime);
+
+	FVector CameraLocaion = Character->GetCamera()->GetComponentLocation();
+	CameraLocaion.Z += CurveValue * Sign;
+
+	Character->GetCamera()->SetWorldLocation(CameraLocaion);
+}
+
+void UCombatComponent::CameraMoveEnd()
+{
+	bMovingCamera = false;
+	Character->GetCamera()->AttachToComponent(Character->GetSpringArm(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+}
+
+bool UCombatComponent::CheckAbleGlaiveUltiSkill()
+{
+	AGlaive* Glaive = Cast<AGlaive>(EquippedWeapon);
+	if (Glaive == nullptr)
+		return false;
+
+	if (Glaive->GetHitStackIsFull() && Glaive->GetUltiSkillMana() <= Mana)
+		return true;
+	else
+		return false;
+}
+
+void UCombatComponent::ResetCombo()
+{
+	MeleeAttackComboCount = 0;
+}
+
+void UCombatComponent::GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+
+}
+
+void UCombatComponent::PlayMontageDeath()
+{
+	if (AnimInstance == nullptr || DeathMontage == nullptr) return;
+
+	AnimInstance->Montage_Play(DeathMontage);
+
+	if (Character->GetWeaponType() == EWeaponType::EWT_None)
+	{
+		AnimInstance->Montage_JumpToSection(FName("UnArmed"));
+	}
+}
+
+void UCombatComponent::ActivateWeaponTrace()
+{
+	AMeleeWeapon* MW = Cast<AMeleeWeapon>(EquippedWeapon);
+	if (MW)
+	{
+		MW->ActivateWeaponTrace();
+	}
+}
+
+void UCombatComponent::DeactivateWeaponTrace()
+{
+	AMeleeWeapon* MW = Cast<AMeleeWeapon>(EquippedWeapon);
+	if (MW)
+	{
+		MW->DeactivateWeaponTrace();
+	}
+}
+
+void UCombatComponent::OnDeathMontageEnded()
+{
+	Character->GetMesh()->bPauseAnims = true;
 }
 
 void UCombatComponent::UpdateHealth(float Damage)
@@ -334,6 +638,15 @@ void UCombatComponent::UpdateHealth(float Damage)
 		PlayerDeathDelegate.Broadcast();
 		Character->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		PlayMontageDeath();
+	}
+}
+
+void UCombatComponent::UpdateMana(float ManaToSpend)
+{
+	Mana = FMath::Clamp(Mana - ManaToSpend, 0.f, MaxMana);
+	if (CharacterController)
+	{
+		CharacterController->SetHUDManaBar(Mana, MaxMana);
 	}
 }
 
@@ -773,9 +1086,19 @@ float UCombatComponent::GetHealthPercentage() const
 
 bool UCombatComponent::SpendStamina(float StaminaToSpend)
 {
-	if (Stamina < StaminaToSpend) return false;
+	if (Stamina < StaminaToSpend) 
+		return false;
 
 	Stamina = FMath::Clamp(Stamina - StaminaToSpend, 0.f, MaxStamina);
+	return true;
+}
+
+bool UCombatComponent::SpendMana(float ManaToSpend)
+{
+	if (Mana < ManaToSpend) 
+		return false;
+
+	UpdateMana(ManaToSpend);
 	return true;
 }
 
@@ -787,4 +1110,14 @@ bool UCombatComponent::GetDmgDebuffActivated() const
 bool UCombatComponent::GetHealBanActivated() const
 {
 	return bHealBanActivated;
+}
+
+bool UCombatComponent::GetEnableCheck() const
+{
+	return bEnableCheck;
+}
+
+void UCombatComponent::SetEnableCheck(bool bCheck)
+{
+	bEnableCheck = bCheck;
 }
