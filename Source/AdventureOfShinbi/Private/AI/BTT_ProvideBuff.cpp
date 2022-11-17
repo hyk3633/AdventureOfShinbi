@@ -3,6 +3,7 @@
 
 #include "AI/BTT_ProvideBuff.h"
 #include "Enemy/EnemyAIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "EnemyMuriel/EnemyMuriel.h"
 
 UBTT_ProvideBuff::UBTT_ProvideBuff()
@@ -36,6 +37,7 @@ void UBTT_ProvideBuff::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMe
 
 	if (!bCasting)
 	{
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("ProvideBuff"), false);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
 }

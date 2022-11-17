@@ -12,26 +12,35 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/SphereComponent.h"
 #include "Sound/SoundCue.h"
 
 AEnemyRanged::AEnemyRanged()
 {
+	WeaponTraceStartSocketName = FName("RangedTraceStart");
+	WeaponTraceEndSocketName = FName("RangedTraceEnd");
 }
 
 void AEnemyRanged::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyRanged::OnFireMontageEnded);
+}
+
+void AEnemyRanged::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
 }
 
 void AEnemyRanged::RangedAttack()
 {
-	CurrentFireCount++;
-
 	bIsAttacking = true;
-
-	GetWorldTimerManager().SetTimer(FireDelayTimer, this, &AEnemyRanged::AfterFireDelay, FireDelayTime);
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
+	GetWorldTimerManager().SetTimer(FireDelayTimer, this, &AEnemyRanged::AfterFireDelay, FireDelayTime, false);
 }
 
 void AEnemyRanged::ProjectileFire(TSubclassOf<AProjectile> Projectile)
@@ -107,21 +116,20 @@ void AEnemyRanged::PlayFireMontage()
 
 void AEnemyRanged::OnFireMontageEnded()
 {
-	if (AIController)
-	{
-		bool bCheckCondition =
-			GetCharacterMovement()->IsFalling() ||
-			GetAiInfo().bIsPlayerDead ||
-			GetAiInfo().bTargetIsVisible == false;
+	CurrentFireCount++;
 
-		if (CurrentFireCount < FireCount)
-		{
-			RangedAttack();
-		}
-		else if(CurrentFireCount >= FireCount || bCheckCondition)
-		{
-			FinishFire();
-		}
+	bool bCheckCondition =
+		GetCharacterMovement()->IsFalling() ||
+		GetAiInfo().bIsPlayerDead ||
+		GetAiInfo().bTargetIsVisible == false;
+
+	if (CurrentFireCount == FireCount || bCheckCondition)
+	{
+		FinishFire();
+	}
+	else
+	{
+		RangedAttack();
 	}
 }
 
@@ -129,6 +137,14 @@ void AEnemyRanged::FinishFire()
 {
 	CurrentFireCount = 0;
 	bIsAttacking = false;
+	if (GetAttackRange()->IsOverlappingActor(AiInfo.TargetPlayer) == false)
+		AiInfo.bTargetInAttackRange = false;
+	else
+		AiInfo.bTargetInAttackRange = true;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 	OnAttackEnd.Broadcast();
 }
 

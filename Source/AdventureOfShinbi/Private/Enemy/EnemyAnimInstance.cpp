@@ -11,17 +11,10 @@ void UEnemyAnimInstance::NativeInitializeAnimation()
 	EnemyCharacter = Cast<AEnemyCharacter>(TryGetPawnOwner());
 }
 
-void UEnemyAnimInstance::DeathMontageEnd()
-{
-	if (EnemyCharacter)
-	{
-		EnemyCharacter->Destroy();
-	}
-}
-
 void UEnemyAnimInstance::UpdateAnimationProperties(float DeltaTime)
 {
-	if (EnemyCharacter == nullptr) return;
+	if (EnemyCharacter == nullptr) 
+		return;
 
 	FVector Velocity = EnemyCharacter->GetVelocity();
 	Velocity.Z = 0.f;

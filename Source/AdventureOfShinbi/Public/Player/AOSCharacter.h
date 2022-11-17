@@ -22,13 +22,15 @@ class USoundCue;
 DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
 DECLARE_DELEGATE_OneParam(OnAimButtonPressedDelegate, bool bPress);
 
-UENUM(BlueprintType)
+UENUM()
 enum class ECharacterState : uint8
 {
-	ECS_Nothing UMETA(DisplayName = "Nothing"),
-	ECS_Attacking UMETA(DisplayName = "Attacking"),
+	ECS_Nothing,
+	ECS_AnimationPlaying,
+	ECS_Freezed,
+	ECS_Stiffed,
 
-	ECT_MAX UMETA(DisplayName = "DefaultMAX")
+	ECS_MAX
 };
 
 enum class EWalkingState : uint8
@@ -78,6 +80,8 @@ protected:
 		const class UDamageType* DamageType,
 		AActor* DamageCauser
 	);
+
+	void PlayerKnockBack(AActor* DamageCauser, float Power);
 
 	UFUNCTION()
 	void TakeRadialDamage
@@ -138,14 +142,6 @@ private:
 
 private:
 
-	TArray<FColor> color;
-	TArray<float> AngleOffset;
-	TArray<float> AngleAxis;
-	FVector AxisVector;
-
-	FVector Right;
-	FVector Forward;
-
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* SpringArm;
 
@@ -161,8 +157,6 @@ private:
 	bool bIsRunning = false;
 
 	bool bCanRunning = true;
-
-	bool bIsAnimationPlaying = false;
 
 	bool bIsMoving = false;
 
@@ -180,13 +174,13 @@ private:
 
 	AWeapon* OverlappingWeapon;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Character | Info")
 	EWeaponType WeaponType = EWeaponType::EWT_None;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Character | Info")
 	ECharacterState CharacterState = ECharacterState::ECS_Nothing;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* CombatComp;
 
 	UPROPERTY(VisibleAnywhere)
@@ -199,41 +193,39 @@ private:
 
 	AItem* OverlappingItemLastFrame = nullptr;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Character | Dash")
 	UAnimMontage* DashMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Character | Dash")
 	float DashPower = 5000.f;
 
-	UPROPERTY(EditAnywhere, Category = "Effect")
+	UPROPERTY(EditAnywhere, Category = "Character | Effect")
 	UParticleSystem* HitParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Effect")
+	UPROPERTY(EditAnywhere, Category = "Character | Effect")
 	USoundCue* HitSound;
 
-	UPROPERTY(VisibleAnywhere, Category = "Moving Speed")
-	float CurrentRunningSpeed = 1000.f; // 600
-	UPROPERTY(VisibleAnywhere, Category = "Moving Speed")
+	UPROPERTY(VisibleAnywhere, Category = "Character | Moving Speed")
+	float CurrentRunningSpeed = 600.f;
+	UPROPERTY(VisibleAnywhere, Category = "Character | Moving Speed")
 	float CurrentWalkingSpeed = 350.f;
 
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
-	float OriginRunningSpeed = 1000.f; // 600
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
+	float OriginRunningSpeed = 600.f;
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float OriginWalkingSpeed = 350.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float OriginCrouchedSpeed = 250.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float ArmedRunningSpeed = 700.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float ArmedWalkingSpeed = 550.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float SlowedRunningSpeed = 250.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float SlowedWalkingSpeed = 150.f;
-	UPROPERTY(EditAnywhere, Category = "Moving Speed")
+	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float SlowedCroucedSpeed = 100.f;
-
-	bool bIsFreezed = false;
 	
 public:
 

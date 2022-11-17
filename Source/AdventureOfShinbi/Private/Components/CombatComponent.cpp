@@ -47,6 +47,7 @@ void UCombatComponent::BeginPlay()
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::WolfAttackMontageEnd);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::GlaiveUltimateAttackMontageEnd);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::OnReloadMontageEnded);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::OnHitReactMontageEnd);
 	}
 
 	CharacterController = Cast<AAOSController>(Character->GetController());
@@ -527,15 +528,6 @@ void UCombatComponent::PlayMontageGlaiveUltimateAttack(FName Version)
 	Character->GetCamera()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	Character->GetWorldTimerManager().SetTimer(MovingCameraTimer, this, &UCombatComponent::CameraMoveEnd, 0.8f);
 	bMovingCamera = true;
-
-	if (Version == FName("U1"))
-	{
-
-	}
-	else if (Version == FName("U2"))
-	{
-
-	}
 }
 
 void UCombatComponent::MovingCamera(float DeltaTime)
@@ -586,6 +578,42 @@ void UCombatComponent::ResetCombo()
 }
 
 void UCombatComponent::GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+
+}
+
+void UCombatComponent::PlayHitReactMontage()
+{
+	if (AnimInstance == nullptr || EquippedWeapon == nullptr)
+		return;
+
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	{
+		if (OneHandHitReactMontage)
+		{
+			AnimInstance->Montage_Play(GlaiveUltimateMontage);
+			//AnimInstance->Montage_JumpToSection(Version);
+		}
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	{
+		if (GlaiveHitReactMontage)
+		{
+			AnimInstance->Montage_Play(GlaiveHitReactMontage);
+			//AnimInstance->Montage_JumpToSection(Version);
+		}
+	}
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		if (GunHitReactMontage)
+		{
+			AnimInstance->Montage_Play(GunHitReactMontage);
+			//AnimInstance->Montage_JumpToSection(Version);
+		}
+	}
+}
+
+void UCombatComponent::OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
 
 }

@@ -24,6 +24,15 @@ public:
 
 	AEnemyAIController();
 
+	void SetTarget(AActor* Target);
+
+	void SetDetectedLocation(FVector Location);
+
+	void UpdateAiInfo();
+
+	void ActivateSiegeMode();
+	void DeactivateSiegeMode();
+
 protected:
 
 	virtual void BeginPlay() override;

@@ -4,7 +4,6 @@
 #include "AI/BTT_SkillShot.h"
 #include "Enemy/EnemyAIController.h"
 #include "EnemyMuriel/EnemyMuriel.h"
-#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 
 UBTT_SkillShot::UBTT_SkillShot()
@@ -39,6 +38,7 @@ void UBTT_SkillShot::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 
     if (!IsAttacking)
     {
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), false);
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
     }
 }

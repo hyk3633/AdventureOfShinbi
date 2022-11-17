@@ -34,6 +34,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaTime) override;
+
 	virtual void HandleStiffAndStun(FName& BoneName) override;
 
 	void SiegeModeProjectileFire();
@@ -50,16 +52,16 @@ protected:
 
 private:
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	TSubclassOf<AProjectile> SiegeModeProjectileClass;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	UAnimMontage* SiegeModeFireMontage;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	TArray<FName> SiegeModeFireMontageSectionNameArr;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	UAnimMontage* SiegeModeHitReactionMontage;
 
 	bool bSiegeMode = false;

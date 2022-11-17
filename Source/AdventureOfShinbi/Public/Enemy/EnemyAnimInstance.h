@@ -25,11 +25,6 @@ public:
 
 	virtual void NativeInitializeAnimation() override;
 
-protected:
-
-	UFUNCTION(BlueprintCallable)
-	void DeathMontageEnd();
-
 private:
 
 	UPROPERTY(VisibleAnywhere)

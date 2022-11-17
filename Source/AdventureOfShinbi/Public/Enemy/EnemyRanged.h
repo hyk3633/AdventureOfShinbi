@@ -24,11 +24,13 @@ public:
 
 	AEnemyRanged();
 
-	void RangedAttack();
+	virtual void RangedAttack();
 
 protected:
 
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
 
 	void ProjectileFire(TSubclassOf<AProjectile> Projectile);
 
@@ -45,29 +47,29 @@ protected:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option")
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack")
 	TSubclassOf<AProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, Category = "Montages")
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack")
 	UAnimMontage* FireMontage;
 
 private:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin=0.f))
-	float BulletSpread;
-
-	UPROPERTY(EditAnywhere, Category = "Montages")
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack")
 	TArray<FName> FireMontageSectionNameArr;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option", meta = (ClampMin = 0.f))
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack", meta = (ClampMin = 0.f))
+	float BulletSpread;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack", meta = (ClampMin = 0.f))
 	uint8 FireCount = 3;
 
 	uint8 CurrentFireCount = 0;
 
 	FTimerHandle FireDelayTimer;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Option")
-	float FireDelayTime = 0.01f;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Ranged Attack")
+	float FireDelayTime = 0.1f;
 
 public:
 

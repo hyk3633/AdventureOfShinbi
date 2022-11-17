@@ -11,6 +11,7 @@
 #include "Items/Item.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
+#include "Weapons/Projectile.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 #include "Components/ItemComponent.h"
@@ -61,9 +62,9 @@ AAOSCharacter::AAOSCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = OriginWalkingSpeed;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = OriginCrouchedSpeed;
 
-	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	CombatComp = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat Component"));
 
-	ItemComp = CreateDefaultSubobject<UItemComponent>(TEXT("ItemComponent"));
+	ItemComp = CreateDefaultSubobject<UItemComponent>(TEXT("Item Component"));
 }
 
 void AAOSCharacter::BeginPlay()
@@ -73,7 +74,6 @@ void AAOSCharacter::BeginPlay()
 	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
 
 	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
-	//OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 
@@ -119,7 +119,32 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 		CombatComp->UpdateHealth(DamageReceived);
 	}
 
+	if (CharacterState == ECharacterState::ECS_Nothing)
+	{
+		AProjectile* Proj = Cast<AProjectile>(DamageCauser);
+		if (Proj)
+		{
+			if (FMath::RandRange(0.f, 1.f) <= 0.2f)
+			{
+				CombatComp->PlayHitReactMontage();
+				PlayerKnockBack(DamageCauser, 1000.f);
+			}
+		}
+		else
+		{
+			CombatComp->PlayHitReactMontage();
+			PlayerKnockBack(DamageCauser, 3000.f);
+		}
+	}
+
 	PlayHitEffect(HitLocation, ShotFromDirection.Rotation());
+}
+
+void AAOSCharacter::PlayerKnockBack(AActor* DamageCauser, float Power)
+{
+	FVector Direction = GetActorLocation() - DamageCauser->GetActorLocation();
+	Direction.Normalize();
+	LaunchCharacter(Direction * Power, false, true);
 }
 
 void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
@@ -145,7 +170,7 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 
 void AAOSCharacter::MoveForward(float Value)
 {
-	if (bIsAnimationPlaying || bDashing || bIsFreezed) 
+	if (CharacterState != ECharacterState::ECS_Nothing || bDashing)
 		return;
 
 	bIsMoving = Value != 0.f ? true : false;
@@ -160,7 +185,7 @@ void AAOSCharacter::MoveForward(float Value)
 
 void AAOSCharacter::MoveRight(float Value)
 {
-	if (bIsAnimationPlaying || bDashing || bIsFreezed) 
+	if (CharacterState != ECharacterState::ECS_Nothing || bDashing)
 		return;
 
 	bIsMoving = Value != 0.f ? true : false;
@@ -185,7 +210,7 @@ void AAOSCharacter::Turn(float Value)
 
 void AAOSCharacter::Jump()
 {
-	if (bIsAnimationPlaying || bIsFreezed) 
+	if (CharacterState != ECharacterState::ECS_Nothing || bDashing)
 		return;
 
 	MakeNoise(1.f, GetInstigator(), GetActorLocation());
@@ -195,7 +220,8 @@ void AAOSCharacter::Jump()
 
 void AAOSCharacter::RunningButtonPressed()
 {
-	if (bIsAnimationPlaying || bCanRunning == false || bIsFreezed || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f) return;
+	if (CharacterState != ECharacterState::ECS_Nothing || bDashing || bCanRunning == false || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f)
+		return;
 
 	bIsRunning = true;
 
@@ -204,8 +230,6 @@ void AAOSCharacter::RunningButtonPressed()
 
 void AAOSCharacter::RunningButtonReleased()
 {
-	if (bIsAnimationPlaying) return;
-
 	bIsRunning = false;
 
 	GetCharacterMovement()->MaxWalkSpeed = CurrentWalkingSpeed;
@@ -213,7 +237,8 @@ void AAOSCharacter::RunningButtonReleased()
 
 void AAOSCharacter::Crouch_DashButtonPressed()
 {
-	if (bIsAnimationPlaying || bIsFreezed) return;
+	if (CharacterState != ECharacterState::ECS_Nothing)
+		return;
 
 	if (WeaponType == EWeaponType::EWT_None)
 	{
@@ -239,7 +264,8 @@ void AAOSCharacter::Crouching()
 
 void AAOSCharacter::Dash()
 {
-	if (bDashing || !CombatComp->SpendStamina(10.f)) return;
+	if (bDashing || !CombatComp->SpendStamina(10.f)) 
+		return;
 	bDashing = true;
 	PlayDashMotage();
 	LaunchCharacter(GetLastMovementInputVector() * DashPower, false, false);
@@ -247,7 +273,8 @@ void AAOSCharacter::Dash()
 
 void AAOSCharacter::Equip_Skill1ButtonPressed()
 {
-	if (bIsAnimationPlaying || bIsFreezed) return;
+	if (CharacterState != ECharacterState::ECS_Nothing)
+		return;
 
 	if (OverlappingItem)
 	{
@@ -266,7 +293,8 @@ void AAOSCharacter::Equip_Skill1ButtonPressed()
 
 void AAOSCharacter::AttackButtonPressed()
 {
-	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX || bIsFreezed) return;
+	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX || CharacterState != ECharacterState::ECS_Nothing)
+		return;
 
 	bAttackButtonPressing = true;
 
@@ -323,7 +351,6 @@ void AAOSCharacter::PlayDashMotage()
 	if (DashMontage)
 	{
 		AnimInstance->Montage_Play(DashMontage);
-		//AnimInstance->Montage_JumpToSection(FName("Dash"));
 	}
 }
 
@@ -334,7 +361,7 @@ void AAOSCharacter::OnDashMontageEnded()
 
 void AAOSCharacter::AimButtonPressed()
 {
-	if (bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	if (CombatComp->EquippedWeapon)
@@ -367,7 +394,7 @@ void AAOSCharacter::AimButtonReleased()
 
 void AAOSCharacter::Reload_Skill2ButtonPressed()
 {
-	if (bIsAnimationPlaying || bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	CombatComp->WeaponSkill2();
@@ -375,7 +402,7 @@ void AAOSCharacter::Reload_Skill2ButtonPressed()
 
 void AAOSCharacter::InventoryKeyPressed()
 {
-	if (bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	bIsInventoryOn = bIsInventoryOn ? false : true;
@@ -389,7 +416,7 @@ void AAOSCharacter::InventoryKeyPressed()
 
 void AAOSCharacter::WeaponQuickSwapKeyPressed()
 {
-	if (bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	if (CombatComp)
@@ -400,7 +427,7 @@ void AAOSCharacter::WeaponQuickSwapKeyPressed()
 
 void AAOSCharacter::UseItemKeyPressed()
 {
-	if (bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	if (ItemComp)
@@ -411,7 +438,7 @@ void AAOSCharacter::UseItemKeyPressed()
 
 void AAOSCharacter::ItemChangeKeyPressed()
 {
-	if (bIsFreezed)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	if (ItemComp)
@@ -422,7 +449,7 @@ void AAOSCharacter::ItemChangeKeyPressed()
 
 void AAOSCharacter::Skill3ButtonPressed()
 {
-	if (bIsFreezed || bIsAnimationPlaying)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
 	if (CombatComp->EquippedWeapon)
@@ -433,12 +460,12 @@ void AAOSCharacter::Skill3ButtonPressed()
 
 void AAOSCharacter::TransitionAnimationStart()
 {
-	bIsAnimationPlaying = true;
+	CharacterState = ECharacterState::ECS_AnimationPlaying;
 }
 
 void AAOSCharacter::TransitionAnimationEnd()
 {
-	bIsAnimationPlaying = false;
+	CharacterState = ECharacterState::ECS_Nothing;
 }
 
 void AAOSCharacter::ResumeRunning()
@@ -497,13 +524,12 @@ void AAOSCharacter::ActivateFreezing(bool IsActivate)
 	if (IsActivate)
 	{
 		GetMesh()->bPauseAnims = true;
-		bIsFreezed = true;
-		// effect
+		CharacterState = ECharacterState::ECS_Freezed;
 	}
 	else
 	{
 		GetMesh()->bPauseAnims = false;
-		bIsFreezed = false;
+		CharacterState = ECharacterState::ECS_Nothing;
 	}
 }
 
@@ -534,7 +560,8 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AAOSCharacter::SetOverlappingItem()
 {
-	if (!bExistOverlappingItem) return;
+	if (bExistOverlappingItem == false) 
+		return;
 
 	FHitResult HitItem;
 	TraceItem(HitItem);
@@ -622,7 +649,7 @@ void AAOSCharacter::SetCanRunning(bool IsCapable)
 
 bool AAOSCharacter::GetIsAnimationPlaying() const
 {
-	return bIsAnimationPlaying;
+	return CharacterState == ECharacterState::ECS_AnimationPlaying;
 }
 
 bool AAOSCharacter::GetIsMoving() const

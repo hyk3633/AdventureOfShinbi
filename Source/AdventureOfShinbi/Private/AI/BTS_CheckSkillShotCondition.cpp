@@ -20,29 +20,19 @@ void UBTS_CheckSkillShotCondition::TickNode(UBehaviorTreeComponent& OwnerComp, u
 {
     Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-    AEnemyMuriel* ControllingEnemy = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
-    if (ControllingEnemy == nullptr) return;
-
-    if (ControllingEnemy->GetSkillShotCoolTimeEnd() == false)
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), false);
+    AEnemyMuriel* Muriel = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
+    if (Muriel == nullptr)
         return;
-    }
+
+    if (Muriel->GetIsCasting() || Muriel->GetIsAttacking())
+        return;
 
     AAOSCharacter* AC = Cast<AAOSCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName("Target")));
     if (AC)
     {
-        if (AC->GetCombatComp()->GetHealthPercentage() <= 0.7f)
+        if (AC->GetCombatComp()->GetHealthPercentage() <= 0.7f && Muriel->GetSkillShotCoolTimeEnd())
         {
-            const float Percentage = FMath::RandRange(0.f, 1.0f);
-            if (Percentage <= 0.2f)
-            {
-                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), true);
-            }
-            else
-            {
-                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), false);
-            }
+            OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSkillShot"), true);
         }
     }
 }

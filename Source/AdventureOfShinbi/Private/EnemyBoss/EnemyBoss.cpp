@@ -3,16 +3,19 @@
 #include "EnemyBoss/EnemyBoss.h"
 #include "EnemyBoss/BossAIController.h"
 #include "Enemy/EnemyAnimInstance.h"
+#include "Enemy/EnemyAIController.h"
 #include "Player/AOSCharacter.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CombatComponent.h"
+#include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/Projectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMaterialLibrary.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
@@ -30,10 +33,12 @@ AEnemyBoss::AEnemyBoss()
 	DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	BoxTraceSize = FVector(30.f, 30.f, 30.f);
+
 	StrafingAnimRate = 0.6f;
 	ChaseAnimRate = 1.f;
-	StrafingSpeed = 250.f;
-	ChaseSpeed = 500.f;
+	PatrolSpeed = 400.f;
+	ChaseSpeed = 700.f;
 }
 
 void AEnemyBoss::BeginPlay()
@@ -46,11 +51,19 @@ void AEnemyBoss::BeginPlay()
 		Target->DAttackButtonPressed.BindUObject(this, &AEnemyBoss::DetectAttack);
 	}
 
+	BossController = Cast<ABossAIController>(GetController());
+	if (BossController)
+	{
+		BossController->SetTarget(Target);
+	}
+
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyBoss::BlizzardMontageEnd);
 
 	DashAndWallBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBoss::OnDashBoxOverlap);
 
-	BossController = Cast<ABossAIController>(GetController());
+	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, 15.f);
+	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, 15.f);
+	GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, 15.f);
 }
 
 void AEnemyBoss::Tick(float DeltaTime)
@@ -63,7 +76,7 @@ void AEnemyBoss::Tick(float DeltaTime)
 
 	BlizzardDotDamage(DeltaTime);
 
-	Weapon1LineTrace();
+	Weapon1BoxTrace();
 
 	BurstShockWave();
 }
@@ -72,6 +85,7 @@ void AEnemyBoss::RotateToTarget(float DeltaTime)
 {
 	if (
 		bDeath == false &&
+		bFreezingAttack == false &&
 		AiInfo.bIsPlayerDead == false
 		)
 	{
@@ -96,7 +110,6 @@ void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, ACo
 		bPhase2 = true;
 		DashDelayTime = 0.5f;
 		MaxDashCount = 6;
-		UE_LOG(LogTemp, Warning, TEXT("phase2"));
 	}
 }
 
@@ -109,9 +122,9 @@ void AEnemyBoss::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, 
 	if (Cha)
 	{
 		AiInfo.bTargetInAttackRange = true;
-		if (bFreezingCoolTimeEnd)
+		if (BossController)
 		{
-			bAbleFreezing = true;
+			BossController->UpdateAiInfo();
 		}
 	}
 }
@@ -146,89 +159,55 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
 void AEnemyBoss::DetectAttack()
 {
-	// 공격 도중에도 수행될 수 있음 그렇게 되면 해당 몽타주를 중단하고 수행하기
-	// 쿨타임 검사
+	if (bEvadeSkillCoolTimeEnd == false)
+		return;
+
 	EWeaponType TargetWeaponType = Target->GetCombatComp()->GetEquippedWeapon()->GetWeaponType();
 
-	if (bEvadeCoolTimeEnd)
+	if (bPhase2 && TargetWeaponType == EWeaponType::EWT_Gun && GetDistanceTo(Target) > 700.f)
 	{
-		bAbleEvade = true;
+		EvadeSkillNum = FMath::RandRange(1, 2);
 	}
-	else if (bPhase2 && bBackAttackCoolTimeEnd)
+	else
 	{
-		bAbleBackAttack = true;
+		EvadeSkillNum = FMath::RandRange(0, 1);
 	}
-	else if (bPhase2 && bIceWallCoolTimeEnd && TargetWeaponType == EWeaponType::EWT_Gun && GetDistanceTo(Target) > 1000.f)
+
+	bAbleEvadeSkill = true;
+	if (BossController)
 	{
-		bAbleIceWall = true;
+		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
 	}
 }
 
-void AEnemyBoss::Weapon1LineTrace()
+bool AEnemyBoss::Weapon1BoxTrace()
 {
-	if (bActivateWeaponTrace1 == false)
-		return;
-	
-	FHitResult WeaponHitResult;
-	GetLineTraceHitResult(WeaponHitResult);
+	const bool bHit = Super::Weapon1BoxTrace();
 
-	if (WeaponHitResult.bBlockingHit)
+	if (bHit)
 	{
-		AAOSCharacter* Cha = Cast<AAOSCharacter>(WeaponHitResult.GetActor());
-		if (Cha == nullptr)
-			return;
-
-		PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
-
-		UGameplayStatics::ApplyPointDamage(Cha, Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
-		if (bIsAttacking)
-		{
-			UGameplayStatics::ApplyPointDamage(Cha, Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
-		}
-
 		if (EnemyAnim->Montage_GetIsStopped(FreezingMontage) == false)
 		{
 			FreezingActivate();
 		}
-
-		bActivateWeaponTrace1 = false;
 	}
-	
+
+	return bHit;
 }
 
-void AEnemyBoss::GetLineTraceHitResult(FHitResult& HitResult)
+void AEnemyBoss::DoStrafing()
 {
-	const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
-	if (WeaponTraceStart == nullptr) return;
-	const FTransform SocketStart = WeaponTraceStart->GetSocketTransform(GetMesh());
-
-	const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
-	if (WeaponTraceEnd == nullptr) return;
-	const FTransform SocketEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
-
-	FVector TraceStart = SocketStart.GetLocation();
-	FVector TraceEnd = SocketEnd.GetLocation();
-
-	UCollisionProfile* Profile = UCollisionProfile::Get();
-	ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECollisionChannel::ECC_Visibility);
-
-	UKismetSystemLibrary::BoxTraceSingle
-	(
-		this,
-		TraceStart,
-		TraceEnd,
-		FVector(20.f,20.f,20.f),
-		SocketStart.GetRotation().Rotator(),
-		TraceType,
-		false,
-		TArray<AActor*>(),
-		EDrawDebugTrace::None,
-		HitResult,
-		true,
-		FLinearColor::Green,
-		FLinearColor::Red,
-		50.f
-	);
+	const bool StrafingCondition = CheckStrafingCondition();
+	if (StrafingCondition)
+	{
+		SetStrafingValue();
+		GetCharacterMovement()->MaxWalkSpeed = StrafingSpeed;
+	}
+	else
+	{
+		StrafingValue = 0.f;
+		GetCharacterMovement()->MaxWalkSpeed = bPhase2 ? ChaseSpeed : PatrolSpeed;
+	}
 }
 
 bool AEnemyBoss::CheckStrafingCondition()
@@ -236,7 +215,6 @@ bool AEnemyBoss::CheckStrafingCondition()
 	return bDeath == false &&
 		bStrafing &&
 		bIsAttacking == false &&
-		AiInfo.bTargetInAttackRange == false &&
 		AiInfo.bStunned == false;
 }
 
@@ -259,47 +237,174 @@ void AEnemyBoss::ChangeStrafingDirection()
 	GetWorldTimerManager().SetTimer(StrafingTimer, this, &AEnemyBoss::ChangeStrafingDirection, StrafingTime);
 }
 
+void AEnemyBoss::RangedAttackCoolTimeEnd()
+{
+	bRangedAttackCoolTimeEnd = true;
+	if (BossController)
+	{
+		BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
+	}
+}
+
+void AEnemyBoss::EvadeSkillCoolTimeEnd()
+{
+	bEvadeSkillCoolTimeEnd = true;
+}
+
+void AEnemyBoss::SetFlying()
+{
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+}
+
+void AEnemyBoss::PlayDeathMontage()
+{
+	Super::PlayDeathMontage();
+
+	UParticleSystemComponent* SwordParticle = Cast<UParticleSystemComponent>(GetMesh()->GetChildComponent(0));
+	if (SwordParticle)
+	{
+		SwordParticle->Deactivate();
+	}
+}
+
+void AEnemyBoss::DeathMontageEnded()
+{
+	GetMesh()->bPauseAnims = true;
+}
+
+void AEnemyBoss::Attack()
+{
+	if (bDeath)
+		return;
+
+	bIsAttacking = true;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+	}
+
+	if (bFreezingCoolTimeEnd && FMath::RandRange(0.f,1.f) < 0.3f)
+	{
+		Freezing();
+	}
+	else
+	{
+		PlayAttackMontage();
+	}
+}
+
+void AEnemyBoss::RangedAttack()
+{
+	if (bDeath)
+		return;
+
+	bIsAttacking = true;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+	}
+
+	int8 RandNum = 0;
+	const float DistToTarget = GetDistanceTo(AiInfo.TargetPlayer);
+	if (DistToTarget > 900.f)
+	{
+		RandNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
+	}
+	else if (DistToTarget > 800.f && DistToTarget <= 900.f)
+	{
+		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
+	}
+	else if (DistToTarget > 600.f && DistToTarget <= 800.f)
+	{
+		RandNum = FMath::RandRange(0, 1);
+	}
+	else
+	{
+		RandNum = 0;
+	}
+
+	switch (RandNum)
+	{
+	case 0:
+		Blizzard();
+		break;
+	case 1:
+		EmitSwordAura();
+		break;
+	case 2:
+		Dash();
+		break;
+	case 3:
+		IcicleAttack();
+		break;
+	}
+}
+
+void AEnemyBoss::EvadeSkill()
+{
+	if (bDeath)
+		return;
+
+	bIsAttacking = true;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+	}
+
+	if (EvadeSkillNum == 0)
+	{
+		Evade();
+	}
+	else if (EvadeSkillNum == 1)
+	{
+		BackAttack();
+	}
+	else
+	{
+		CreateIceWall();
+	}
+}
+
 void AEnemyBoss::PlayAttackMontage()
 {
-	if (EnemyAnim == nullptr) return;
+	if (EnemyAnim == nullptr) 
+		return;
 
-	int8 RanNum = 0;
-	RanNum = bPhase2 ? FMath::RandRange(0, 2) : FMath::RandRange(0, 1);
-
-	if (RanNum == 0)
+	const int8 RandNum = FMath::RandRange(0, bPhase2 ? 2 : 1);
+	
+	if (RandNum == 0)
 	{
 		PlayAttack1Montage();
 	}
-	else if (RanNum == 1)
+	else if (RandNum == 1)
 	{
 		PlayAttack2Montage();
 	}
 	else
 	{
+		GetCharacterMovement()->DefaultLandMovementMode = EMovementMode::MOVE_Flying;
 		PlayAttack3Montage();
 	}
 }
 
 void AEnemyBoss::PlayAttack1Montage()
 {
-	if (AttackMontage == nullptr) return;
-
+	if (AttackMontage == nullptr) 
+		return;
 	EnemyAnim->Montage_Play(AttackMontage);
 }
 
 void AEnemyBoss::PlayAttack2Montage()
 {
-	if (Attack2Montage == nullptr) return;
-
+	if (Attack2Montage == nullptr) 
+		return;
 	EnemyAnim->Montage_Play(Attack2Montage);
 }
 
 void AEnemyBoss::PlayAttack3Montage()
 {
-	if (Attack3Montage == nullptr) return;
-
-	GetCharacterMovement()->DefaultLandMovementMode = EMovementMode::MOVE_Flying;
-
+	if (Attack3Montage == nullptr) 
+		return;
 	EnemyAnim->Montage_Play(Attack3Montage);
 }
 
@@ -313,8 +418,13 @@ void AEnemyBoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	if (Montage == AttackMontage || Montage == Attack2Montage || Montage == Attack3Montage)
 	{
 		bIsAttacking = false;
-		AiInfo.bTargetInAttackRange = false;
-		GetCharacterMovement()->DefaultLandMovementMode = EMovementMode::MOVE_Walking;
+		if (GetAttackRange()->IsOverlappingActor(AiInfo.TargetPlayer) == false)
+			AiInfo.bTargetInAttackRange = false;
+		if (BossController)
+		{
+			BossController->UpdateAiInfo();
+		}
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 		OnAttackEnd.Broadcast();
 	}
 }
@@ -332,10 +442,75 @@ void AEnemyBoss::StopAttackMontage()
 	}
 }
 
+void AEnemyBoss::Freezing()
+{
+	bFreezingAttack = true;
+	PlayFreezingMontage();
+}
+
+void AEnemyBoss::FreezingActivate()
+{
+	if (Target == nullptr)
+	{
+		FreezingMontageEnded();
+		return;
+	}
+
+	Target->ActivateFreezing(true);
+
+	if (TargetFreezingParticle)
+	{
+		FTransform ParticleTransform;
+		FVector TargetLocation = Target->GetActorLocation();
+		TargetLocation.Z = -40.f;
+		ParticleTransform.SetLocation(TargetLocation);
+		ParticleTransform.SetRotation(Target->GetActorRotation().Quaternion());
+
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetFreezingParticle, ParticleTransform, true);
+	}
+
+	if (FreezingSound)
+	{
+		UGameplayStatics::PlaySound2D(this, FreezingSound);
+	}
+
+	GetWorldTimerManager().SetTimer(FreezingDurationTimer, this, &AEnemyBoss::FreezingDurationEnd, FreezingDurationTime);
+}
+
+void AEnemyBoss::PlayFreezingMontage()
+{
+	if (FreezingMontage == nullptr)
+		return;
+
+	EnemyAnim->Montage_Play(FreezingMontage);
+}
+
+void AEnemyBoss::FreezingDurationEnd()
+{
+	Target->ActivateFreezing(false);
+}
+
+void AEnemyBoss::FreezingMontageEnded()
+{
+	bIsAttacking = false;
+	bFreezingAttack = false;
+	bFreezingCoolTimeEnd = false;
+	AiInfo.bTargetInAttackRange = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+	}
+	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, FreezingCoolTime);
+	OnAttackEnd.Broadcast();
+}
+
+void AEnemyBoss::FreezingCoolTimeEnd()
+{
+	bFreezingCoolTimeEnd = true;
+}
+
 void AEnemyBoss::Blizzard()
 {
-	bBlizzardCoolTimeEnd = false;
-	bIsAttacking = true;
 	PlayBlizzardMontage();
 }
 
@@ -364,7 +539,6 @@ void AEnemyBoss::ApplyBlizzardDebuff()
 {
 	bBlizzardDebuffOn = true;
 
-	// 타겟 속도 느리게 그리고 화면 동상 이펙트 출력
 	Target->SetWalkingSpeed(EWalkingState::EWS_Slowed);
 
 	GetWorldTimerManager().SetTimer(BlizzardDebuffTimer, this, &AEnemyBoss::BlizzardDebuffEnd, BlizzardDebuffTime);
@@ -374,7 +548,6 @@ void AEnemyBoss::BlizzardDotDamage(float DeltaTime)
 {
 	if (bBlizzardDebuffOn == false)
 		return;
-
 	UGameplayStatics::ApplyDamage(Target, DeltaTime * 4.f, GetController(), this, UDamageType::StaticClass());
 }
 
@@ -390,21 +563,20 @@ void AEnemyBoss::BlizzardMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (Montage == BlizzardMontage)
 	{
-		GetWorldTimerManager().SetTimer(BlizzardCoolTimer, this, &AEnemyBoss::BlizzardCoolTimeEnd, BlizzardCoolTime);
 		bIsAttacking = false;
+		bRangedAttackCoolTimeEnd = false;
+		if (BossController)
+		{
+			BossController->UpdateAiInfo();
+			BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
+		}
+		GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, RangedAttackCoolTime);
 		OnAttackEnd.Broadcast();
 	}
 }
 
-void AEnemyBoss::BlizzardCoolTimeEnd()
-{
-	bBlizzardCoolTimeEnd = true;
-}
-
 void AEnemyBoss::Dash()
 {
-	bIsAttacking = true;
-	bDashCoolTimeEnd = false;
 	DashCount++;
 
 	SetBoxState(EBoxState::EBS_Dash);
@@ -430,18 +602,23 @@ void AEnemyBoss::DashLaunch()
 
 void AEnemyBoss::DashMontageEnd()
 {
-	SetBoxState(EBoxState::EBS_Disabled);
-
 	if (DashCount < MaxDashCount)
 	{
 		Dash();
 	}
 	else
 	{
+		SetBoxState(EBoxState::EBS_Disabled);
 		bIsAttacking = false;
-		OnAttackEnd.Broadcast();
+		bRangedAttackCoolTimeEnd = false;
 		DashCount = 0;
-		GetWorldTimerManager().SetTimer(DashCoolTimer, this, &AEnemyBoss::DashCoolTimeEnd, DashCoolTime, false);
+		if (BossController)
+		{
+			BossController->UpdateAiInfo();
+			BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
+		}
+		GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, RangedAttackCoolTime);
+		OnAttackEnd.Broadcast();
 	}
 }
 
@@ -456,12 +633,14 @@ void AEnemyBoss::SetBoxState(EBoxState State)
 		break;
 	case EBoxState::EBS_Dash:
 		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 		DashAndWallBox->SetBoxExtent(FVector(50.f, 80.f, 150.f));
 		DashAndWallBox->SetRelativeLocation(FVector(180.f, 0.f, 60.f));
 		break;
 	case EBoxState::EBS_Wall:
 		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Block);
 		DashAndWallBox->SetBoxExtent(FVector(100.f, 270.f, 220.f));
@@ -474,22 +653,172 @@ void AEnemyBoss::SetBoxState(EBoxState State)
 	}
 }
 
-void AEnemyBoss::DashCoolTimeEnd()
+void AEnemyBoss::EmitSwordAura()
 {
-	bDashCoolTimeEnd = true;
+	PlayFireMontage();
+}
+
+void AEnemyBoss::FireSwordAura()
+{
+	const USkeletalMeshSocket* EmitSocket = GetMesh()->GetSocketByName("Sword_Mid");
+	if (EmitSocket == nullptr) return;
+	const FTransform SocketTransform = EmitSocket->GetSocketTransform(GetMesh());
+
+	FVector ToTarget = Target->GetActorLocation() - SocketTransform.GetLocation();
+	FRotator TargetRotation = ToTarget.Rotation();
+
+	if (ProjectileClass)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.Instigator = this;
+
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
+		}
+	}
+}
+
+void AEnemyBoss::PlayFireMontage()
+{
+	if (FireMontage == nullptr)
+		return;
+
+	EnemyAnim->Montage_Play(FireMontage);
+}
+
+void AEnemyBoss::OnFireMontageEnded()
+{
+	bIsAttacking = false;
+	bRangedAttackCoolTimeEnd = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
+	}
+	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, RangedAttackCoolTime);
+	OnAttackEnd.Broadcast();
+}
+
+void AEnemyBoss::IcicleAttack()
+{
+	PlayIcicleAttackMontage();
+}
+
+void AEnemyBoss::RisingIcicle()
+{
+	if (IcicleParticle)
+	{
+		FTransform ParticleTransform;
+		ParticleTransform.SetLocation(Target->GetActorLocation() + FVector(0.f, 120.f, 0.f));
+		ParticleTransform.SetRotation(FRotator(0.f, 120.f, 0.f).Quaternion());
+		ParticleTransform.SetScale3D(FVector(5.f, 5.f, 5.f));
+
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), IcicleParticle, ParticleTransform);
+		if (IcicleSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, IcicleSound, ParticleTransform.GetLocation());
+		}
+
+		UCollisionProfile* Profile = UCollisionProfile::Get();
+		ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_EnemyWeaponTrace);
+		FHitResult SphereHit;
+		UKismetSystemLibrary::SphereTraceSingle
+		(
+			this,
+			IcicleLocation + FVector(0.f, 0.f, 10.f),
+			IcicleLocation + FVector(0.f, 0.f, 10.f),
+			100.f,
+			TraceType,
+			false,
+			TArray<AActor*>(),
+			EDrawDebugTrace::None,
+			SphereHit,
+			true
+		);
+
+		if (SphereHit.bBlockingHit)
+		{
+			if (Target == SphereHit.GetActor())
+			{
+				UGameplayStatics::ApplyPointDamage(Target, 70.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
+				Target->LaunchCharacter(Target->GetActorUpVector() * 500.f, true, false);
+			}
+		}
+	}
+}
+
+void AEnemyBoss::SetIcicleLocation()
+{
+	IcicleLocation = Target->GetActorLocation();
+}
+
+void AEnemyBoss::BurstShockWave()
+{
+	if (bActivateBurst == false)
+		return;
+
+	FHitResult WeaponHitResult;
+	GetBoxTraceHitResult(WeaponHitResult, WeaponTraceStartSocketName, WeaponTraceEndSocketName);
+
+	if (WeaponHitResult.bBlockingHit)
+	{
+		TArray<AActor*> Ignore;
+		UGameplayStatics::ApplyRadialDamage(
+			this,
+			BurstDamage,
+			WeaponHitResult.ImpactPoint,
+			100.f,
+			UDamageType::StaticClass(),
+			Ignore,
+			this,
+			GetController()
+		);
+
+		bActivateBurst = false;
+	}
+}
+
+void AEnemyBoss::PlayIcicleAttackMontage()
+{
+	if (IcicleAttackMontage == nullptr)
+		return;
+	EnemyAnim->Montage_Play(IcicleAttackMontage);
+}
+
+void AEnemyBoss::IcicleAttackMontageEnded()
+{
+	bIsAttacking = false;
+	bRangedAttackCoolTimeEnd = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
+	}
+	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, RangedAttackCoolTime);
+	OnAttackEnd.Broadcast();
+}
+
+void AEnemyBoss::ActivateBurst()
+{
+	bActivateBurst = true;
+}
+
+void AEnemyBoss::DeactivateBurst()
+{
+	bActivateBurst = false;
 }
 
 void AEnemyBoss::CreateIceWall()
 {
-	bIsAttacking = true;
-	bIceWallCoolTimeEnd = false;
-
 	SetBoxState(EBoxState::EBS_Wall);
 
 	if (IceWallParticle)
 	{
 		FTransform ParticleTransform;
-		ParticleTransform.SetLocation(GetActorLocation() + FVector(50.f, 0.f, 0.f));
+		ParticleTransform.SetLocation(GetActorLocation() + FVector(50.f, 0.f, -50.f));
 		ParticleTransform.SetRotation(GetActorRotation().Quaternion());
 		ParticleTransform.SetScale3D(FVector(6.f, 6.f, 6.f));
 
@@ -519,6 +848,7 @@ void AEnemyBoss::IcaWallDisappearAndCheck()
 	}
 	SetRotationToAppear(Dir);
 
+	bEvadeSkillCoolTimeEnd = false;
 	PlayIceWallAttackMontage();
 	GetWorldTimerManager().SetTimer(IceWallAttackAppearTimer, this, &AEnemyBoss::AppearFromLRB, IceWallAttackAppearTime);
 }
@@ -544,7 +874,7 @@ void AEnemyBoss::PlayIceWallAttackMontage()
 	if (IceWallAttackMontage == nullptr)
 		return;
 
-	int8 RandNum = FMath::RandRange(0, 1);
+	const int8 RandNum = FMath::RandRange(0, 1);
 
 	EnemyAnim->Montage_Play(IceWallAttackMontage);
 	EnemyAnim->Montage_JumpToSection(FName(*FString::FromInt(RandNum)));
@@ -552,23 +882,23 @@ void AEnemyBoss::PlayIceWallAttackMontage()
 
 void AEnemyBoss::IceWallAttackMontageEnd(bool IsSuccess)
 {
-	bAbleIceWall = false;
+	bIsAttacking = false;
+	bAbleEvadeSkill = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
+	}
+	SetBoxState(EBoxState::EBS_Disabled);
 	if (IsSuccess)
 	{
-		GetWorldTimerManager().SetTimer(IceWallCoolTimer, this, &AEnemyBoss::IceWallCoolTimeEnd, IceWallCoolTime);
+		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
 	}
 	else
 	{
-		IceWallCoolTimeEnd();
+		EvadeSkillCoolTimeEnd();
 	}
-	SetBoxState(EBoxState::EBS_Disabled);
-	bIsAttacking = false;
 	OnAttackEnd.Broadcast();
-}
-
-void AEnemyBoss::IceWallCoolTimeEnd()
-{
-	bIceWallCoolTimeEnd = true;
 }
 
 void AEnemyBoss::BackAttack()
@@ -576,12 +906,9 @@ void AEnemyBoss::BackAttack()
 	if (Target == nullptr)
 		return;
 
-	bIsAttacking = true;
-
 	UParticleSystemComponent* SwordParticle = Cast<UParticleSystemComponent>(GetMesh()->GetChildComponent(0));
 	if (SwordParticle)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("success"));
 		SwordParticle->Deactivate();
 	}
 
@@ -608,8 +935,6 @@ void AEnemyBoss::BackAttack()
 
 void AEnemyBoss::BackAttackDisappearAndCheck()
 {
-	bBackAttackCoolTimeEnd = false;
-
 	bool bSafe = CheckObstacle(Target, FName("B"), 250.f);
 	if (bSafe == false)
 	{
@@ -620,6 +945,7 @@ void AEnemyBoss::BackAttackDisappearAndCheck()
 	RotationToAppear = GetActorRotation();
 	RotationToAppear.Yaw = Target->GetActorRotation().Yaw;
 
+	bEvadeSkillCoolTimeEnd = false;
 	PlayBackAttackMontage();
 	GetWorldTimerManager().SetTimer(BackAttackAppearTimer, this, &AEnemyBoss::AppearFromLRB, BackAttackAppearTime);
 }
@@ -709,34 +1035,31 @@ void AEnemyBoss::PlayBackAttackMontage()
 {
 	if (BackAttackMontage == nullptr)
 		return;
-
 	EnemyAnim->Montage_Play(BackAttackMontage);
 }
 
 void AEnemyBoss::BackAttackMontageEnd(bool IsSuccess)
 {
-	bAbleBackAttack = false;
 	bIsAttacking = false;
+	bAbleEvadeSkill = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
+	}
 	if (IsSuccess)
 	{
-		GetWorldTimerManager().SetTimer(BackAttackCoolTimer, this, &AEnemyBoss::BackAttackCoolTimeEnd, BackAttackCoolTime);
+		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
 	}
 	else
 	{
-		BackAttackCoolTimeEnd();
+		EvadeSkillCoolTimeEnd();
 	}
 	OnAttackEnd.Broadcast();
 }
 
-void AEnemyBoss::BackAttackCoolTimeEnd()
-{
-	bBackAttackCoolTimeEnd = true;
-}
-
 void AEnemyBoss::Evade()
 {
-	bIsAttacking = true;
-	bEvadeCoolTimeEnd = false;
 	EWeaponType TargetWeaponType = Target->GetCombatComp()->GetEquippedWeapon()->GetWeaponType();
 
 	FName Dir;
@@ -764,6 +1087,7 @@ void AEnemyBoss::Evade()
 		}
 	}
 
+	bEvadeSkillCoolTimeEnd = false;
 	PlayEvadeMontage(Dir);
 }
 
@@ -776,7 +1100,6 @@ void AEnemyBoss::PlayEvadeMontage(FName Dir)
 {
 	if (EvadeMontage == nullptr)
 		return;
-
 	EnemyAnim->Montage_Play(EvadeMontage);
 	EnemyAnim->Montage_JumpToSection(Dir);
 }
@@ -784,233 +1107,21 @@ void AEnemyBoss::PlayEvadeMontage(FName Dir)
 void AEnemyBoss::EvadeMontageEnd(bool IsSuccess)
 {
 	bIsAttacking = false;
-	bAbleEvade = false;
+	bAbleEvadeSkill = false;
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
+	}
 	if (IsSuccess)
 	{
-		GetWorldTimerManager().SetTimer(EvadeCoolTimer, this, &AEnemyBoss::EvadeCoolTimeEnd, EvadeCoolTime);
+		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
 	}
 	else
 	{
-		EvadeCoolTimeEnd();
+		EvadeSkillCoolTimeEnd();
 	}
 	OnAttackEnd.Broadcast();
-}
-
-void AEnemyBoss::EvadeCoolTimeEnd()
-{
-	bAbleEvade = true;
-}
-
-void AEnemyBoss::EmitSwordAura()
-{
-	bIsAttacking = true;
-	bEmitSwordAuraCoolTimeEnd = false;
-
-	PlayFireMontage();
-}
-
-void AEnemyBoss::ProjectileFire()
-{
-	const USkeletalMeshSocket* EmitSocket = GetMesh()->GetSocketByName("Sword_Mid");
-	if (EmitSocket == nullptr) return;
-	const FTransform SocketTransform = EmitSocket->GetSocketTransform(GetMesh());
-
-	FVector ToTarget = Target->GetActorLocation() - SocketTransform.GetLocation();
-	FRotator TargetRotation = ToTarget.Rotation();
-
-	if (ProjectileClass)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
-		SpawnParams.Instigator = this;
-
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			World->SpawnActor<AProjectile>(ProjectileClass, SocketTransform.GetLocation(), TargetRotation, SpawnParams);
-		}
-	}
-}
-
-void AEnemyBoss::PlayFireMontage()
-{
-	if (FireMontage == nullptr)
-		return;
-
-	EnemyAnim->Montage_Play(FireMontage);
-}
-
-void AEnemyBoss::OnFireMontageEnded()
-{
-	GetWorldTimerManager().SetTimer(EmitSwordAuraCoolTimer, this, &AEnemyBoss::EmitSwordAuraCoolTimeEnd, EmitSwordAuraCoolTime);
-	bIsAttacking = false;
-	OnAttackEnd.Broadcast();
-}
-
-void AEnemyBoss::EmitSwordAuraCoolTimeEnd()
-{
-	bEmitSwordAuraCoolTimeEnd = true;
-}
-
-void AEnemyBoss::Freezing()
-{
-	bIsAttacking = true;
-	bFreezingCoolTimeEnd = false;
-
-	PlayFreezingMontage();
-}
-
-void AEnemyBoss::FreezingActivate()
-{
-	if (Target == nullptr)
-	{
-		bFreezingCoolTimeEnd = true;
-		return;
-	}
-
-	Target->ActivateFreezing(true);
-
-	if (TargetFreezingParticle)
-	{
-		FTransform ParticleTransform;
-		FVector TargetLocation = Target->GetActorLocation();
-		TargetLocation.Z = -40.f;
-		ParticleTransform.SetLocation(TargetLocation);
-		ParticleTransform.SetRotation(Target->GetActorRotation().Quaternion());
-
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetFreezingParticle, ParticleTransform, true);
-	}
-
-	if (FreezingSound)
-	{
-		UGameplayStatics::PlaySound2D(this, FreezingSound);
-	}
-
-	GetWorldTimerManager().SetTimer(FreezingDurationTimer, this, &AEnemyBoss::FreezingDurationEnd, FreezingDurationTime);
-}
-
-void AEnemyBoss::PlayFreezingMontage()
-{
-	if (FreezingMontage == nullptr)
-		return;
-
-	EnemyAnim->Montage_Play(FreezingMontage);
-}
-
-void AEnemyBoss::FreezingDurationEnd()
-{
-	Target->ActivateFreezing(false);
-}
-
-void AEnemyBoss::FreezingMontageEnded()
-{
-	bIsAttacking = false;
-	AiInfo.bTargetInAttackRange = false;
-	bAbleFreezing = false;
-
-	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, FreezingCoolTime);
-
-	OnAttackEnd.Broadcast();
-}
-
-void AEnemyBoss::FreezingCoolTimeEnd()
-{
-	bFreezingCoolTimeEnd = true;
-}
-
-void AEnemyBoss::IcicleAttack()
-{
-	bIsAttacking = true;
-	bIcicleAttackCoolTimeEnd = false;
-
-	PlayIcicleAttackMontage();
-}
-
-void AEnemyBoss::RisingIcicle()
-{
-	DrawDebugSphere(GetWorld(), IcicleLocation, 100.f, 24.f, FColor::Blue, false, 5.f);
-	if (IcicleParticle)
-	{
-		FTransform ParticleTransform;
-		ParticleTransform.SetLocation(Target->GetActorLocation() + FVector(0.f, 120.f, 0.f));
-		ParticleTransform.SetRotation(FRotator(0.f,120.f,0.f).Quaternion());
-		ParticleTransform.SetScale3D(FVector(5.f, 5.f, 5.f));
-
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), IcicleParticle, ParticleTransform);
-		if (IcicleSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, IcicleSound, ParticleTransform.GetLocation());
-		}
-	}
-}
-
-void AEnemyBoss::SetIcicleLocation()
-{
-	IcicleLocation = Target->GetActorLocation();
-}
-
-void AEnemyBoss::BurstShockWave()
-{
-	if (bActivateBurst == false)
-		return;
-
-	FHitResult WeaponHitResult;
-	GetLineTraceHitResult(WeaponHitResult);
-	if (WeaponHitResult.bBlockingHit)
-	{
-		TArray<AActor*> Ignore;
-		DrawDebugSphere(GetWorld(), WeaponHitResult.ImpactPoint, 100.f, 24.f, FColor::Purple, false, 5.f);
-		UGameplayStatics::ApplyRadialDamage(
-			this,
-			BurstDamage,
-			WeaponHitResult.ImpactPoint,
-			100.f,
-			UDamageType::StaticClass(),
-			Ignore,
-			this,
-			GetController()
-		);
-
-		bActivateBurst = false;
-
-		// 이펙트 및 임펄스
-	}
-}
-
-void AEnemyBoss::PlayIcicleAttackMontage()
-{
-	if (IcicleAttackMontage == nullptr)
-		return;
-
-	EnemyAnim->Montage_Play(IcicleAttackMontage);
-}
-
-void AEnemyBoss::IcicleAttackMontageEnded()
-{
-	bIsAttacking = false;
-	GetWorldTimerManager().SetTimer(IcicleAttackCoolTimer, this, &AEnemyBoss::IcicleAttackCoolTimeEnd, IcicleAttackCoolTime);
-
-	OnAttackEnd.Broadcast();
-}
-
-void AEnemyBoss::IcicleAttackCoolTimeEnd()
-{
-	bIcicleAttackCoolTimeEnd = true;
-}
-
-void AEnemyBoss::ActivateBurst()
-{
-	bActivateBurst = true;
-}
-
-void AEnemyBoss::DeactivateBurst()
-{
-	bActivateBurst = false;
-}
-
-APawn* AEnemyBoss::GetTarget() const
-{
-	return Target;
 }
 
 bool AEnemyBoss::GetPhase2() const
@@ -1018,42 +1129,12 @@ bool AEnemyBoss::GetPhase2() const
 	return bPhase2;
 }
 
-bool AEnemyBoss::GetAbleIceWall() const
+bool AEnemyBoss::GetRangedAttackCoolTimeEnd() const
 {
-	return bAbleIceWall;
+	return bRangedAttackCoolTimeEnd;
 }
 
-bool AEnemyBoss::GetAbleBackAttack() const
+bool AEnemyBoss::GetAbleEvadeSkill() const
 {
-	return bAbleBackAttack;
-}
-
-bool AEnemyBoss::GetAbleEvade() const
-{
-	return bAbleEvade;
-}
-
-bool AEnemyBoss::GetAbleFreezing() const
-{
-	return bAbleFreezing;
-}
-
-bool AEnemyBoss::GetBlizzardCoolTimeEnd() const
-{
-	return bBlizzardCoolTimeEnd;
-}
-
-bool AEnemyBoss::GetEmitSwordAuraCoolTimeEnd() const
-{
-	return bEmitSwordAuraCoolTimeEnd;
-}
-
-bool AEnemyBoss::GetDashCoolTimeEnd() const
-{
-	return bDashCoolTimeEnd;
-}
-
-bool AEnemyBoss::GetIcicleAttackCoolTimeEnd() const
-{
-	return bIcicleAttackCoolTimeEnd;
+	return bAbleEvadeSkill;
 }

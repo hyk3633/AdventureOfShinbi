@@ -60,6 +60,8 @@ void AProjectileHoming::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
+	BodyParticleComp->Deactivate();
+
 	PlayHitEffect(Hit, OtherActor);
 
 	GetWorldTimerManager().SetTimer(DestroyTimer, this, &AProjectileHoming::DestroyProjectile, DestroyTime);

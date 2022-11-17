@@ -48,14 +48,20 @@ void UBTS_CheckDistanceForStrafing::TickNode(UBehaviorTreeComponent& OwnerComp, 
 
             if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
             {
-                float Distance = ControllingEnemy->GetDistanceTo(Cha);
+                const float Distance = ControllingEnemy->GetDistanceTo(Cha);
 
-                if (Distance <= 900.f)
+                if (Distance >= ControllingEnemy->GetAcceptableRaius() && Distance <= 900.f && ControllingEnemy->GetIsAttacking() == false)
                 {
-                    OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
+                    KeepingTime += DeltaSeconds;
+                    if (KeepingTime >= 2.f)
+                    {
+                        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
+                        KeepingTime = 0.f;
+                    }
                 }
                 else
                 {
+                    KeepingTime = 0.f;
                     OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
                     ControllingEnemy->OnStrafingEnd.Broadcast();
                 }

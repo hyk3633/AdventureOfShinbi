@@ -18,10 +18,8 @@ enum class EStrafingDirection : uint8
 	ESD_Front UMETA(DisplayName = "Front"),
 	ESD_Left UMETA(DisplayName = "Left"),
 	ESD_Right UMETA(DisplayName = "Right"),
-	ESD_Back UMETA(DisplayName = "Back"),
 	ESD_RDiagonal UMETA(DisplayName = "RDiagonal"),
 	ESD_LDiagonal UMETA(DisplayName = "LDiagonal"),
-	ESD_Stop UMETA(DisplayName = "Stop"),
 
 	ESD_MAX UMETA(Hidden)
 };
@@ -45,7 +43,9 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	void DoStrafing();
+	virtual void DoStrafing();
+
+	void SetStrafingValue();
 
 	virtual bool CheckStrafingCondition();
 
@@ -63,20 +63,24 @@ protected:
 
 protected:
 
-	UPROPERTY(VisibleAnywhere)
+	float time=0.f;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Enemy | Strafing")
 	EStrafingDirection StrafingDir = EStrafingDirection::ESD_Front;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleInstanceOnly, Category = "Enemy | Strafing")
 	bool bStrafing = false;
 
 	float StrafingValue = 0.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy | Strafing")
 	float JogAnimRate = 1.f;
 
-	float StrafingAnimRate = 0.6f;
-	float ChaseAnimRate = 1.f;
-	float StrafingSpeed = 150.f;
-	float ChaseSpeed = 450.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy | Strafing")
+	float StrafingAnimRate = 0.8f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy | Strafing")
+	float ChaseAnimRate = 1.1f;
 
 	FTimerHandle StrafingTimer;
 

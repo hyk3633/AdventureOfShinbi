@@ -22,10 +22,13 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	void Weapon2LineTrace();
+	void Weapon2BoxTrace();
 
 	UFUNCTION(BlueprintCallable)
 	void ActivateWeaponTrace2();
+
+	UFUNCTION(BlueprintCallable)
+	void DeactivateWeaponTrace2();
 
 private:
 

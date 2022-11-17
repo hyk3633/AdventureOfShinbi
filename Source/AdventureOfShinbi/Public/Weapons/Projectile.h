@@ -27,7 +27,7 @@ protected:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute")
+	UPROPERTY(EditAnywhere, Category = "Projectile")
 	bool bIsExplosive = false;
 
 	UPROPERTY(EditAnywhere)
@@ -39,18 +39,18 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	float Damage = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float Damage = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
-	float HeadShotDamage = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	float HeadShotDamage = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
+	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
 	float ExplosionRadius = 30.f;
 
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Attribute", meta = (EditCondition = "bIsExplosive"))
+	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (EditCondition = "bIsExplosive"))
 	URadialForceComponent* RadialForce;
 
 };

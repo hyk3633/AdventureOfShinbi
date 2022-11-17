@@ -9,7 +9,11 @@
 
 UBTT_RangedAttack::UBTT_RangedAttack()
 {
+    bNotifyTick = true;
 
+    NodeName = TEXT("Ranged Attack");
+
+    IsAttacking = false;
 }
 
 EBTNodeResult::Type UBTT_RangedAttack::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -17,7 +21,6 @@ EBTNodeResult::Type UBTT_RangedAttack::ExecuteTask(UBehaviorTreeComponent& Owner
     EBTNodeResult::Type Result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
     bNotifyTick = true;
-    IsAttacking = false;
 
     ER = Cast<AEnemyRanged>(OwnerComp.GetAIOwner()->GetPawn());
     if (ER == nullptr)

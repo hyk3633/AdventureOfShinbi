@@ -118,7 +118,10 @@ void AWraith::FormChange(bool bSniperMode)
 			UGameplayStatics::PlaySound2D(this, DeactivateSound);
 		}
 
-		ScopeParticleComp->Deactivate();
+		if (ScopeParticleComp)
+		{
+			ScopeParticleComp->Deactivate();
+		}
 	}
 }
 
@@ -128,7 +131,7 @@ void AWraith::ActivateScopeParticle()
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
 
-	if (ScopeParticle)
+	if (ScopeParticle && ScopeParticleComp == nullptr)
 	{
 		ScopeParticleComp = UGameplayStatics::SpawnEmitterAttached
 		(
@@ -140,6 +143,10 @@ void AWraith::ActivateScopeParticle()
 			EAttachLocation::KeepWorldPosition,
 			false
 		);
+	}
+	else if (ScopeParticleComp)
+	{
+		ScopeParticleComp->Activate();
 	}
 }
 

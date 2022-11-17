@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 #include "Engine/CollisionProfile.h"
 #include "DrawDebugHelpers.h"
@@ -21,7 +22,17 @@ void AEnemyMuriel::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FriendlyTag = bWhite ? FName("White") : FName("Black");
+    if (bWhite)
+    {
+        BuffDurationTime = 12.f;
+        FriendlyTag = FName("White");
+    }
+    else
+    {
+        FriendlyTag = FName("Black");
+    }
+
+    AiInfo.TargetPlayer = UGameplayStatics::GetPlayerPawn(this, 0);
 }
 
 void AEnemyMuriel::Tick(float DeltaTime)
@@ -34,16 +45,21 @@ void AEnemyMuriel::TakePointDamage(AActor* DamagedActor, float DamageReceived, A
 {
     Super::TakePointDamage(DamagedActor, DamageReceived, InstigatedBy, HitLocation, FHitComponent, BoneName, ShotFromDirection, DamageType, DamageCauser);
 
-    const float RandPercentage = FMath::RandRange(0.f, 1.0f);
-    if (bTeleportMinionCoolTimeEnd && RandPercentage <= 0.3f)
+    if (bTeleportMinionCoolTimeEnd)
     {
+        AAIController* AiController = Cast<AAIController>(GetController());
+        if (AiController)
+        {
+            AiController->GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), true);
+        }
         bAbleTeleportMinion = true;
     }
 }
 
 void AEnemyMuriel::HandleStiffAndStun(FName& BoneName)
 {
-    if (bIsCasting) return;
+    if (bIsCasting || bIsAttacking) 
+        return;
 
     Super::HandleStiffAndStun(BoneName);
 }
@@ -57,7 +73,8 @@ void AEnemyMuriel::ProvideBuff()
 
 void AEnemyMuriel::SummonMinion() // 수정
 {
-    if (EnemyClassArr.Num() == 0) return;
+    if (EnemyClassArr.Num() == 0) 
+        return;
 
     bSummonCoolTimeEnd = false;
     bIsCasting = true;
@@ -79,11 +96,16 @@ void AEnemyMuriel::FindTeleportPosition()
     if (AC)
     {
         bool bTeleportIsSafe = CheckSpawnPosition(TeleportPosition, AC, 200.f);
-        if (bTeleportIsSafe == false) return;
+        if (bTeleportIsSafe == false) 
+            return;
 
         TArray<AActor*> Allies;
         UGameplayStatics::GetAllActorsWithTag(this, FriendlyTag, Allies);
-        if (Allies.Num() == 0) return;
+        if (Allies.Num() == 0)
+        {
+            bAbleTeleportMinion = false;
+            return;
+        }
 
         float FarestDistance = 0.f;
         for (AActor* const& TaggedActor : Allies)
@@ -95,10 +117,9 @@ void AEnemyMuriel::FindTeleportPosition()
             }
         }
 
-        TeleportRotation = AC->GetVelocity().Rotation();
-        TeleportRotation.Yaw += RotationDir[RotationIdx];
+        TeleportRotation = (AC->GetActorForwardVector() * -1.f).Rotation();
 
-        bAbleTeleportMinion = false;
+        bTeleportMinionCoolTimeEnd = false;
         bIsCasting = true;
 
         PlayTeleportMinionMontage();
@@ -144,6 +165,7 @@ void AEnemyMuriel::Summon()
     else
     {
         bSummonCoolTimeEnd = true;
+        bIsCasting = false;
     }
 }
 
@@ -199,7 +221,8 @@ bool AEnemyMuriel::CheckSpawnPosition(FVector& SafePosition, AActor* CenterActor
 
 void AEnemyMuriel::PlaySummonMontage()
 {
-    if (EnemyAnim == nullptr || SummonMontage == nullptr) return;
+    if (EnemyAnim == nullptr || SummonMontage == nullptr) 
+        return;
 
     EnemyAnim->Montage_Play(SummonMontage);
 }
@@ -225,43 +248,52 @@ void AEnemyMuriel::SummonCoolTimeEnd()
 
 void AEnemyMuriel::Buff()
 {
-    TArray<AActor*> Allies;
-    UGameplayStatics::GetAllActorsWithTag(this, FriendlyTag, Allies);
-    if (Allies.Num() == 0) return;
+    UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), FriendlyTag, TargetsToBuff);
+    if (TargetsToBuff.Num() == 0)
+    {
+        bBuffCoolTimeEnd = true;
+        bIsCasting = false;
+        return;
+    }
 
-    for (AActor* const& TaggedActor : Allies)
+    for (AActor* const& TaggedActor : TargetsToBuff)
     {
         AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
         if (Friendly)
         {
             if (GetDistanceTo(Friendly) <= 1000.f)
             {
+                PlayBuffParticle(Friendly);
                 if (bWhite)
                 {
-                    Friendly->ActivateHealing(Friendly->GetMaxHealth() * 0.3);
+                    Friendly->ActivateHealing(Friendly->GetMaxHealth() * 0.5);
                 }
                 else
                 {
-                    Friendly->ActivateDamageUp(1.2f);
+                    Friendly->SetDamage(1.25f);
                 }
             }
         }
     }
 
-    GetWorldTimerManager().SetTimer(BuffTimer, this, &AEnemyMuriel::BuffCoolTimeEnd, BuffCoolTime);
+    GetWorldTimerManager().SetTimer(BuffDurationTimer, this, &AEnemyMuriel::BuffDurationEnd, BuffDurationTime);
+    GetWorldTimerManager().SetTimer(BuffCoolTimer, this, &AEnemyMuriel::BuffCoolTimeEnd, BuffCoolTime);
+
+    // delete PlayBuffParticle()
 }
 
 void AEnemyMuriel::PlayBuffMontage()
 {
-    if (EnemyAnim == nullptr || BuffMontage == nullptr) return;
+    if (EnemyAnim == nullptr || BuffMontage == nullptr) 
+        return;
 
     EnemyAnim->Montage_Play(BuffMontage);
 }
 
 void AEnemyMuriel::OnBuffMontageEnded()
 {
-    OnSkillEnd.Broadcast();
     bIsCasting = false;
+    OnSkillEnd.Broadcast();
 }
 
 void AEnemyMuriel::BuffCoolTimeEnd()
@@ -269,9 +301,56 @@ void AEnemyMuriel::BuffCoolTimeEnd()
 	bBuffCoolTimeEnd = true;
 }
 
+void AEnemyMuriel::BuffDurationEnd()
+{
+    if (BuffParticleComponents.Num() > 0)
+    {
+        for (int8 i = 0; i < BuffParticleComponents.Num(); i++)
+        {
+            BuffParticleComponents[i]->Deactivate();
+        }
+        BuffParticleComponents.Empty();
+    }
+    
+    if (bWhite == false)
+    {
+        for (AActor* Target : TargetsToBuff)
+        {
+            AEnemyCharacter* BuffedTarget = Cast<AEnemyCharacter>(Target);
+            if (Target)
+            {
+                BuffedTarget->SetDamage();
+            }
+        }
+    }
+
+    TargetsToBuff.Empty();
+}
+
+void AEnemyMuriel::PlayBuffParticle(const ACharacter* BuffTarget)
+{
+    if (BuffStartParticle)
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BuffStartParticle, BuffTarget->GetActorLocation(), BuffTarget->GetActorRotation(), true);
+    }
+    if (BuffParticle)
+    {
+        BuffParticleComponents.Add(UGameplayStatics::SpawnEmitterAttached
+        (
+            BuffParticle,
+            BuffTarget->GetMesh(),
+            FName(),
+            FVector::UpVector * 50.f,
+            FRotator::ZeroRotator,
+            EAttachLocation::KeepRelativeOffset
+        ));
+    }
+}
+
 void AEnemyMuriel::PlaySkillShotFireMontage()
 {
-    if (EnemyAnim == nullptr || SkillShotFireMontage == nullptr) return;
+    if (EnemyAnim == nullptr || SkillShotFireMontage == nullptr) 
+        return;
 
     EnemyAnim->Montage_Play(SkillShotFireMontage);
 }
@@ -297,7 +376,6 @@ void AEnemyMuriel::TeleportMinionToPlayer()
     PlayTeleportMinionEffect();
     AEnemyCharacter* EC = Cast<AEnemyCharacter>(FarestMinion);
     EC->GetMesh()->SetVisibility(false);
-    // 텔레포트 시 행동 잠금
 
     GetWorldTimerManager().SetTimer(TeleportTimer, this, &AEnemyMuriel::TeleportMinionDelayEnd, TeleportDelayTime);
 }
@@ -320,24 +398,30 @@ void AEnemyMuriel::PlayTeleportMinionEffect()
 
 void AEnemyMuriel::PlayTeleportMinionMontage()
 {
-    if (EnemyAnim == nullptr || TeleportMinionMontage == nullptr) return;
+    if (EnemyAnim == nullptr || TeleportMinionMontage == nullptr) 
+        return;
 
     EnemyAnim->Montage_Play(TeleportMinionMontage);
 }
 
 void AEnemyMuriel::OnTeleportMinionMontageEnded()
 {
-    OnSkillEnd.Broadcast();
-
     bIsCasting = false;
+    bAbleTeleportMinion = false;
+    AAIController* AiController = Cast<AAIController>(GetController());
+    if (AiController)
+    {
+        AiController->GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), false);
+    }
+    OnSkillEnd.Broadcast();
 }
 
 void AEnemyMuriel::TeleportMinionDelayEnd()
 {
     AEnemyCharacter* EC = Cast<AEnemyCharacter>(FarestMinion);
-    if (EC == nullptr) return;
+    if (EC == nullptr) 
+        return;
     
-    // 텔레포트 시 행동 해제
     FarestMinion->SetActorLocation(TeleportPosition);
     FarestMinion->SetActorRotation(TeleportRotation);
     EC->GetMesh()->SetVisibility(true);
@@ -357,6 +441,11 @@ FName AEnemyMuriel::GetFriendlyTag() const
 bool AEnemyMuriel::GetMurielType() const
 {
     return bWhite;
+}
+
+bool AEnemyMuriel::GetIsCasting() const
+{
+    return bIsCasting;
 }
 
 float AEnemyMuriel::GetSkillShotDurationTime() const

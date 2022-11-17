@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Perception/AIPerceptionTypes.h"
+#include "Components/TimelineComponent.h"
 #include "EnemyCharacter.generated.h"
 
 class AEnemyAIController;
@@ -37,8 +38,6 @@ struct FAiInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
-	FVector WorldPatrolPoint = FVector::ZeroVector;
 	UPROPERTY()
 	FVector DetectedLocation = FVector::ZeroVector;
 
@@ -75,7 +74,7 @@ public:
 
 	AEnemyCharacter();
 
-	void Attack();
+	virtual void Attack();
 
 	FOnAttackEndDelegate OnAttackEnd;
 
@@ -98,9 +97,9 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void Weapon1LineTrace();
+	virtual bool Weapon1BoxTrace();
 
-	virtual void GetLineTraceHitResult(FHitResult& HitResult);
+	void GetBoxTraceHitResult(FHitResult& HitResult, FName StartSocketName, FName EndSocketName);
 
 	virtual void CheckIsKnockUp();
 
@@ -111,6 +110,9 @@ protected:
 
 	UFUNCTION()
 	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void OnAttackRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION()
 	virtual void TakePointDamage
@@ -138,7 +140,12 @@ protected:
 
 	void PlayStunMontage();
 
-	void PlayDeathMontage();
+	virtual void PlayDeathMontage();
+
+	void Dissolution();
+
+	UFUNCTION()
+	void UpdateDissolveMat(float Value);
 
 	UFUNCTION()
 	virtual void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -150,7 +157,7 @@ protected:
 	void OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION(BlueprintCallable)
-	void DeathMontageEnded();
+	virtual void DeathMontageEnded();
 
 	void ForgetHit();
 
@@ -173,6 +180,8 @@ protected:
 
 	void SightStimulusExpire();
 
+	USphereComponent* GetAttackRange() const;
+
 protected:
 
 	AEnemyAIController* AIController;
@@ -180,33 +189,44 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UAIPerceptionComponent* PerceptionComp;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float Damage;
-
 	UPROPERTY()
 	UEnemyAnimInstance* EnemyAnim;
 
-	// 공격 몽타주
-	UPROPERTY(EditAnywhere, Category = "Montages")
-	UAnimMontage* AttackMontage;
+	FAiInfo AiInfo;
+
+	FName WeaponTraceStartSocketName;
+	FName WeaponTraceEndSocketName;
 
 	bool bActivateWeaponTrace1 = false;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
-	bool bIsAttacking = false;
-
-	UPROPERTY(VisibleAnywhere)
-	EEnemyState EnemyState = EEnemyState::EES_Patrol;
-
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
-	float StiffChance = 0.35f;
-
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
-	float StunChance = 0.2f;
-
 	bool bDeath = false;
 
-	FAiInfo AiInfo;
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Enemy | Stats", Meta = (AllowPrivateAccess = true))
+	bool bIsAttacking = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Enemy | Stats")
+	EEnemyState EnemyState = EEnemyState::EES_Patrol;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
+	float Damage;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
+	float PatrolSpeed = 300.f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
+	float ChaseSpeed = 600.f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
+	UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
+	FVector BoxTraceSize;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
+	float StiffChance = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
+	float StunChance = 0.2f;
 
 private:
 
@@ -214,87 +234,81 @@ private:
 
 	UAISenseConfig_Hearing* HearingConfig;
 
-	// 공격 범위
 	UPROPERTY(EditAnywhere)
 	USphereComponent* AttackRange;
 
-	UPROPERTY(EditAnywhere, Category = "Montages")
-	UAnimMontage* HitReactionMontage;
+	float AcceptableRadius;
 
-	UPROPERTY(EditAnywhere, Category = "Montages")
-	UAnimMontage* StunMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages")
-	UAnimMontage* DeathMontage;
-
-	UPROPERTY(EditAnywhere, Category = "Montages")
+	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
 	TArray<FName> AttackMontageSectionNameArr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (AllowPrivateAccess = "true"))
-	float Health;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
+	UParticleSystem* MeleeHitParticle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (AllowPrivateAccess = "true"))
-	float MaxHealth;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
+	USoundCue* MeleeHitSound;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float Defense;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Hit")
+	UAnimMontage* HitReactionMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float PatrolSpeed = 300.f;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Hit")
+	UAnimMontage* StunMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Stats")
-	float ChaseSpeed = 600.f;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Hit")
+	UParticleSystem* HitParticle;
 
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
-	float AcceptableRadius = 10.f;
+	UPROPERTY(EditAnywhere, Category = "Enemy | Hit")
+	USoundCue* HitVoice;
 
 	FTimerHandle HitForgetTimer;
 
-	UPROPERTY(EditAnywhere, Category = "AI Settings")
+	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
+	UAnimMontage* DeathMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
+	UParticleSystem* DeathParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
+	USoundCue* DeathVoice;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Dissolve")
+	UCurveFloat* DissolveCurve;
+
+	UPROPERTY(VisibleAnywhere)
+	UTimelineComponent* DissolveTimeline;
+	FOnTimelineFloat DissolveTrack;
+
+	UPROPERTY(VisibleAnywhere, Category = "Enemy | Dissolve")
+	TArray<UMaterialInstanceDynamic*> DynamicDissolveMatInst;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Dissolve")
+	TArray<UMaterialInstance*> DissolveMatInst;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
+	float Health;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
+	float MaxHealth;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
+	float Defense;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
 	float HitMemoryTime = 10.f;
+
+	FTimerHandle SightStimulusExpireTimer;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
+	float SightStimulusExpireTime = 10.f;
 
 	UPROPERTY(EditAnywhere)
 	UWidgetComponent* HealthWidget;
 
-	UPROPERTY(EditAnywhere, Category = "HUD")
+	UPROPERTY(EditAnywhere, Category = "Enemy | HUD")
 	TSubclassOf<UUserWidget> DamageAmountTextClass;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true", MakeEditWidget = "true"))
 	FVector PatrolPoint;
-
-	/** 이펙트 : 파티클, 사운드 */
-
-	// 근접 공격 적중 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UParticleSystem* MeleeHitParticle;
-
-	// 피격 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UParticleSystem* HitParticle;
-
-	// 사망 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UParticleSystem* DeathParticle;
-
-	// 버프 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UParticleSystem* BuffParticle;
-
-	// 버프 스타트 파티클
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	UParticleSystem* BuffStartParticle;
-
-	// 피격 시 캐릭터 음성
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	USoundCue* HitVoice;
-
-	// 사망 시 캐릭터 음성
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	USoundCue* DeathVoice;
-
-	// 근접 공격 시 효과음
-	UPROPERTY(EditAnywhere, Category = "Effects")
-	USoundCue* MeleeHitSound;
 
 	bool bHealing = false;
 
@@ -311,15 +325,6 @@ private:
 
 	float DamageUpTime = 30.f;
 
-	UParticleSystemComponent* BuffParticleComponent;
-
-	/** ai */
-
-	FTimerHandle SightStimulusExpireTimer;
-
-	UPROPERTY(EditAnywhere, Category = "AI")
-	float SightStimulusExpireTime = 10.f;
-
 	bool IsPlayerDeathDelegateBined = false;
 
 public:
@@ -329,6 +334,7 @@ public:
 	void SetEnemyState(EEnemyState State);
 	bool GetIsAttacking() const;
 	bool GetIsDead() const;
+	void SetDamage(float DamageUpRate = 0.f);
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetPatrolPoint() const;
@@ -338,4 +344,5 @@ public:
 	float GetEnemyDamage() const;
 
 	FAiInfo GetAiInfo() const;
+	FVector GetPatrolPoint();
 };

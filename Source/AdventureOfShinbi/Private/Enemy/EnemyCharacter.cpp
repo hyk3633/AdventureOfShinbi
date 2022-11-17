@@ -1,8 +1,8 @@
 
 
 #include "Enemy/EnemyCharacter.h"
-#include "Enemy/EnemyAIController.h"
 #include "Enemy/EnemyAnimInstance.h"
+#include "Enemy/EnemyAIController.h"
 #include "Player/AOSCharacter.h"
 #include "Components/CombatComponent.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
@@ -17,6 +17,7 @@
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "HUD/EnemyHealthBar.h"
@@ -66,6 +67,8 @@ AEnemyCharacter::AEnemyCharacter()
 	HealthWidget->SetupAttachment(RootComponent);
 	HealthWidget->SetVisibility(false);
 
+	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("Dissolve Timeline Component"));
+
 	/** Perception Component */
 
 	PerceptionComp = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AI Perception Component"));
@@ -91,6 +94,11 @@ AEnemyCharacter::AEnemyCharacter()
 	PerceptionComp->ConfigureSense(*HearingConfig);
 
 	PerceptionComp->SetDominantSense(SightConfig->GetSenseImplementation());
+
+	BoxTraceSize = FVector(20.f, 20.f, 20.f);
+
+	WeaponTraceStartSocketName = FName("Weapon1TraceStart");
+	WeaponTraceEndSocketName = FName("Weapon1TraceEnd");
 }
 
 void AEnemyCharacter::BeginPlay()
@@ -98,6 +106,8 @@ void AEnemyCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	OriginDamage = Damage;
+
+	AcceptableRadius = AttackRange->GetScaledSphereRadius() - 80.f;
 
 	PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyCharacter::OnDetected);
 
@@ -107,10 +117,12 @@ void AEnemyCharacter::BeginPlay()
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnStunMontageEnded);
 
 	AttackRange->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlap);
-	
+	AttackRange->OnComponentEndOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlapEnd);
+
 	OnTakePointDamage.AddDynamic(this, &AEnemyCharacter::TakePointDamage);
 
-	AiInfo.WorldPatrolPoint = UKismetMathLibrary::TransformLocation(GetActorTransform(), PatrolPoint);
+	PatrolPoint = GetActorLocation();
+
 	AiInfo.DetectedLocation = FVector::ZeroVector;
 	AiInfo.TargetPlayer = nullptr;
 	AiInfo.bTargetIsVisible = false;
@@ -121,6 +133,14 @@ void AEnemyCharacter::BeginPlay()
 	AiInfo.bStiffed = false;
 	AiInfo.bTargetInAttackRange = false;
 	AiInfo.bTargetHitsMe = false;
+
+	AIController = Cast<AEnemyAIController>(GetController());
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+		AIController->SetTarget(AiInfo.TargetPlayer);
+		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
+	}
 }
 
 void AEnemyCharacter::Tick(float DeltaTime)
@@ -131,48 +151,62 @@ void AEnemyCharacter::Tick(float DeltaTime)
 
 	CheckIsKnockUp();
 
-	Weapon1LineTrace();
+	Weapon1BoxTrace();
 
 	Healing(DeltaTime);
 }
 
-void AEnemyCharacter::Weapon1LineTrace()
+bool AEnemyCharacter::Weapon1BoxTrace()
 {
 	if (bActivateWeaponTrace1)
 	{
 		FHitResult WeaponHitResult;
-		GetLineTraceHitResult(WeaponHitResult);
+		GetBoxTraceHitResult(WeaponHitResult, WeaponTraceStartSocketName, WeaponTraceEndSocketName);
 
 		if (WeaponHitResult.bBlockingHit)
 		{
 			PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
 
-			if (bIsAttacking)
-			{
-				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
-			}
+			UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
 
 			bActivateWeaponTrace1 = false;
+
+			return true;
 		}
 	}
+
+	return false;
 }
 
-void AEnemyCharacter::GetLineTraceHitResult(FHitResult& HitResult)
+void AEnemyCharacter::GetBoxTraceHitResult(FHitResult& HitResult, FName StartSocketName, FName EndSocketName)
 {
-	const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon1TraceStart");
+	const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName(StartSocketName);
 	if (WeaponTraceStart == nullptr)
 		return;
 	const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
 
-	const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon1TraceEnd");
+	const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName(EndSocketName);
 	if (WeaponTraceEnd == nullptr) 
 		return;
 	const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
 
-	FVector TraceStart = SocketTransformStart.GetLocation();
-	FVector TraceEnd = SocketTransformEnd.GetLocation();
+	UCollisionProfile* Profile = UCollisionProfile::Get();
+	ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_EnemyWeaponTrace);
 
-	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+	UKismetSystemLibrary::BoxTraceSingle
+	(
+		this,
+		SocketTransformStart.GetLocation(),
+		SocketTransformEnd.GetLocation(),
+		BoxTraceSize,
+		FRotator::ZeroRotator,
+		TraceType,
+		false,
+		TArray<AActor*>(),
+		EDrawDebugTrace::None,
+		HitResult,
+		true
+	);
 }
 
 void AEnemyCharacter::CheckIsKnockUp()
@@ -185,6 +219,11 @@ void AEnemyCharacter::CheckIsKnockUp()
 	else
 	{
 		AiInfo.bIsKnockUp = false;
+	}
+
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
 	}
 }
 
@@ -209,7 +248,6 @@ void AEnemyCharacter::Healing(float DeltaTime)
 		HealedAmount = 0.f;
 		bHealing = false;
 		HealthWidget->SetVisibility(false);
-		BuffParticleComponent->Deactivate();
 	}
 }
 
@@ -223,6 +261,10 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 	{
 		Cha->GetCombatComp()->PlayerDeathDelegate.AddLambda([this]() -> void {
 			AiInfo.bIsPlayerDead = true;
+			if (AIController)
+			{
+				AIController->UpdateAiInfo();
+			}
 		});
 	}
 
@@ -231,6 +273,7 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			AiInfo.bTargetIsVisible = true;
+			AiInfo.bSightStimulusExpired = false;
 			AiInfo.TargetPlayer = Cha;
 
 			SetEnemyState(EEnemyState::EES_Chase);
@@ -261,6 +304,13 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 		}
 	}
 
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+		AIController->SetTarget(AiInfo.TargetPlayer);
+		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
+	}
+
 	CheckNothingStimulus();
 }
 
@@ -273,6 +323,26 @@ void AEnemyCharacter::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedCompon
 	if (Cha)
 	{
 		AiInfo.bTargetInAttackRange = true;
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
+	}
+}
+
+void AEnemyCharacter::OnAttackRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (bIsAttacking)
+		return;
+
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(OtherActor);
+	if (Cha)
+	{
+		AiInfo.bTargetInAttackRange = false;
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
 	}
 }
 
@@ -290,8 +360,6 @@ void AEnemyCharacter::PlayMeleeAttackEffect(FVector HitLocation, FRotator HitRot
 
 void AEnemyCharacter::ActivateHealing(float RecoveryAmount)
 {
-	PlayBuffParticle();
-
 	HealAmount = RecoveryAmount;
 	bHealing = true;
 	HealthWidget->SetVisibility(true);
@@ -331,6 +399,11 @@ void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived
 {
 	AiInfo.bTargetHitsMe = true;
 	AiInfo.DetectedLocation = DamageCauser->GetActorLocation();
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
+	}
 
 	HandleStiffAndStun(BoneName);
 	HandleHealthChange(DamageReceived);
@@ -456,6 +529,10 @@ void AEnemyCharacter::Attack()
 		return;
 
 	bIsAttacking = true;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 	PlayAttackMontage();
 }
 
@@ -495,6 +572,43 @@ void AEnemyCharacter::PlayDeathMontage()
 		return;
 
 	EnemyAnim->Montage_Play(DeathMontage);
+
+	if (DissolveMatInst.Num() == 0)
+		return;
+
+	for (int8 i = 0; i < DissolveMatInst.Num(); i++)
+	{
+		DynamicDissolveMatInst.Add(nullptr);
+		if (DissolveMatInst[i])
+		{
+			DynamicDissolveMatInst[i] = UMaterialInstanceDynamic::Create(DissolveMatInst[i], this);
+			GetMesh()->SetMaterial(i, DynamicDissolveMatInst[i]);
+			DynamicDissolveMatInst[i]->SetScalarParameterValue(TEXT("Dissolve"), -0.55f);
+			DynamicDissolveMatInst[i]->SetScalarParameterValue(TEXT("Glow"), 100.f);
+		}
+	}
+	Dissolution();
+}
+
+void AEnemyCharacter::Dissolution()
+{
+	DissolveTrack.BindDynamic(this, &AEnemyCharacter::UpdateDissolveMat);
+	if (DissolveCurve && DissolveTimeline)
+	{
+		DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTrack);
+		DissolveTimeline->Play();
+	}
+}
+
+void AEnemyCharacter::UpdateDissolveMat(float Value)
+{
+	for (int8 i = 0; i < DynamicDissolveMatInst.Num(); i++)
+	{
+		if (DynamicDissolveMatInst[i])
+		{
+			DynamicDissolveMatInst[i]->SetScalarParameterValue(TEXT("Dissolve"), Value);
+		}
+	}
 }
 
 void AEnemyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
@@ -502,7 +616,12 @@ void AEnemyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrup
 	if (Montage == AttackMontage)
 	{
 		bIsAttacking = false;
-		AiInfo.bTargetInAttackRange = false;
+		if(AttackRange->IsOverlappingActor(AiInfo.TargetPlayer) == false)
+			AiInfo.bTargetInAttackRange = false;
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
 		OnAttackEnd.Broadcast();
 	}
 }
@@ -512,6 +631,10 @@ void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInt
 	if (Montage == HitReactionMontage)
 	{
 		AiInfo.bStiffed = false;
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
 	}
 }
 
@@ -520,6 +643,10 @@ void AEnemyCharacter::OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupte
 	if (Montage == StunMontage)
 	{
 		AiInfo.bStunned = false;
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
 	}
 }
 
@@ -527,13 +654,18 @@ void AEnemyCharacter::DeathMontageEnded()
 {
 	HealthWidget->SetVisibility(false);
 	GetMesh()->bPauseAnims = true;
+
+	// Å¸ÀÌ¸Ó
 	//Destroy();
 }
 
 void AEnemyCharacter::ForgetHit()
 {
 	AiInfo.bTargetHitsMe = false;
-
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 	CheckNothingStimulus();
 	
 	if (HealthWidget)
@@ -549,7 +681,8 @@ void AEnemyCharacter::RotateToTarget(float DeltaTime)
 		AiInfo.bStiffed == false &&
 		AiInfo.bStunned == false &&
 		AiInfo.TargetPlayer != nullptr &&
-		AiInfo.bIsPlayerDead == false
+		AiInfo.bIsPlayerDead == false &&
+		EnemyState == EEnemyState::EES_Chase
 		)
 	{
 		AActor* Target = Cast<AActor>(AiInfo.TargetPlayer);
@@ -600,41 +733,27 @@ void AEnemyCharacter::StopAttackMontage()
 void AEnemyCharacter::DamageUpTimeEnd()
 {
 	Damage = OriginDamage;
-	BuffParticleComponent->Deactivate();
 }
 
 void AEnemyCharacter::PlayBuffParticle()
 {
-	if (BuffStartParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BuffStartParticle, GetActorLocation(), GetActorRotation(), true);
-	}
-	if (BuffParticle)
-	{
-		BuffParticleComponent = UGameplayStatics::SpawnEmitterAttached
-		(
-			BuffParticle,
-			GetMesh(),
-			FName(),
-			FVector::UpVector * 50.f,
-			FRotator::ZeroRotator,
-			EAttachLocation::KeepRelativeOffset
-		);
-	}
+	
 }
 
 void AEnemyCharacter::SightStimulusExpire()
 {
 	AiInfo.bSightStimulusExpired = true;
 	AiInfo.TargetPlayer = nullptr;
-
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+		AIController->SetTarget(AiInfo.TargetPlayer);
+	}
 	CheckNothingStimulus();
 }
 
 void AEnemyCharacter::SetEnemyState(EEnemyState State)
 {
-	if (EnemyState != EEnemyState::EES_Siege) return;
-
 	EnemyState = State;
 
 	if (EnemyState == EEnemyState::EES_Patrol || EnemyState == EEnemyState::EES_Detected)
@@ -652,9 +771,9 @@ bool AEnemyCharacter::GetIsAttacking() const
 	return bIsAttacking;
 }
 
-FVector AEnemyCharacter::GetPatrolPoint() const
+FVector AEnemyCharacter::GetPatrolPoint()
 {
-	return PatrolPoint;
+	return UKismetMathLibrary::TransformLocation(GetActorTransform(), PatrolPoint);
 }
 
 float AEnemyCharacter::GetHealthPercentage() const
@@ -672,6 +791,18 @@ FAiInfo AEnemyCharacter::GetAiInfo() const
 	return AiInfo;
 }
 
+void AEnemyCharacter::SetDamage(float DamageUpRate)
+{
+	if (DamageUpRate > 0.f)
+	{
+		Damage *= DamageUpRate;
+	}
+	else
+	{
+		Damage = OriginDamage;
+	}
+}
+
 bool AEnemyCharacter::GetIsDead() const
 {
 	return bDeath;
@@ -680,6 +811,11 @@ bool AEnemyCharacter::GetIsDead() const
 float AEnemyCharacter::GetEnemyDamage() const
 {
 	return Damage;
+}
+
+USphereComponent* AEnemyCharacter::GetAttackRange() const
+{
+	return AttackRange;
 }
 
 float AEnemyCharacter::GetAcceptableRaius() const

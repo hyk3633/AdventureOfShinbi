@@ -20,12 +20,15 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-    AEnemyMuriel* ControllingEnemy = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
-    if (nullptr == ControllingEnemy)
+    AEnemyMuriel* Muriel = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
+    if (nullptr == Muriel)
+        return;
+
+    if (Muriel->GetIsCasting())
         return;
 
     TArray<AActor*> Allies;
-    UGameplayStatics::GetAllActorsWithTag(this, ControllingEnemy->GetFriendlyTag(), Allies);
+    UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), Muriel->GetFriendlyTag(), Allies);
 
     int8 LowHealthCount = 0;
     int8 AlliesNearbyCount = 0;
@@ -34,7 +37,7 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
         AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
         if (Friendly)
         {
-            if (ControllingEnemy->GetDistanceTo(Friendly) <= 1000.f)
+            if (Muriel->GetDistanceTo(Friendly) <= 1000.f)
             {
                 AlliesNearbyCount++;
                 if (Friendly->GetHealthPercentage() <= 0.6f)
@@ -45,22 +48,14 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
         }
     }
 
-    if (AlliesNearbyCount < 2 && ControllingEnemy->GetSummonCoolTimeEnd())
+    if (AlliesNearbyCount < 2 && Muriel->GetSummonCoolTimeEnd())
     {
         OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("LackOfAllies"), true);
     }
-    else
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("LackOfAllies"), false);
-    }
     
-    if (LowHealthCount >= 2 && ControllingEnemy->GetBuffCoolTimeEnd())
+    if (LowHealthCount >= 2 && Muriel->GetBuffCoolTimeEnd())
     {
         OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("ProvideBuff"), true);
-    }
-    else
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("ProvideBuff"), false);
     }
     
 }

@@ -15,7 +15,8 @@ void UEnemyBossAnimInstance::UpdateAnimationProperties(float DeltaTime)
 {
 	Super::UpdateAnimationProperties(DeltaTime);
 
-	if (Boss == nullptr) return;
+	if (Boss == nullptr) 
+		return;
 
 	bPhase2 = Boss->GetPhase2();
 

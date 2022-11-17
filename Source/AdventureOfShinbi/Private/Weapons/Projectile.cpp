@@ -48,7 +48,7 @@ void AProjectile::BeginPlay()
 	}
 	else
 	{
-		AEnemyCharacter* EC = Cast<AEnemyCharacter>(GetOwner());
+		AEnemyCharacter* EC = Cast<AEnemyCharacter>(GetInstigator());
 		if (EC)
 		{
 			Damage = EC->GetEnemyDamage();
@@ -61,12 +61,12 @@ void AProjectile::BeginPlay()
 	if (bIsPlayersProjectile)
 	{
 		BoxCollision->SetCollisionObjectType(ECC_PlayerProjectile);
-		BoxCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Block);
+		BoxCollision->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Ignore);
 	}
 	else
 	{
 		BoxCollision->SetCollisionObjectType(ECC_EnemyProjectile);
-		BoxCollision->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
+		BoxCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Ignore);
 	}
 
 	IgnoreActors.Add(GetOwner());
@@ -74,6 +74,8 @@ void AProjectile::BeginPlay()
 
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	if (bIsExplosive)
 	{
 		UGameplayStatics::ApplyRadialDamage
@@ -91,7 +93,8 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	}
 	else
 	{
-		float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
+		const float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
+		AActor* DmgCauser = bIsPlayersProjectile ? GetOwner() : this;
 		UGameplayStatics::ApplyPointDamage
 		(
 			OtherActor, 
@@ -99,7 +102,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 			GetActorLocation(), 
 			Hit,
 			GetOwner()->GetInstigatorController(), 
-			GetOwner(), 
+			DmgCauser,
 			UDamageType::StaticClass()
 		);
 	}

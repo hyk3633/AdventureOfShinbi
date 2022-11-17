@@ -4,19 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BTT_Boss_IceWall.generated.h"
+#include "BTT_EvadeSkill.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ADVENTUREOFSHINBI_API UBTT_Boss_IceWall : public UBTTaskNode
+class ADVENTUREOFSHINBI_API UBTT_EvadeSkill : public UBTTaskNode
 {
 	GENERATED_BODY()
 	
 public:
 
-    UBTT_Boss_IceWall();
+    UBTT_EvadeSkill();
 
     virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 

@@ -25,7 +25,13 @@ public:
 
 	ABossAIController();
 
-	void SetBlackboardKey();
+	void UpdateAiInfo();
+
+	void SetTarget(AActor* Target);
+
+	void SetRangedAttackCoolTimeEnd(bool Key);
+
+	void SetAbleEvadeSkill(bool Key);
 
 protected:
 

@@ -9,19 +9,25 @@
 #include "GameFrameWork/CharacterMovementComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Components/SphereComponent.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 AEnemyRangedSiege::AEnemyRangedSiege()
 {
-
+	BoxTraceSize = FVector(40.f, 30.f, 40.f);
 }
 
 void AEnemyRangedSiege::BeginPlay()
 {
 	Super::BeginPlay();
 
+}
+
+void AEnemyRangedSiege::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 }
 
 void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
@@ -58,6 +64,11 @@ void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
 			}
 		}
 	}
+
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 }
 
 void AEnemyRangedSiege::SiegeModeAttack()
@@ -69,7 +80,8 @@ void AEnemyRangedSiege::SiegeModeAttack()
 void AEnemyRangedSiege::SiegeModeProjectileFire()
 {
 	const USkeletalMeshSocket* MuzzleSocket = GetMesh()->GetSocketByName("MuzzleSocket");
-	if (MuzzleSocket == nullptr) return;
+	if (MuzzleSocket == nullptr) 
+		return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetMesh());
 
 	if (SiegeModeProjectileClass)
@@ -89,22 +101,33 @@ void AEnemyRangedSiege::SiegeModeProjectileFire()
 void AEnemyRangedSiege::ConvertSiegeMode()
 {
 	EnemyState = EEnemyState::EES_Siege;
-	bSiegeMode = true;
+	if (AIController)
+	{
+		AIController->ActivateSiegeMode();
+	}
 	// 방어력 증가
 }
 
 void AEnemyRangedSiege::ReleaseSiegeMode()
 {
 	SetEnemyState(EEnemyState::EES_Comeback);
-	bSiegeMode = false;
+	if (AIController)
+	{
+		AIController->DeactivateSiegeMode();
+	}
 	// 방어력 복구
 }
 
 void AEnemyRangedSiege::PlaySiegeModeFireMontage()
 {
-	if (EnemyAnim == nullptr || SiegeModeFireMontage == nullptr) return;
+	if (EnemyAnim == nullptr || SiegeModeFireMontage == nullptr) 
+		return;
 
 	bIsAttacking = true;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(SiegeModeFireMontageSectionNameArr.Num());
 
@@ -115,7 +138,8 @@ void AEnemyRangedSiege::PlaySiegeModeFireMontage()
 
 void AEnemyRangedSiege::PlaySiegeModeHitReactionMontage()
 {
-	if (EnemyAnim == nullptr || SiegeModeHitReactionMontage == nullptr) return;
+	if (EnemyAnim == nullptr || SiegeModeHitReactionMontage == nullptr) 
+		return;
 
 	EnemyAnim->Montage_Play(SiegeModeHitReactionMontage);
 
@@ -125,15 +149,18 @@ void AEnemyRangedSiege::PlaySiegeModeHitReactionMontage()
 void AEnemyRangedSiege::OnSiegeModeFireMontageEnded()
 {
 	bIsAttacking = false;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 	OnAttackEnd.Broadcast();
 }
 
 void AEnemyRangedSiege::OnSiegeModeHitReactionMontageEnded()
 {
 	AiInfo.bStiffed = false;
-}
-
-bool AEnemyRangedSiege::GetSiegeMode() const
-{
-	return bSiegeMode;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 }

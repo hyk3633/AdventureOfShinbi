@@ -117,6 +117,11 @@ protected:
 	UFUNCTION()
 	void GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted);
 
+	void PlayHitReactMontage();
+
+	UFUNCTION()
+	void OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted);
+
 	void PlayMontageDeath();
 
 	UFUNCTION(BlueprintCallable)
@@ -174,22 +179,22 @@ private:
 
 	AAOSHUD* HUD;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float Health = 100.f;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float MaxHealth = 100.f;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float Mana = 100.f;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float MaxMana = 100.f;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float Stamina = 100.f;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats", meta = (ClampMin = "10.0", ClampMax = "500.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float MaxStamina = 100.f;
 
 	float StaminaDecreaseRate = 20.f;
@@ -212,17 +217,20 @@ private:
 
 	/** 신비의 검 변수들 */
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
 	UAnimMontage* MeleeOneHandAttackMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
 	UAnimMontage* WolfAttackMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
 	UAnimMontage* CirclingWolvesMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Shinbi Sword")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
 	UAnimMontage* UltimateWolfRushMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
+	UAnimMontage* OneHandHitReactMontage;
 
 	bool bAbleWolfAttack = true;
 
@@ -246,24 +254,30 @@ private:
 
 	/** 총기류 */
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Guns")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Guns")
 	UAnimMontage* GunReloadMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Guns")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Guns")
 	UAnimMontage* GunFireMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Guns")
+	UAnimMontage* GunHitReactMontage;
 
 	/** 글레이브 */
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
 	UAnimMontage* SickleAttackMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
 	UAnimMontage* GlaiveAttackMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
 	UAnimMontage* GlaiveUltimateMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Weapons | Glaive")
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
+	UAnimMontage* GlaiveHitReactMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
 	UCurveFloat* CameraCurve;
 
 	FTimerHandle MovingCameraTimer;

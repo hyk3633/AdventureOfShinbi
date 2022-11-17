@@ -24,18 +24,32 @@ AEnemyAIController::AEnemyAIController()
 void AEnemyAIController::BeginPlay()
 {
 	Super::BeginPlay();
+
 }
 
 void AEnemyAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AEnemyAIController::SetTarget(AActor* Target)
+{
+	BBComp->SetValueAsObject(FName("Target"), Target);
+}
+
+void AEnemyAIController::SetDetectedLocation(FVector Location)
+{
+	BBComp->SetValueAsVector(FName("DetectedLocation"), Location);
+}
+
+void AEnemyAIController::UpdateAiInfo()
+{
 	if (PossessedCharacter)
 	{
 		BBComp->SetValueAsBool(FName("TargetIsVisible"), PossessedCharacter->GetAiInfo().bTargetIsVisible);
 		BBComp->SetValueAsBool(FName("SightStimulusExpired"), PossessedCharacter->GetAiInfo().bSightStimulusExpired);
 		BBComp->SetValueAsBool(FName("TargetIsHeard"), PossessedCharacter->GetAiInfo().bTargetIsHeard);
-		BBComp->SetValueAsObject(FName("Target"), PossessedCharacter->GetAiInfo().TargetPlayer);
 		BBComp->SetValueAsBool(FName("IsAttacking"), PossessedCharacter->GetIsAttacking());
 
 		BBComp->SetValueAsBool(FName("KnockUp"), PossessedCharacter->GetAiInfo().bIsKnockUp);
@@ -44,15 +58,18 @@ void AEnemyAIController::Tick(float DeltaTime)
 		BBComp->SetValueAsBool(FName("IsEnemyDead"), PossessedCharacter->GetIsDead());
 		BBComp->SetValueAsBool(FName("TargetInAttackRange"), PossessedCharacter->GetAiInfo().bTargetInAttackRange);
 		BBComp->SetValueAsBool(FName("TargetHitsMe"), PossessedCharacter->GetAiInfo().bTargetHitsMe);
-		BBComp->SetValueAsBool(FName("KeyIsPlayerDead"), PossessedCharacter->GetAiInfo().bIsPlayerDead);
-		BBComp->SetValueAsVector(FName("DetectedLocation"), PossessedCharacter->GetAiInfo().DetectedLocation);
+		BBComp->SetValueAsBool(FName("IsPlayerDead"), PossessedCharacter->GetAiInfo().bIsPlayerDead);
 	}
+}
 
-	AEnemyRangedSiege* ERS = Cast<AEnemyRangedSiege>(PossessedCharacter);
-	if (ERS)
-	{
-		BBComp->SetValueAsBool(FName("SiegeMode"), ERS->GetSiegeMode());
-	}
+void AEnemyAIController::ActivateSiegeMode()
+{
+	BBComp->SetValueAsBool(FName("SiegeMode"), true);
+}
+
+void AEnemyAIController::DeactivateSiegeMode()
+{
+	BBComp->SetValueAsBool(FName("SiegeMode"), false);
 }
 
 void AEnemyAIController::OnPossess(APawn* InPawn)
@@ -65,7 +82,7 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	{
 		BBComp->SetValueAsObject(FName("Target"), nullptr);
 		BBComp->SetValueAsBool(FName("SightStimulusExpired"), true);
-		BBComp->SetValueAsVector(FName("WaitingPosition"), PossessedCharacter->GetAiInfo().WorldPatrolPoint);
+		BBComp->SetValueAsVector(FName("WaitingPosition"), PossessedCharacter->GetPatrolPoint());
 		BBComp->SetValueAsVector(FName("MoveToPoint"), PossessedCharacter->GetActorLocation());
 	}
 

@@ -22,26 +22,15 @@ void AEnemyDualMelee::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	Weapon2LineTrace();
+	Weapon2BoxTrace();
 }
 
-void AEnemyDualMelee::Weapon2LineTrace()
+void AEnemyDualMelee::Weapon2BoxTrace()
 {
 	if (bActivateWeaponTrace2)
 	{
-		const USkeletalMeshSocket* WeaponTraceStart = GetMesh()->GetSocketByName("Weapon2TraceStart");
-		if (WeaponTraceStart == nullptr) return;
-		const FTransform SocketTransformStart = WeaponTraceStart->GetSocketTransform(GetMesh());
-
-		const USkeletalMeshSocket* WeaponTraceEnd = GetMesh()->GetSocketByName("Weapon2TraceEnd");
-		if (WeaponTraceEnd == nullptr) return;
-		const FTransform SocketTransformEnd = WeaponTraceEnd->GetSocketTransform(GetMesh());
-
 		FHitResult WeaponHitResult;
-		FVector TraceStart = SocketTransformStart.GetLocation();
-		FVector TraceEnd = SocketTransformEnd.GetLocation();
-
-		GetWorld()->LineTraceSingleByChannel(WeaponHitResult, TraceStart, TraceEnd, ECC_EnemyWeaponTrace);
+		GetBoxTraceHitResult(WeaponHitResult, FName("Weapon2TraceStart"), FName("Weapon2TraceEnd"));
 
 		if (WeaponHitResult.bBlockingHit)
 		{
@@ -60,5 +49,10 @@ void AEnemyDualMelee::Weapon2LineTrace()
 void AEnemyDualMelee::ActivateWeaponTrace2()
 {
 	bActivateWeaponTrace2 = true;
+}
+
+void AEnemyDualMelee::DeactivateWeaponTrace2()
+{
+	bActivateWeaponTrace2 = false;
 }
 
