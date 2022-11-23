@@ -15,6 +15,7 @@ class AItem;
 class UImage;
 class UButton;
 class UTextBlock;
+class USoundCue;
 
 USTRUCT()
 struct FQuickSlotItem
@@ -105,6 +106,9 @@ private:
 	TArray<AItem*> ItemArray;
 
 	TMap<ERecoveryType, int32> RecoveryItemMap;
+
+	UPROPERTY(EditAnywhere, Category = "Item Compnent | Voice")
+	USoundCue* VoiceRecoveryHealth;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
 	float HealthRecoveryAmount = 50.f;

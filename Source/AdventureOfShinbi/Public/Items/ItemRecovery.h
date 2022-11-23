@@ -10,6 +10,9 @@
  * 
  */
 
+class UParticleSystem;
+class USoundCue;
+
 UCLASS()
 class ADVENTUREOFSHINBI_API AItemRecovery : public AItem
 {
@@ -18,6 +21,12 @@ class ADVENTUREOFSHINBI_API AItemRecovery : public AItem
 public:
 
 	AItemRecovery();
+
+	virtual void PlayGainEffect() override;
+
+	void PlayUsingEffect(FVector Location);
+
+	void HandleItemAfterGain();
 
 protected:
 
@@ -30,6 +39,23 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	ERecoveryType RecoveryType;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	UParticleSystem* FieldParticle;
+
+	UParticleSystemComponent* FieldParticleComp;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	UParticleSystem* GainParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	UParticleSystem* UsingParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	USoundCue* GainSound;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	USoundCue* UsingSound;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 500.0))
 	float RecoveryQuatity = 50.f;

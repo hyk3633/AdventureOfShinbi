@@ -302,6 +302,12 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Dash")
 	UAnimMontage* DashMontage;
 
+	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Dash")
+	USoundCue* DashHitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Dash")
+	TSubclassOf<UCameraShakeBase> CameraShakeDash;
+
 	FVector DashStartLocation;
 
 	FTimerHandle DashDelayTimer;
@@ -309,6 +315,8 @@ private:
 
 	int8 DashCount = 0;
 	int8 MaxDashCount = 3;
+
+	bool bDashAttack = false;
 
 	/** 검기 발사 */
 
@@ -391,4 +399,5 @@ public:
 	bool GetPhase2() const;
 	bool GetRangedAttackCoolTimeEnd() const;
 	bool GetAbleEvadeSkill() const;
+	bool GetDashAttack() const;
 };

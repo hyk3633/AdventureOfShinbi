@@ -18,7 +18,10 @@ ARangedWeapon::ARangedWeapon()
 
 void ARangedWeapon::Firing()
 {
-	// 자식 클래스에서 재정의
+	if (CameraShakeGunFire)
+	{
+		GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeGunFire);
+	}
 }
 
 void ARangedWeapon::BeginPlay()
@@ -168,24 +171,10 @@ void ARangedWeapon::ConsumeAmmo()
 	LoadedAmmo = FMath::Clamp(LoadedAmmo - AmmoConsumption, 0, Magazine);
 }
 
-void ARangedWeapon::SetWeaponState(const EWeaponState State)
+void ARangedWeapon::PlayNoAmmoSound()
 {
-	Super::SetWeaponState(State);
-
-	if (State == EWeaponState::EWS_Field)
+	if (NoAmmoSound)
 	{
-
-	}
-	else if (State == EWeaponState::EWS_PickedUp)
-	{
-
-	}
-	else if (State == EWeaponState::EWS_Equipped)
-	{
-
-	}
-	else
-	{
-
+		UGameplayStatics::PlaySound2D(this, NoAmmoSound);
 	}
 }

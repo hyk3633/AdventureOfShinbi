@@ -101,7 +101,11 @@ protected:
 
 	void GetBoxTraceHitResult(FHitResult& HitResult, FName StartSocketName, FName EndSocketName);
 
-	virtual void CheckIsKnockUp();
+	void CheckIsKnockUp();
+
+	void EndKnockUpDelay();
+
+	virtual void AbortAttack();
 
 	void Healing(float DeltaTime);
 
@@ -138,6 +142,8 @@ protected:
 
 	void PlayHitReactionMontage();
 
+	FName DistinguishHitDirection();
+
 	void PlayStunMontage();
 
 	virtual void PlayDeathMontage();
@@ -153,15 +159,21 @@ protected:
 	UFUNCTION()
 	void OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	void EndStiffDelay();
+
 	UFUNCTION()
 	void OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION(BlueprintCallable)
 	virtual void DeathMontageEnded();
 
+	void DestroyCharacter();
+
 	void ForgetHit();
 
 	virtual void RotateToTarget(float DeltaTime);
+
+	virtual bool CheckRotateToTargetCondition();
 
 	void SetHealthBar();
 
@@ -265,18 +277,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
 	UAnimMontage* DeathMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
-	UParticleSystem* DeathParticle;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy | Death")
-	USoundCue* DeathVoice;
-
 	UPROPERTY(EditAnywhere, Category = "Enemy | Dissolve")
 	UCurveFloat* DissolveCurve;
 
 	UPROPERTY(VisibleAnywhere)
 	UTimelineComponent* DissolveTimeline;
+
 	FOnTimelineFloat DissolveTrack;
+
+	FTimerHandle DestroyTimer;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Dissolve")
+	float DestroyTime = 3.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy | Dissolve")
 	TArray<UMaterialInstanceDynamic*> DynamicDissolveMatInst;
@@ -326,6 +338,10 @@ private:
 	float DamageUpTime = 30.f;
 
 	bool IsPlayerDeathDelegateBined = false;
+
+	FTimerHandle StiffDelayTimer;
+
+	FTimerHandle KnockUpDelayTimer;
 
 public:
 

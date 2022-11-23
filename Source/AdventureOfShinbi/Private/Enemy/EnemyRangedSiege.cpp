@@ -32,43 +32,20 @@ void AEnemyRangedSiege::Tick(float DeltaTime)
 
 void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
 {
-	if (BoneName == FName("head") && EnemyState != EEnemyState::EES_Siege)
-	{
-		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
-		if (StunChance > Chances)
-		{
-			AiInfo.bStunned = true;
-			PlayStunMontage();
-		}
-		else
-		{
-			if (EnemyState == EEnemyState::EES_Patrol)
-			{
-				SetEnemyState(EEnemyState::EES_Detected);
-			}
-		}
-	}
-	else
-	{
-		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
-		if (StiffChance > Chances)
-		{
-			AiInfo.bStiffed = true;
-			EnemyState == EEnemyState::EES_Siege ? PlaySiegeModeHitReactionMontage() : PlayHitReactionMontage();
-		}
-		else
-		{
-			if (EnemyState == EEnemyState::EES_Patrol)
-			{
-				SetEnemyState(EEnemyState::EES_Detected);
-			}
-		}
-	}
+	if (EnemyState == EEnemyState::EES_Siege)
+		return;
 
-	if (AIController)
-	{
-		AIController->UpdateAiInfo();
-	}
+	Super::HandleStiffAndStun(BoneName);
+}
+
+bool AEnemyRangedSiege::CheckRotateToTargetCondition()
+{
+	return bDeath == false &&
+		AiInfo.bStiffed == false &&
+		AiInfo.bStunned == false &&
+		AiInfo.TargetPlayer != nullptr &&
+		AiInfo.bIsPlayerDead == false &&
+		EnemyState == EEnemyState::EES_Chase;
 }
 
 void AEnemyRangedSiege::SiegeModeAttack()
@@ -110,7 +87,7 @@ void AEnemyRangedSiege::ConvertSiegeMode()
 
 void AEnemyRangedSiege::ReleaseSiegeMode()
 {
-	SetEnemyState(EEnemyState::EES_Comeback);
+	SetEnemyState(EEnemyState::EES_Chase);
 	if (AIController)
 	{
 		AIController->DeactivateSiegeMode();
@@ -130,9 +107,7 @@ void AEnemyRangedSiege::PlaySiegeModeFireMontage()
 	}
 
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(SiegeModeFireMontageSectionNameArr.Num());
-
 	EnemyAnim->Montage_Play(SiegeModeFireMontage);
-
 	EnemyAnim->Montage_JumpToSection(SiegeModeFireMontageSectionNameArr[RandSectionNum]);
 }
 

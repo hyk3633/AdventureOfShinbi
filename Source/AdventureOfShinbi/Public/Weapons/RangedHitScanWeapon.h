@@ -10,6 +10,8 @@
  * 
  */
 
+class ACasing;
+
 UCLASS()
 class ADVENTUREOFSHINBI_API ARangedHitScanWeapon : public ARangedWeapon
 {
@@ -17,9 +19,13 @@ class ADVENTUREOFSHINBI_API ARangedHitScanWeapon : public ARangedWeapon
 
 public:
 
+	ARangedHitScanWeapon();
+
 	virtual void Firing() override;
 
 protected:
+
+	void SpawnCasing();
 
 	void ScatterFiring();
 
@@ -29,11 +35,14 @@ protected:
 
 	FVector GetTraceEnd(const FVector& Start);
 
-	void DrawTrailParticle(const FVector StartPoint, const FVector EndPoint, const FVector EndNormal);
+	void DrawTrailParticle(const FVector StartPoint);
 
 	void ProcessHitResult(const FHitResult& HitResult);
 
 private:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
+	TSubclassOf<ACasing> CasingClass;
 
 	// 캐릭터 적중 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
@@ -49,7 +58,10 @@ private:
 
 	// 적중 시 효과음
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
-	USoundCue* HitSound;
+	USoundCue* TargetHitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effects")
+	USoundCue* WorldHitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Attributes", meta = (ClampMin = "0.0", ClampMax = "100.0"))
 	float BulletSpread = 0.f;

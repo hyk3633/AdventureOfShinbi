@@ -44,6 +44,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Melee Weapon")
 	USoundCue* ImpactSound;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Melee Weapon")
+	TSubclassOf<UCameraShakeBase> CameraShakeHitImpact;
+
 private:
 
 	bool bActivateWeaponTrace = false;

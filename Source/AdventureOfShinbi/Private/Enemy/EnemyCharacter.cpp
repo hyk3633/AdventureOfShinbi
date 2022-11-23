@@ -165,13 +165,16 @@ bool AEnemyCharacter::Weapon1BoxTrace()
 
 		if (WeaponHitResult.bBlockingHit)
 		{
-			PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
+			if (WeaponHitResult.GetActor() == AiInfo.TargetPlayer)
+			{
+				PlayMeleeAttackEffect(WeaponHitResult.ImpactPoint, WeaponHitResult.ImpactNormal.Rotation());
 
-			UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyPointDamage(WeaponHitResult.GetActor(), Damage, WeaponHitResult.ImpactPoint, WeaponHitResult, GetController(), this, UDamageType::StaticClass());
 
-			bActivateWeaponTrace1 = false;
+				bActivateWeaponTrace1 = false;
 
-			return true;
+				return true;
+			}
 		}
 	}
 
@@ -215,15 +218,40 @@ void AEnemyCharacter::CheckIsKnockUp()
 	{
 		EnemyAnim->StopAllMontages(0.2f);
 		AiInfo.bIsKnockUp = true;
+		AbortAttack();
+		if (AIController)
+		{
+			AIController->UpdateAiInfo();
+		}
 	}
-	else
+	else if(AiInfo.bIsKnockUp)
 	{
-		AiInfo.bIsKnockUp = false;
+		if (GetWorldTimerManager().IsTimerActive(KnockUpDelayTimer) == false)
+		{
+			GetWorldTimerManager().SetTimer(KnockUpDelayTimer, this, &AEnemyCharacter::EndKnockUpDelay, 2.f);
+		}
 	}
+}
 
+void AEnemyCharacter::EndKnockUpDelay()
+{
+	AiInfo.bIsKnockUp = false;
 	if (AIController)
 	{
 		AIController->UpdateAiInfo();
+	}
+}
+
+void AEnemyCharacter::AbortAttack()
+{
+	if (bIsAttacking)
+	{
+		bIsAttacking = false;
+		if (GetAttackRange()->IsOverlappingActor(AiInfo.TargetPlayer) == false)
+			AiInfo.bTargetInAttackRange = false;
+		else
+			AiInfo.bTargetInAttackRange = true;
+		OnAttackEnd.Broadcast();
 	}
 }
 
@@ -424,7 +452,7 @@ void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 
 void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 {
-	if (bDeath || bIsAttacking) 
+	if (bDeath) 
 		return;
 
 	if (BoneName == FName("head"))
@@ -433,6 +461,7 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 		if (StunChance > Chances)
 		{
 			AiInfo.bStunned = true;
+			AbortAttack();
 			PlayStunMontage();
 		}
 		else
@@ -449,6 +478,7 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 		if (StiffChance > Chances)
 		{
 			AiInfo.bStiffed = true;
+			AbortAttack();
 			PlayHitReactionMontage();
 		}
 		else
@@ -458,6 +488,11 @@ void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
 				SetEnemyState(EEnemyState::EES_Detected);
 			}
 		}
+	}
+
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
 	}
 }
 
@@ -479,15 +514,9 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 	if (Health == 0)
 	{
 		bDeath = true;
-
-		// ¡◊¿Ω ¿Ã∆Â∆Æ ¿Áª˝
-		if (DeathParticle)
+		if (AIController)
 		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DeathParticle, GetActorLocation());
-		}
-		if (DeathVoice)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, DeathVoice, GetActorLocation());
+			AIController->UpdateAiInfo();
 		}
 		PlayDeathMontage();
 	}
@@ -541,11 +570,13 @@ void AEnemyCharacter::PlayAttackMontage()
 	if (EnemyAnim == nullptr || AttackMontage == nullptr) 
 		return;
 
-	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(AttackMontageSectionNameArr.Num());
-
 	EnemyAnim->Montage_Play(AttackMontage);
 
-	EnemyAnim->Montage_JumpToSection(AttackMontageSectionNameArr[RandSectionNum]);
+	if (AttackMontageSectionNameArr.Num() > 0)
+	{
+		int8 RandSectionNum = UKismetMathLibrary::RandomInteger(AttackMontageSectionNameArr.Num());
+		EnemyAnim->Montage_JumpToSection(AttackMontageSectionNameArr[RandSectionNum]);
+	}
 }
 
 void AEnemyCharacter::PlayHitReactionMontage()
@@ -554,8 +585,39 @@ void AEnemyCharacter::PlayHitReactionMontage()
 		return;
 
 	EnemyAnim->Montage_Play(HitReactionMontage);
+	EnemyAnim->Montage_JumpToSection(DistinguishHitDirection());
+}
 
-	EnemyAnim->Montage_JumpToSection(FName("HitFront"));
+FName AEnemyCharacter::DistinguishHitDirection()
+{
+	const FVector TargetLocation = AiInfo.DetectedLocation;
+	FVector ToTarget = TargetLocation - GetActorLocation();
+	ToTarget.Normalize();
+	const float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
+
+	FVector Cross = FVector::CrossProduct(ToTarget, GetActorForwardVector());
+	Cross.Normalize();
+	const float CrossDot = FVector::DotProduct(Cross, GetActorUpVector());
+
+	if (Dot >= 0.3f && Dot < 1.0)
+	{
+		return FName("F");
+	}
+	else if (Dot >= -0.3f && Dot < -1.0)
+	{
+		return FName("B");
+	}
+	else
+	{
+		if (CrossDot > 0.f)
+		{
+			return FName("L");
+		}
+		else
+		{
+			return FName("R");
+		}
+	}
 }
 
 void AEnemyCharacter::PlayStunMontage()
@@ -630,11 +692,17 @@ void AEnemyCharacter::OnHitReactionMontageEnded(UAnimMontage* Montage, bool bInt
 {
 	if (Montage == HitReactionMontage)
 	{
-		AiInfo.bStiffed = false;
-		if (AIController)
-		{
-			AIController->UpdateAiInfo();
-		}
+		GetWorldTimerManager().SetTimer(StiffDelayTimer, this, &AEnemyCharacter::EndStiffDelay, 0.3f);
+	}
+}
+
+void AEnemyCharacter::EndStiffDelay()
+{
+	AiInfo.bStiffed = false;
+	AiInfo.bTargetInAttackRange = AttackRange->IsOverlappingActor(AiInfo.TargetPlayer) ? true : false;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
 	}
 }
 
@@ -643,10 +711,13 @@ void AEnemyCharacter::OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupte
 	if (Montage == StunMontage)
 	{
 		AiInfo.bStunned = false;
+		AiInfo.bTargetInAttackRange = AttackRange->IsOverlappingActor(AiInfo.TargetPlayer) ? true : false;
 		if (AIController)
 		{
 			AIController->UpdateAiInfo();
 		}
+
+
 	}
 }
 
@@ -655,8 +726,12 @@ void AEnemyCharacter::DeathMontageEnded()
 	HealthWidget->SetVisibility(false);
 	GetMesh()->bPauseAnims = true;
 
-	// ≈∏¿Ã∏”
-	//Destroy();
+	GetWorldTimerManager().SetTimer(DestroyTimer, this, &AEnemyCharacter::DestroyCharacter, DestroyTime);
+}
+
+void AEnemyCharacter::DestroyCharacter()
+{
+	Destroy();
 }
 
 void AEnemyCharacter::ForgetHit()
@@ -676,14 +751,8 @@ void AEnemyCharacter::ForgetHit()
 
 void AEnemyCharacter::RotateToTarget(float DeltaTime)
 {
-	if (
-		bDeath == false &&
-		AiInfo.bStiffed == false &&
-		AiInfo.bStunned == false &&
-		AiInfo.TargetPlayer != nullptr &&
-		AiInfo.bIsPlayerDead == false &&
-		EnemyState == EEnemyState::EES_Chase
-		)
+	if (CheckRotateToTargetCondition()
+)
 	{
 		AActor* Target = Cast<AActor>(AiInfo.TargetPlayer);
 
@@ -697,6 +766,16 @@ void AEnemyCharacter::RotateToTarget(float DeltaTime)
 		Rotation = FMath::RInterpTo(GetActorRotation(), LookAtRotation, DeltaTime, RotateRate);
 		SetActorRotation(Rotation);
 	}
+}
+
+bool AEnemyCharacter::CheckRotateToTargetCondition()
+{
+	return bDeath == false &&
+		AiInfo.bStiffed == false &&
+		AiInfo.bStunned == false &&
+		AiInfo.TargetPlayer != nullptr &&
+		AiInfo.bIsPlayerDead == false &&
+		EnemyState == EEnemyState::EES_Chase;
 }
 
 void AEnemyCharacter::SetHealthBar()

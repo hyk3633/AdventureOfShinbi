@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Weapons/Weapon.h"
 #include "Types/AmmoType.h"
+#include "Types/WeaponType.h"
 #include "RangedWeapon.generated.h"
 
 /**
@@ -13,15 +14,6 @@
 class AItemAmmo;
 class USoundCue;
 class UTexture2D;
-
-UENUM(BlueprintType)
-enum class ERangedWeaponType : uint8
-{
-	ERWT_HitScan UMETA(DisplayName = "HitScan"),
-	ERWT_Projectile UMETA(DisplayName = "Projectile"),
-
-	ERWT_MAX UMETA(DisplayName = "DefaultMAX")
-};
 
 UCLASS()
 class ADVENTUREOFSHINBI_API ARangedWeapon : public AWeapon
@@ -65,6 +57,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effect")
 	USoundCue* FireSound;
 
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effect")
+	TSubclassOf<UCameraShakeBase> CameraShakeGunFire;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Effect")
+	USoundCue* NoAmmoSound;
+
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status")
 	bool bAutomaticFire = false;
 
@@ -73,6 +71,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GunRecoil = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
+	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
 
 private:
 
@@ -86,9 +87,6 @@ private:
 	int8 DamageMultiplier = 5;
 
 	FVector2D ViewPortSize;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
-	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
 
 protected:
 
@@ -121,5 +119,5 @@ public:
 	float GetFireRate() const;
 	float GetZoomScope() const;
 	void ConsumeAmmo();
-	virtual void SetWeaponState(const EWeaponState State) override;
+	void PlayNoAmmoSound();
 };

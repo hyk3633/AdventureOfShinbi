@@ -52,11 +52,15 @@ protected:
 	void ActivateSickleModeParticle();
 	void DeactivateSickleModeParticle();
 
+	void ActivateUltimateParticle();
+
 	UFUNCTION(BlueprintCallable)
 	void UltimateGlaiveAttack1();
 
 	UFUNCTION(BlueprintCallable)
 	void UltimateGlaiveAttack2();
+
+	void PlayCameraShake();
 
 	void HandleTraceHitResult(TArray<FHitResult>& Results);
 
@@ -70,11 +74,14 @@ private:
 
 	bool bAbleMagicSkill = false;
 
-	UPROPERTY(EditAnywhere, Category = "Glaive")
+	UPROPERTY(EditAnywhere, Category = "Glaive | Setting")
 	float FormChangeSpeed = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Glaive")
+	UPROPERTY(EditAnywhere, Category = "Glaive | Setting")
 	float SkillDamage = 50.f;
+
+	UPROPERTY(EditAnywhere, Category = "Glaive | Setting")
+	TSubclassOf<UCameraShakeBase> CameraShakeUltimate;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	FRotator CurrentBladeValue = FRotator::ZeroRotator;
@@ -121,12 +128,13 @@ private:
 	UParticleSystem* UltimateGlaiveAttack2Particle;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Glaive Mode")
-	USoundCue* GlaiveModeSound; // 몽타주 칼날 소리 좀 더 날카로운 칼날 소리로
+	USoundCue* GlaiveModeSound;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Sickle Mode")
 	float UltimateSkillManaConsumption = 10.f;
 
 	int8 HitStack = 0;
+	int8 MaxHitStack = 9;
 
 	FVector Start;
 	FVector End;

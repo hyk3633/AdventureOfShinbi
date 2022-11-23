@@ -7,19 +7,38 @@
 #include "Components/WidgetComponent.h"
 #include "Components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "Sound/SoundCue.h"
 
 AWeapon::AWeapon()
 {
-	PrimaryActorTick.bCanEverTick = false;
-
 	bIsWeapon = true;
+	bOnSpin = false;
+	MovementSpeed = 10.f;
+}
+
+void AWeapon::PlayGainEffect()
+{
+	if (PickAndEquipSound)
+	{
+		UGameplayStatics::PlaySound2D(this, PickAndEquipSound);
+	}
 }
 
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
+	ItemMesh->OnComponentHit.AddDynamic(this, &AWeapon::OnHit);
+}
+
+void AWeapon::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (DropSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DropSound, GetActorLocation());
+	}
+
+	ItemMesh->SetNotifyRigidBodyCollision(false);
 }
 
 EWeaponType AWeapon::GetWeaponType() const
@@ -39,20 +58,18 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		ItemMesh->SetVisibility(true);
 		ItemMesh->SetSimulatePhysics(true);
 		ItemMesh->SetEnableGravity(true);
+		ItemMesh->BodyInstance.bNotifyRigidBodyCollision = true;
 		ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-		ItemMesh->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_PlayerProjectile, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyWeaponTrace, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_PlayerWeaponTrace, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_ItemRange, ECollisionResponse::ECR_Ignore);
-		ItemMesh->SetCollisionResponseToChannel(ECC_EnemyAttackRange, ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
+		ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+		ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		OverlapSphere->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 
 		Widget->SetVisibility(false);
+
 		break;
 
 	case EWeaponState::EWS_PickedUp:
@@ -68,6 +85,7 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		
 		Widget->SetVisibility(false);
+
 		break;
 
 	case EWeaponState::EWS_Equipped:
@@ -79,6 +97,8 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+
+		PlayGainEffect();
 
 		break;
 	}
@@ -104,6 +124,19 @@ float AWeapon::GetWeaponDamage()
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Failed"));
 	return Damage;
+}
+
+void AWeapon::DropWeapon()
+{
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	ItemMesh->DetachFromComponent(DetachRules);
+	ItemMesh->SetSimulatePhysics(true);
+	ItemMesh->SetEnableGravity(true);
+	ItemMesh->BodyInstance.bNotifyRigidBodyCollision = true;
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
+	ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
 }

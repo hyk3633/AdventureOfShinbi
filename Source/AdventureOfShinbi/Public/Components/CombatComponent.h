@@ -16,6 +16,7 @@ class UAnimMontage;
 class AItem;
 class AWeapon;
 class UCurveFloat;
+class USoundCue;
 
 DECLARE_MULTICAST_DELEGATE(DPlayerDeathDelegate);
 
@@ -117,7 +118,7 @@ protected:
 	UFUNCTION()
 	void GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted);
 
-	void PlayHitReactMontage();
+	void PlayHitReactMontage(FName SectionName);
 
 	UFUNCTION()
 	void OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted);
@@ -134,6 +135,8 @@ protected:
 	void OnDeathMontageEnded();
 
 	void ResetCombo();
+
+	void DeactivateFireFactor();
 
 	// 플레이어 스탯 처리
 
@@ -214,6 +217,20 @@ private:
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	float ComboTime = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Voice")
+	USoundCue* VoiceLowHealth;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Voice")
+	USoundCue* VoiceLackMana;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Voice")
+	USoundCue* VoiceBreathingRun;
+
+	UAudioComponent* VoiceBreathingRunComp = nullptr;
+
+	bool bVoiceLowHealthPlayed = false;
+	bool bVoiceLackManaPlayed = false;
 
 	/** 신비의 검 변수들 */
 
@@ -304,8 +321,14 @@ private:
 	UPROPERTY(EditAnywhere)
 	float ZoomSpeed = 30.f;
 
-	float CrosshairVelocityFactor;
-	float CrosshairInAirFactor;
+	FTimerHandle FireFactorTimer;
+	float FireFactorTime = 0.05f;
+	bool bFireFactor = false;
+
+	float CrosshairVelocityFactor = 0.f;
+	float CrosshairInAirFactor = 0.f;
+	float CrosshairZoomFactor = 0.f;
+	float CrosshairFireFactor = 0.f;
 
 	TArray<AWeapon*> AcquiredWeapons;
 
@@ -316,6 +339,7 @@ private:
 	bool bHealBanActivated = false;
 
 	bool bEnableCheck = true;
+
 
 public:
 

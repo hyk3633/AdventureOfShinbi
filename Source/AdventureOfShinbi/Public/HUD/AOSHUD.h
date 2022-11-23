@@ -30,6 +30,8 @@ public:
 
 	void CreateInventorySlot();
 
+	int32 GetInventorySlotCount();
+
 	void UpdateInventory();
 
 	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);

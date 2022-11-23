@@ -2,21 +2,41 @@
 
 
 #include "Items/ItemAmmo.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Sound/SoundCue.h"
+#include "AdventureOfShinbi/AdventureOfShinbi.h"
 
 AItemAmmo::AItemAmmo()
 {
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(RootComponent);
-	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	MeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	MeshComponent->SetCollisionObjectType(ECC_Item);
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	MeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	MeshComponent->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
+}
 
+void AItemAmmo::PlayGainEffect()
+{
+	if (GainSound)
+	{
+		UGameplayStatics::PlaySound2D(this, GainSound);
+	}
+}
 
+void AItemAmmo::HandleItemAfterGain()
+{
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComponent->SetVisibility(false);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Widget->SetVisibility(false);
 }
 
 void AItemAmmo::BeginPlay()
 {
 	Super::BeginPlay();
-
 
 }
 

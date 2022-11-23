@@ -50,27 +50,27 @@ private:
 	UNiagaraComponent* BodyNiagaraComp;
 
 	// 타겟 적중 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* TargetHitParticle;
 
 	// 타겟이 아닌 물체 적중 시 파티클
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* WorldHitParticle;
 
 	// 무엇도 적중하지 않을 경우의 파티클
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* NoHitParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	USoundCue* FlyingSound;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	USoundCue* HitSound;
 
 	FTimerHandle DestroyTimer;
 	FTimerHandle NoHitTimer;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile | Homing")
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting")
 	float DestroyTime = 1.f;
 
 	FTimerHandle CheckEnemyTimer;

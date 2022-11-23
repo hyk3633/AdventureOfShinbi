@@ -18,6 +18,10 @@ ARevenant::ARevenant()
 	Magazine = 6;
 
 	bScatterGun = true;
+
+	AmmoType = EAmmoType::EAT_Shell;
+
+	RangedWeaponType = ERangedWeaponType::ERWT_Revenent;
 }
 
 void ARevenant::BeginPlay()
@@ -56,7 +60,7 @@ void ARevenant::Tick(float DeltaTime)
 
 void ARevenant::Charging(float DeltaTime)
 {
-	if (bRightButtonClicking)
+	if (bRightButtonClicking && GetLoadedAmmo() > 0)
 	{
 		if (CurrentPartsLoc.BarrelPitch >= 360.f)
 		{

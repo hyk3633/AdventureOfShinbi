@@ -29,7 +29,7 @@ AEnemyBoss::AEnemyBoss()
 
 	DashAndWallBox = CreateDefaultSubobject<UBoxComponent>(TEXT("DashAndWallBox"));
 	DashAndWallBox->SetupAttachment(RootComponent);
-	DashAndWallBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	DashAndWallBox->SetCollisionObjectType(ECC_EnemyWeaponTrace);
 	DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -138,23 +138,38 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	const FVector TargetLocation = Cha->GetActorLocation();
 	const float Dist = FVector::Dist(DashStartLocation, TargetLocation);
 
-	const FVector ForwardVector = GetActorForwardVector();
-	FVector TargetForwardVector = Cha->GetActorForwardVector();
+	FVector ToTarget = GetActorLocation() - TargetLocation;
+	ToTarget.Normalize();
+	float Dot = FVector::DotProduct(Cha->GetActorForwardVector(), ToTarget);
 
-	// 타겟의 오른쪽 왼쪽을 구분
-	const FVector CrossVec = FVector::CrossProduct(TargetForwardVector, GetActorLocation() - TargetLocation);
-	const float DotResult = FVector::DotProduct(CrossVec, GetActorUpVector());
+	FVector Cross = FVector::CrossProduct(ToTarget, Cha->GetActorForwardVector());
+	Cross.Normalize();
+	float CrossDot = FVector::DotProduct(Cross, Cha->GetActorUpVector());
+	
+	const float RandFloat = FMath::RandRange(30.f, 60.f);
+	float RotateValue = 0.f;
+	if (Dot < 0)
+	{
+		RotateValue = CrossDot < 0 ? RandFloat : RandFloat * -1.f;
+	}
+	else
+	{
+		RotateValue = CrossDot < 0 ? RandFloat + 90.f : (RandFloat + 90.f) * -1.f;
+	}
+	FVector Forward = GetActorForwardVector();
+	const FVector LaunchDirection = Forward.RotateAngleAxis(RotateValue, FVector(0, 0, 1));
 
-	float AngleToAdd = 45.f;
-	AngleToAdd = (ForwardVector + TargetForwardVector).Size() < ForwardVector.Size() ? -(AngleToAdd + 90.f) : -AngleToAdd;
-	AngleToAdd = DotResult > 0 ? AngleToAdd : AngleToAdd * -1.f;
+	Cha->LaunchCharacter(LaunchDirection * Dist * 5.f, false, true);
+	GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeDash);
 
-	TargetForwardVector.Normalize();
-	FVector LaunchAngle = TargetForwardVector.RotateAngleAxis(AngleToAdd, Cha->GetActorUpVector());
+	if (DashHitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DashHitSound, Cha->GetActorLocation());
+	}
 
-	Cha->LaunchCharacter(LaunchAngle * (Dist * 5.f), false, true);
+	UGameplayStatics::ApplyPointDamage(Cha, Damage, LaunchDirection, SweepResult, GetController(), this, UDamageType::StaticClass());
 
-	UGameplayStatics::ApplyPointDamage(Cha, Damage, LaunchAngle, SweepResult, GetController(), this, UDamageType::StaticClass());
+	SetBoxState(EBoxState::EBS_Disabled);
 }
 
 void AEnemyBoss::DetectAttack()
@@ -306,17 +321,13 @@ void AEnemyBoss::RangedAttack()
 
 	int8 RandNum = 0;
 	const float DistToTarget = GetDistanceTo(AiInfo.TargetPlayer);
-	if (DistToTarget > 900.f)
+	if (DistToTarget > 800.f)
 	{
 		RandNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
 	}
-	else if (DistToTarget > 800.f && DistToTarget <= 900.f)
-	{
-		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
-	}
 	else if (DistToTarget > 600.f && DistToTarget <= 800.f)
 	{
-		RandNum = FMath::RandRange(0, 1);
+		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
 	}
 	else
 	{
@@ -590,6 +601,7 @@ void AEnemyBoss::PlayDashMontage()
 {
 	if (DashMontage == nullptr) 
 		return;
+	bDashAttack = true;
 	EnemyAnim->Montage_Play(DashMontage);
 }
 
@@ -611,6 +623,7 @@ void AEnemyBoss::DashMontageEnd()
 		SetBoxState(EBoxState::EBS_Disabled);
 		bIsAttacking = false;
 		bRangedAttackCoolTimeEnd = false;
+		bDashAttack = false;
 		DashCount = 0;
 		if (BossController)
 		{
@@ -632,7 +645,7 @@ void AEnemyBoss::SetBoxState(EBoxState State)
 		DashAndWallBox->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 		break;
 	case EBoxState::EBS_Dash:
-		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 		DashAndWallBox->SetBoxExtent(FVector(50.f, 80.f, 150.f));
@@ -1137,4 +1150,9 @@ bool AEnemyBoss::GetRangedAttackCoolTimeEnd() const
 bool AEnemyBoss::GetAbleEvadeSkill() const
 {
 	return bAbleEvadeSkill;
+}
+
+bool AEnemyBoss::GetDashAttack() const
+{
+	return bDashAttack;
 }

@@ -32,6 +32,8 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void AbortAttack() override;
+
 	void ProjectileFire(TSubclassOf<AProjectile> Projectile);
 
 	void CrosshairLineTrace(FVector& OutHitPoint);

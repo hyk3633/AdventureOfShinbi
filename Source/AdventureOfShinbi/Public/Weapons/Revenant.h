@@ -77,10 +77,10 @@ private:
 
 	bool bRightButtonClicking = false;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Normal Shot")
 	TSubclassOf<AProjectile> ObliterateClass;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Normal Shot")
 	UParticleSystem* MuzzleFlash2;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")

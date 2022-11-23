@@ -27,30 +27,36 @@ protected:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Projectile")
-	bool bIsExplosive = false;
-
-	UPROPERTY(EditAnywhere)
-	bool bIsPlayersProjectile = false;
-
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxCollision;
 
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovementComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting")
+	bool bIsExplosive = false;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting")
+	bool bIsPlayersProjectile = false;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile | Camera Shake")
+	TSubclassOf<UCameraShakeBase> CameraShake;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile | Camera Shake")
+	float CameraShakeRadius = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
 	float Damage = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
 	float HeadShotDamage = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
+	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
 	float ExplosionRadius = 30.f;
 
 	TArray<AActor*> IgnoreActors;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile", meta = (EditCondition = "bIsExplosive"))
+	UPROPERTY(EditAnywhere)
 	URadialForceComponent* RadialForce;
 
 };

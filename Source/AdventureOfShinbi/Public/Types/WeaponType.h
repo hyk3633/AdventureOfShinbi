@@ -12,3 +12,13 @@ enum class EWeaponType : uint8
 
 	EWT_MAX UMETA(DisplayName = "DefaultMAX")
 };
+
+UENUM(BlueprintType)
+enum class ERangedWeaponType : uint8
+{
+	ERWT_Revenent UMETA(DisplayName = "Revenent"),
+	ERWT_Wraith UMETA(DisplayName = "Wraith"),
+	ERWT_AK47 UMETA(DisplayName = "AK47"),
+
+	ERWT_MAX UMETA(DisplayName = "DefaultMAX")
+};

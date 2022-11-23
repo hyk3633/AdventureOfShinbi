@@ -59,6 +59,11 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 				this,
 				UDamageType::StaticClass()
 			);
+
+			if (CameraShakeHitImpact)
+			{
+				GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeHitImpact);
+			}
 		}
 	}
 

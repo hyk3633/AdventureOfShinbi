@@ -47,6 +47,31 @@ void AItem::BeginPlay()
 	SetPickupWidgetInfo();
 }
 
+void AItem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UpAndDownMovement(DeltaTime);
+}
+
+void AItem::UpAndDownMovement(float DeltaTime)
+{
+	if (bOnUpAndDown)
+	{
+		FVector NewLocation = GetActorLocation();
+		float DeltaHeight = (FMath::Sin(RunningTime + DeltaTime) - FMath::Sin(RunningTime));
+		NewLocation.Z += DeltaHeight * MovementSpeed;
+		RunningTime += DeltaTime;
+		SetActorLocation(NewLocation);
+	}
+	if (bOnSpin)
+	{
+		FRotator NewRotation = GetActorRotation();
+		NewRotation.Yaw += DeltaTime * MovementSpeed;
+		SetActorRotation(NewRotation);
+	}
+}
+
 void AItem::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
@@ -83,12 +108,6 @@ void AItem::SetPickupWidgetInfo()
 	}
 }
 
-void AItem::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
 bool AItem::GetIsWeapon() const
 {
 	return bIsWeapon;
@@ -122,4 +141,14 @@ void AItem::SetInventorySlot(UInventorySlot* Slot)
 UInventorySlot* AItem::GetInventorySlot() const
 {
 	return InventorySlot;
+}
+
+void AItem::DeactivateItemMovement()
+{
+	bOnSpin = false;
+	bOnUpAndDown = false;
+}
+
+void AItem::PlayGainEffect()
+{
 }

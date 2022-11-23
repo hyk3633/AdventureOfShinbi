@@ -10,6 +10,9 @@
 /**
  * 
  */
+
+class USoundCue;
+
 UCLASS()
 class ADVENTUREOFSHINBI_API AItemAmmo : public AItem
 {
@@ -18,6 +21,10 @@ class ADVENTUREOFSHINBI_API AItemAmmo : public AItem
 public:
 
 	AItemAmmo();
+
+	virtual void PlayGainEffect() override;
+
+	void HandleItemAfterGain();
 
 protected:
 
@@ -33,6 +40,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	int32 AmmoQuantity = 10;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Effect")
+	USoundCue* GainSound;
 
 public:
 

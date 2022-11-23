@@ -15,19 +15,19 @@ class AAOSCharacter;
 USTRUCT(BlueprintType)
 struct FWeaponPartsLocation
 {
-	GENERATED_USTRUCT_BODY()
+	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FVector Barrel;							 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FVector Scope;							 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FVector Lens;							 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FVector StockBott;						 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FRotator StockBottRot;					 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Bone")
+	UPROPERTY(BlueprintReadWrite)
 	FVector StockTop;
 };
 
@@ -57,46 +57,47 @@ protected:
 
 	void ActivateScopeParticle();
 
-	void InitializingWeaponPartsLocation();
-
 private:
 
 	AAOSCharacter* WeaponOwner;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
+	TSubclassOf<UCameraShakeBase> CameraShakeAimingShot;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	TSubclassOf<AProjectile> AimingProjectileClass;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	UParticleSystem* AimedMuzzleFlashParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	UParticleSystem* AimedSmokeParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	UParticleSystem* AimedStabilizerParticle;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	USoundCue* AimedFireSound;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	UParticleSystem* ScopeParticle;
 
 	UParticleSystemComponent* ScopeParticleComp;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	USoundCue* ActivateSound;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	USoundCue* DeactivateSound;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bAimed = false;
 
-	UPROPERTY(EditAnywhere, Category = "Aimed")
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	float FormChangeSpeed = 5.f;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	FWeaponPartsLocation CurrentValue;
+	FWeaponPartsLocation CurrentLocation;
 
 	FWeaponPartsLocation AssaultMode;
 

@@ -4,6 +4,9 @@
 #include "Weapons/Glaive.h"
 #include "Weapons/Projectile.h"
 #include "Player/AOSCharacter.h"
+#include "Enemy/EnemyCharacter.h"
+#include "EnemyMuriel/EnemyMuriel.h"
+#include "EnemyBoss/EnemyBoss.h"
 #include "Components/CombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -41,9 +44,9 @@ bool AGlaive::WeaponCapsuleTrace()
 	{
 		HitStack++;
 
-		if (HitStack == 9)
+		if (HitStack == MaxHitStack)
 		{
-			UltimateActivateParticleComp->Activate();
+			ActivateUltimateParticle();
 		}
 	}
 
@@ -74,12 +77,20 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 		bSickleMode = true;
 		PlayEffect(FormChangeParticle, SickleModeSound);
 		ActivateSickleModeParticle();
+		if (HitStack == MaxHitStack)
+		{
+			UltimateActivateParticleComp->Deactivate();
+		}
 	}
 	else
 	{
 		bSickleMode = false;
 		PlayEffect(FormChangeParticle, GlaiveModeSound);
 		DeactivateSickleModeParticle();
+		if (HitStack == MaxHitStack)
+		{
+			ActivateUltimateParticle();
+		}
 	}
 
 }
@@ -178,8 +189,41 @@ void AGlaive::DeactivateSickleModeParticle()
 	SickleModeParticleComp->Deactivate();
 }
 
+void AGlaive::ActivateUltimateParticle()
+{
+	if (UltimateActivateParticle == nullptr)
+		return;
+
+	if(UltimateActivateParticleComp == nullptr)
+	{
+		const USkeletalMeshSocket* ChargeUpSocket = ItemMesh->GetSocketByName(FName("ChargeUpSocket"));
+		if (ChargeUpSocket == nullptr) return;
+		const FTransform SocketTransform = ChargeUpSocket->GetSocketTransform(ItemMesh);
+
+		UltimateActivateParticleComp = UGameplayStatics::SpawnEmitterAttached
+		(
+			UltimateActivateParticle,
+			ItemMesh,
+			NAME_None,
+			SocketTransform.GetLocation(),
+			SocketTransform.GetRotation().Rotator(),
+			EAttachLocation::KeepWorldPosition,
+			false,
+			EPSCPoolMethod::None,
+			true
+		);
+	}
+	else
+	{
+		UltimateActivateParticleComp->Activate();
+	}
+}
+
 void AGlaive::UltimateGlaiveAttack1()
 {
+	if (WeaponOwner == nullptr)
+		return;
+
 	UCollisionProfile* Profile = UCollisionProfile::Get();
 	ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_PlayerWeaponTrace);
 
@@ -202,6 +246,8 @@ void AGlaive::UltimateGlaiveAttack1()
 		HitArr,
 		true
 	);
+
+	PlayCameraShake();
 
 	if (UltimateGlaiveAttack2Particle)
 	{
@@ -247,6 +293,8 @@ void AGlaive::UltimateGlaiveAttack2()
 		true
 	);
 
+	PlayCameraShake();
+
 	if (UltimateGlaiveAttack1Particle)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation
@@ -262,6 +310,14 @@ void AGlaive::UltimateGlaiveAttack2()
 	if (bHit)
 	{
 		HandleTraceHitResult(HitArr);
+	}
+}
+
+void AGlaive::PlayCameraShake()
+{
+	if (CameraShakeUltimate)
+	{
+		GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeUltimate);
 	}
 }
 
@@ -292,6 +348,12 @@ void AGlaive::HandleTraceHitResult(TArray<FHitResult>& Results)
 			ACharacter* Cha = Cast<ACharacter>(Hit.GetActor());
 			if (Cha)
 			{
+				AEnemyMuriel* EM = Cast<AEnemyMuriel>(Cha);
+				if (EM)
+					continue;
+				AEnemyBoss* EB = Cast<AEnemyBoss>(Cha);
+				if (EB)
+					continue;
 				Cha->LaunchCharacter(Cha->GetActorUpVector() * 700.f, true, false);
 			}
 		}
@@ -305,7 +367,7 @@ bool AGlaive::GetSickleMode() const
 
 bool AGlaive::GetHitStackIsFull() const
 {
-	if (HitStack >= 9)
+	if (HitStack >= MaxHitStack)
 		return true;
 	else
 		return false;
@@ -320,33 +382,13 @@ void AGlaive::SetWeaponState(const EWeaponState State)
 {
 	Super::SetWeaponState(State);
 
-	if (GetWeaponState() == EWeaponState::EWS_Equipped && bDelBinded == false)
+	if (State == EWeaponState::EWS_Equipped && bDelBinded == false)
 	{
 		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
 		if (WeaponOwner)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &AGlaive::FormChange);
 			bDelBinded = true;
-		}
-
-		if (UltimateActivateParticle)
-		{
-			const USkeletalMeshSocket* ChargeUpSocket = ItemMesh->GetSocketByName(FName("ChargeUpSocket"));
-			if (ChargeUpSocket == nullptr) return;
-			const FTransform SocketTransform = ChargeUpSocket->GetSocketTransform(ItemMesh);
-
-			UltimateActivateParticleComp = UGameplayStatics::SpawnEmitterAttached
-			(
-				UltimateActivateParticle,
-				ItemMesh,
-				NAME_None,
-				SocketTransform.GetLocation(),
-				SocketTransform.GetRotation().Rotator(),
-				EAttachLocation::KeepWorldPosition,
-				false,
-				EPSCPoolMethod::None,
-				false
-			);
 		}
 	}
 	else

@@ -11,13 +11,32 @@
 AWraith::AWraith()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	RangedWeaponType = ERangedWeaponType::ERWT_Wraith;
+
+	AssaultMode.Barrel = FVector(0.f, -32.3f, 0.f);
+	AssaultMode.Scope = FVector(0.f, 0.f, -4.f);
+	AssaultMode.Lens = FVector::ZeroVector;
+	AssaultMode.StockBott = FVector(0.f, 5.f, 0.f);
+	AssaultMode.StockBottRot = FRotator::ZeroRotator;
+	AssaultMode.StockTop = FVector(0.f, 5.f, 0.f);
+
+	SniperMode.Barrel = FVector::ZeroVector;
+	SniperMode.Scope = FVector::ZeroVector;
+	SniperMode.Lens = FVector(0.f, -2.f, 0.f);
+	SniperMode.StockBott = FVector(0.f, 3.f, -3.f);
+	SniperMode.StockBottRot = FRotator(0.f, 0.f, -20.f);
+	SniperMode.StockTop = FVector::ZeroVector;
+
+	CurrentLocation = AssaultMode;
+
+	AmmoType = EAmmoType::EAT_Sniper;
 }
 
 void AWraith::BeginPlay()
 {
 	Super::BeginPlay();
 
-	InitializingWeaponPartsLocation();
 }
 
 void AWraith::Tick(float DeltaTime)
@@ -31,21 +50,21 @@ void AWraith::InterpWeaponPartsLocation(float DeltaTime, bool bSniperMode)
 {
 	if (bSniperMode)
 	{
-		CurrentValue.Barrel = FMath::VInterpTo(CurrentValue.Barrel, SniperMode.Barrel, DeltaTime, FormChangeSpeed);
-		CurrentValue.Scope = FMath::VInterpTo(CurrentValue.Scope, SniperMode.Scope, DeltaTime, FormChangeSpeed);
-		CurrentValue.Lens = FMath::VInterpTo(CurrentValue.Lens, SniperMode.Lens, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockBott = FMath::VInterpTo(CurrentValue.StockBott, SniperMode.StockBott, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockBottRot = FMath::RInterpTo(CurrentValue.StockBottRot, SniperMode.StockBottRot, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockTop = FMath::VInterpTo(CurrentValue.StockTop, SniperMode.StockTop, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Barrel = FMath::VInterpTo(CurrentLocation.Barrel, SniperMode.Barrel, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Scope = FMath::VInterpTo(CurrentLocation.Scope, SniperMode.Scope, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Lens = FMath::VInterpTo(CurrentLocation.Lens, SniperMode.Lens, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockBott = FMath::VInterpTo(CurrentLocation.StockBott, SniperMode.StockBott, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockBottRot = FMath::RInterpTo(CurrentLocation.StockBottRot, SniperMode.StockBottRot, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockTop = FMath::VInterpTo(CurrentLocation.StockTop, SniperMode.StockTop, DeltaTime, FormChangeSpeed);
 	}
 	else
 	{
-		CurrentValue.Barrel = FMath::VInterpTo(CurrentValue.Barrel, AssaultMode.Barrel, DeltaTime, FormChangeSpeed);
-		CurrentValue.Scope = FMath::VInterpTo(CurrentValue.Scope, AssaultMode.Scope, DeltaTime, FormChangeSpeed);
-		CurrentValue.Lens = FMath::VInterpTo(CurrentValue.Lens, AssaultMode.Lens, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockBott = FMath::VInterpTo(CurrentValue.StockBott, AssaultMode.StockBott, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockBottRot = FMath::RInterpTo(CurrentValue.StockBottRot, AssaultMode.StockBottRot, DeltaTime, FormChangeSpeed);
-		CurrentValue.StockTop = FMath::VInterpTo(CurrentValue.StockTop, AssaultMode.StockTop, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Barrel = FMath::VInterpTo(CurrentLocation.Barrel, AssaultMode.Barrel, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Scope = FMath::VInterpTo(CurrentLocation.Scope, AssaultMode.Scope, DeltaTime, FormChangeSpeed);
+		CurrentLocation.Lens = FMath::VInterpTo(CurrentLocation.Lens, AssaultMode.Lens, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockBott = FMath::VInterpTo(CurrentLocation.StockBott, AssaultMode.StockBott, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockBottRot = FMath::RInterpTo(CurrentLocation.StockBottRot, AssaultMode.StockBottRot, DeltaTime, FormChangeSpeed);
+		CurrentLocation.StockTop = FMath::VInterpTo(CurrentLocation.StockTop, AssaultMode.StockTop, DeltaTime, FormChangeSpeed);
 	}
 }
 
@@ -53,6 +72,11 @@ void AWraith::Firing()
 {
 	if (bAimed)
 	{
+		if (CameraShakeAimingShot)
+		{
+			GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeAimingShot);
+		}
+
 		PlayFireEffect(AimedMuzzleFlashParticle, AimedFireSound);
 		PlayFireEffect(AimedSmokeParticle, nullptr);
 		PlayFireEffect(AimedStabilizerParticle, nullptr);
@@ -148,24 +172,5 @@ void AWraith::ActivateScopeParticle()
 	{
 		ScopeParticleComp->Activate();
 	}
-}
-
-void AWraith::InitializingWeaponPartsLocation()
-{
-	AssaultMode.Barrel = FVector(0.f, -32.3f, 0.f);
-	AssaultMode.Scope = FVector(0.f,0.f,-4.f);
-	AssaultMode.Lens = FVector::ZeroVector;
-	AssaultMode.StockBott = FVector(0.f,5.f,0.f);
-	AssaultMode.StockBottRot = FRotator::ZeroRotator;
-	AssaultMode.StockTop = FVector(0.f, 5.f, 0.f);
-
-	SniperMode.Barrel = FVector::ZeroVector;
-	SniperMode.Scope = FVector::ZeroVector;
-	SniperMode.Lens = FVector(0.f, -2.f, 0.f);
-	SniperMode.StockBott = FVector(0.f,3.f,-3.f);
-	SniperMode.StockBottRot = FRotator(0.f, 0.f, -20.f);
-	SniperMode.StockTop = FVector::ZeroVector;
-
-	CurrentValue = AssaultMode;
 }
 

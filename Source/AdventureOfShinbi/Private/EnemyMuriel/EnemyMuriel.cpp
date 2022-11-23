@@ -194,12 +194,9 @@ bool AEnemyMuriel::CheckSpawnPosition(FVector& SafePosition, AActor* CenterActor
             TraceType,
             false,
             TArray<AActor*>(),
-            EDrawDebugTrace::ForDuration,
+            EDrawDebugTrace::None,
             BoxHit,
-            true,
-            FLinearColor::Red,
-            FLinearColor::Blue,
-            3.f
+            true
         );
 
         if (BoxHit.bBlockingHit == false)
@@ -278,8 +275,6 @@ void AEnemyMuriel::Buff()
 
     GetWorldTimerManager().SetTimer(BuffDurationTimer, this, &AEnemyMuriel::BuffDurationEnd, BuffDurationTime);
     GetWorldTimerManager().SetTimer(BuffCoolTimer, this, &AEnemyMuriel::BuffCoolTimeEnd, BuffCoolTime);
-
-    // delete PlayBuffParticle()
 }
 
 void AEnemyMuriel::PlayBuffMontage()

@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Player/AOSAnimInstance.h"
@@ -20,6 +19,7 @@ void UAOSAnimInstance::TurnInPlace()
 		RootYawOffset = 0.f;
 		CharacterYaw = CharacterRotation.Yaw;
 		CharacterYawLastframe = CharacterYaw;
+
 		RotationCurveLastframe = 0.f;
 		RotationCurve = 0.f;
 	}
@@ -55,7 +55,8 @@ void UAOSAnimInstance::TurnInPlace()
 
 void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 {
-	if (AOSCharacter == nullptr) return;
+	if (AOSCharacter == nullptr) 
+		return;
 
 	FVector Velocity = AOSCharacter->GetVelocity();
 	Velocity.Z = 0.f;
@@ -75,8 +76,6 @@ void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	bIsAiming = AOSCharacter->GetIsAiming();
 
-	WeaponType = AOSCharacter->GetWeaponType();
-
 	FRotator AimRotation = AOSCharacter->GetBaseAimRotation();
 	CharacterRotation = AOSCharacter->GetActorRotation();
 
@@ -94,5 +93,24 @@ void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 	}
 
 	TurnInPlace();
+}
 
+void UAOSAnimInstance::SetWeaponType(EWeaponType Type)
+{
+	WeaponType = Type;
+}
+
+void UAOSAnimInstance::SetRangedWeaponType(ERangedWeaponType Type)
+{
+	RangedWeaponType = Type;
+}
+
+void UAOSAnimInstance::ActivateReloading()
+{
+	bIsReloading = true;
+}
+
+void UAOSAnimInstance::DeactivateReloading()
+{
+	bIsReloading = false;
 }

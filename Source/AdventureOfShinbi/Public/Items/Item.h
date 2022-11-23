@@ -23,11 +23,17 @@ public:
 
 	AItem();
 
-	virtual void Tick(float DeltaTime) override;
+	void DeactivateItemMovement();
+
+	virtual void PlayGainEffect();
 
 protected:
 
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
+
+	void UpAndDownMovement(float DeltaTime);
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -35,22 +41,6 @@ protected:
 	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	void SetPickupWidgetInfo();
-
-	UPROPERTY(VisibleAnywhere)
-	EItemType InfoItemType;
-
-private:
-
-	UPROPERTY(EditAnywhere)
-	FString ItemName;
-
-	UPROPERTY(EditAnywhere)
-	EItemRank InfoItemRank;
-
-	UPROPERTY(EditAnywhere)
-	UTexture2D* ItemIcon;
-
-	UInventorySlot* InventorySlot;
 
 protected:
 
@@ -63,7 +53,31 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UWidgetComponent* Widget;
 
+	UPROPERTY(VisibleAnywhere)
+	EItemType InfoItemType;
+
 	bool bIsWeapon = false;
+
+	bool bOnSpin = true;
+
+	bool bOnUpAndDown = true;
+
+	float MovementSpeed = 30.f;
+
+private:
+
+	UPROPERTY(EditAnywhere, Category = "Item | Setting")
+	FString ItemName;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Setting")
+	EItemRank InfoItemRank;
+
+	UPROPERTY(EditAnywhere, Category = "Item | Setting")
+	UTexture2D* ItemIcon;
+
+	UInventorySlot* InventorySlot;
+
+	float RunningTime = 0.f;
 
 public:
 

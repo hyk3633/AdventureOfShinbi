@@ -24,6 +24,11 @@ void UBTS_CheckDistanceToTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uin
     if (nullptr == ControllingEnemy)
         return;
 
+    if (ControllingEnemy->GetIsAttacking())
+    {
+        return;
+    }
+
     UWorld* World = ControllingEnemy->GetWorld();
     FVector Center = ControllingEnemy->GetActorLocation();
     float DetectRadius = 6000.0f;
@@ -43,7 +48,7 @@ void UBTS_CheckDistanceToTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uin
             if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
             {
                 float Distance = ControllingEnemy->GetDistanceTo(Cha);
-                if (Distance >= 2500.f && Distance <= 5000.f)
+                if (Distance >= 2500.f && Distance <= 4000.f)
                 {
                     ControllingEnemy->ConvertSiegeMode();
                 }

@@ -55,7 +55,7 @@ void AEnemyAIController::UpdateAiInfo()
 		BBComp->SetValueAsBool(FName("KnockUp"), PossessedCharacter->GetAiInfo().bIsKnockUp);
 		BBComp->SetValueAsBool(FName("Stunned"), PossessedCharacter->GetAiInfo().bStunned);
 		BBComp->SetValueAsBool(FName("Stiffed"), PossessedCharacter->GetAiInfo().bStiffed);
-		BBComp->SetValueAsBool(FName("IsEnemyDead"), PossessedCharacter->GetIsDead());
+		BBComp->SetValueAsBool(FName("IsDead"), PossessedCharacter->GetIsDead());
 		BBComp->SetValueAsBool(FName("TargetInAttackRange"), PossessedCharacter->GetAiInfo().bTargetInAttackRange);
 		BBComp->SetValueAsBool(FName("TargetHitsMe"), PossessedCharacter->GetAiInfo().bTargetHitsMe);
 		BBComp->SetValueAsBool(FName("IsPlayerDead"), PossessedCharacter->GetAiInfo().bIsPlayerDead);

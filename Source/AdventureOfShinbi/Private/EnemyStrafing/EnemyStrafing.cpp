@@ -137,22 +137,6 @@ FVector AEnemyStrafing::WorldDirectionForStrafing()
 	return GetActorForwardVector();
 }
 
-void AEnemyStrafing::CheckIsKnockUp()
-{
-	if (AIController)
-	{
-		if (GetCharacterMovement()->IsFalling())
-		{
-			EnemyAnim->StopAllMontages(0.2f);
-			AiInfo.bIsKnockUp = true;
-			if (AIController)
-			{
-				AIController->UpdateAiInfo();
-			}
-		}
-	}
-}
-
 void AEnemyStrafing::KnockUpEnd()
 {
 	AiInfo.bIsKnockUp = false;

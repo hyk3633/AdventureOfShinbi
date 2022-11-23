@@ -108,7 +108,8 @@ void AAOSHUD::SetCrosshairSpread(float Spread)
 
 void AAOSHUD::CreateInventorySlot()
 {
-	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) return;
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) 
+		return;
 	
 	APlayerController* PlayerController = GetOwningPlayerController();
 
@@ -131,6 +132,11 @@ void AAOSHUD::CreateInventorySlot()
 			}
 		}
 	}
+}
+
+int32 AAOSHUD::GetInventorySlotCount()
+{
+	return CharacterOverlay->InventoryWidget->SlotArray.Num();
 }
 
 void AAOSHUD::UpdateInventory()

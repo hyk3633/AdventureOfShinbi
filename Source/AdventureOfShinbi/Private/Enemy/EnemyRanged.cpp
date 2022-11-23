@@ -33,6 +33,13 @@ void AEnemyRanged::Tick(float DeltaTime)
 
 }
 
+void AEnemyRanged::AbortAttack()
+{
+	Super::AbortAttack();
+
+	CurrentFireCount = 0;
+}
+
 void AEnemyRanged::RangedAttack()
 {
 	bIsAttacking = true;
@@ -105,7 +112,8 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 
 void AEnemyRanged::PlayFireMontage()
 {
-	if (EnemyAnim == nullptr || FireMontage == nullptr) return;
+	if (EnemyAnim == nullptr || FireMontage == nullptr) 
+		return;
 
 	int8 RandSectionNum = UKismetMathLibrary::RandomInteger(FireMontageSectionNameArr.Num());
 

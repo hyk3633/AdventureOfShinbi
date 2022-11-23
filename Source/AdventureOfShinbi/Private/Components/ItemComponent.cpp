@@ -16,6 +16,8 @@
 #include "Components/TextBlock.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 
 UItemComponent::UItemComponent()
@@ -109,12 +111,10 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 
 	if (RecoveryItemMap[Recovery->GetRecoveryType()] == 0)
 	{
+		Recovery->HandleItemAfterGain();
 		ItemArray.Add(Item);
 		HUD->AddItemToSlot(ItemArray.Num()-1,Item);
 		HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemArray.Num()-1]->OnItemMenuSelect.BindUObject(this, &UItemComponent::ItemUseOrEquip);
-		Recovery->GetStaticMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Recovery->GetStaticMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-		Recovery->GetStaticMesh()->SetVisibility(false);
 	}
 	else
 	{
@@ -132,14 +132,12 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	
 	if (AmmoQuantityMap.Find(Ammo->GetAmmoType()) == nullptr)
 	{
+		Ammo->HandleItemAfterGain();
 		ItemArray.Add(Item);
 		AmmoQuantityMap.Add(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
 		AmmoIndexMap[Ammo->GetAmmoType()] = ItemArray.Num() - 1;
 		HUD->AddItemToSlot(ItemArray.Num()-1, Item);
 		HUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemArray.Num() - 1]->ItemInventorySlotIconButton->SetIsEnabled(false);
-		Ammo->GetStaticMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Ammo->GetStaticMesh()->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-		Ammo->GetStaticMesh()->SetVisibility(false);
 	}
 	else
 	{
@@ -310,11 +308,14 @@ void UItemComponent::PlayQuickSlotAnimation()
 
 void UItemComponent::UseRecoveryItem(AItem* Item)
 {
-	if (CombatComp->GetHealBanActivated()) return;
+	if (CombatComp->GetHealBanActivated()) 
+		return;
 
 	AItemRecovery* IR = Cast<AItemRecovery>(Item);
 	if(IR)
 	{
+		IR->PlayUsingEffect(Character->GetActorLocation());
+
 		if (RecoveryItemMap[IR->GetRecoveryType()] > 0)
 		{
 			RecoveryItemMap[IR->GetRecoveryType()] -= 1;
@@ -386,6 +387,11 @@ void UItemComponent::Recovery(float DeltaTime)
 		{
 			bDoRecoveryHealth = false;
 			RecoveredHealthAmount = 0.f;
+			if (VoiceRecoveryHealth && CombatComp->bVoiceLowHealthPlayed)
+			{
+				UGameplayStatics::PlaySound2D(this, VoiceRecoveryHealth);
+				CombatComp->bVoiceLowHealthPlayed = false;
+			}
 		}
 	}
 	if (bDoRecoveryMana)
@@ -401,6 +407,10 @@ void UItemComponent::Recovery(float DeltaTime)
 		{
 			bDoRecoveryMana = false;
 			RecoveredManaAmount = 0.f;
+			if (CombatComp->bVoiceLackManaPlayed)
+			{
+				CombatComp->bVoiceLackManaPlayed = false;
+			}
 		}
 	}
 }

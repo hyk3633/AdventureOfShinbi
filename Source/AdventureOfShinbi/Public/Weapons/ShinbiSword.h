@@ -35,6 +35,8 @@ protected:
 
 	virtual void SetWeaponState(const EWeaponState State) override;
 
+	void ActivateGlow();
+
 	void CirclingWolvesOn(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
@@ -59,6 +61,16 @@ protected:
 private:
 
 	AAOSCharacter* WeaponOwner;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Effect")
+	UParticleSystem* SwordGlowStart;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Effect")
+	UParticleSystem* SwordGlowLoop;
+
+	UParticleSystemComponent* SwordGlowLoopComp;
+
+	FTimerHandle GlowTimer;
 
 	/** 울프 어택 */
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Wolf Attack")

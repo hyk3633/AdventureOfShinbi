@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -22,13 +21,15 @@ class USoundCue;
 DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
 DECLARE_DELEGATE_OneParam(OnAimButtonPressedDelegate, bool bPress);
 
-UENUM()
+UENUM(BlueprintType)
 enum class ECharacterState : uint8
 {
 	ECS_Nothing,
 	ECS_AnimationPlaying,
+	ECS_Reloading,
 	ECS_Freezed,
 	ECS_Stiffed,
+	ECS_Dead,
 
 	ECS_MAX
 };
@@ -42,7 +43,7 @@ enum class EWalkingState : uint8
 	EWS_MAX
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class ADVENTUREOFSHINBI_API AAOSCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -81,7 +82,11 @@ protected:
 		AActor* DamageCauser
 	);
 
+	FName DistinguishHitDirection(FVector DamageCauserLocation);
+
 	void PlayerKnockBack(AActor* DamageCauser, float Power);
+
+	void PlayHitReaction(USoundCue* Voice, AActor* DamageCauser);
 
 	UFUNCTION()
 	void TakeRadialDamage
@@ -140,6 +145,14 @@ private:
 
 	void PlayHitEffect(FVector HitLocation, FRotator HitRotation);
 
+	void InventoryAnimationEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadingStart();
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadingEnd();
+
 private:
 
 	UPROPERTY(EditAnywhere)
@@ -164,18 +177,20 @@ private:
 
 	bool bAttackButtonPressing = false;
 
+	bool bAbleAttack = false;
+
 	bool bAbleFire = true;
 
 	bool bIsInventoryOn = false;
+
+	bool bInventoryAnimationPlaying = false;
+	FTimerHandle InventoryAnimationTimer;
 
 	bool bDashing = false;
 
 	AItem* OverlappingItem;
 
 	AWeapon* OverlappingWeapon;
-
-	UPROPERTY(VisibleAnywhere, Category = "Character | Info")
-	EWeaponType WeaponType = EWeaponType::EWT_None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Character | Info")
 	ECharacterState CharacterState = ECharacterState::ECS_Nothing;
@@ -205,6 +220,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Character | Effect")
 	USoundCue* HitSound;
 
+	UPROPERTY(EditAnywhere, Category = "Character | Voice")
+	USoundCue* VoiceJump;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Voice")
+	USoundCue* VoicePain;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Voice")
+	USoundCue* VoicePainHeavy;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Effect")
+	TSubclassOf<UCameraShakeBase> CameraShakeHitted;
+
 	UPROPERTY(VisibleAnywhere, Category = "Character | Moving Speed")
 	float CurrentRunningSpeed = 600.f;
 	UPROPERTY(VisibleAnywhere, Category = "Character | Moving Speed")
@@ -231,6 +258,8 @@ public:
 
 	UCameraComponent* GetCamera() const;
 	USpringArmComponent* GetSpringArm() const;
+	UAOSAnimInstance* GetAnimInst() const;
+	void SetCharacterState(ECharacterState State);
 	bool GetIsRunning() const;
 	void SetCanRunning(bool IsCapable);
 	bool GetIsAnimationPlaying() const;
@@ -238,9 +267,9 @@ public:
 	bool GetIsAiming() const;
 	void DeactivateAiming();
 	bool GetAttackButtonPressing() const;
+	void CallAttackFunction();
+	void SetAbleAttackFalse();
 	void SetOverlappingItemCount(int8 Quantity);
-	EWeaponType GetWeaponType() const;
-	void SetWeaponType(EWeaponType Type);
 	void ResumeRunning();
 	void StopRunning();
 	void SetGunRecoil(float Recoil);
@@ -248,4 +277,8 @@ public:
 	UItemComponent* GetItemComp() const;
 	void SetWalkingSpeed(EWalkingState State);
 	void ActivateFreezing(bool IsActivate);
+	void SetView(EWeaponType Type);
+	void ActivateWeaponControlMode();
+	void DeactivateWeaponControlMode();
+
 };

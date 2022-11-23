@@ -71,7 +71,7 @@ void AProjectileHoming::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
 {
 	if (TargetHitParticle)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetHitParticle, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), false);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TargetHitParticle, Hit.ImpactPoint, FRotator::ZeroRotator, false);
 	}
 
 	AEnemyCharacter* HittedEnemy = Cast<AEnemyCharacter>(OtherActor);

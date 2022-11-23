@@ -33,7 +33,6 @@ AProjectile::AProjectile()
 	RadialForce->bImpulseVelChange = true;
 	RadialForce->bIgnoreOwningActor = true;
 	RadialForce->bAutoActivate = true;
-
 }
 
 void AProjectile::BeginPlay()
@@ -78,6 +77,11 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 
 	if (bIsExplosive)
 	{
+		if (CameraShake)
+		{
+			UGameplayStatics::PlayWorldCameraShake(this, CameraShake, GetActorLocation(), 200.f, CameraShakeRadius);
+		}
+
 		UGameplayStatics::ApplyRadialDamage
 		(
 			this, 
@@ -93,6 +97,11 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 	}
 	else
 	{
+		if (CameraShake)
+		{
+			GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShake);
+		}
+
 		const float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
 		AActor* DmgCauser = bIsPlayersProjectile ? GetOwner() : this;
 		UGameplayStatics::ApplyPointDamage
@@ -107,5 +116,4 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 		);
 	}
 }
-
 

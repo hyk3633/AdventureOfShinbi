@@ -1,9 +1,8 @@
-
-
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
 #include "Player/AOSAnimInstance.h"
 #include "Enemy/EnemyCharacter.h"
+#include "EnemyBoss/EnemyBoss.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFrameWork/CharacterMovementComponent.h"
@@ -12,6 +11,7 @@
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/Projectile.h"
+#include "Weapons/ProjectileBullet.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CombatComponent.h"
 #include "Components/ItemComponent.h"
@@ -19,6 +19,7 @@
 #include "Components/CapsuleComponent.h"
 #include "HUD/AOSHUD.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 #include "DrawDebugHelpers.h"
@@ -44,13 +45,16 @@ AAOSCharacter::AAOSCharacter()
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
 	SpringArm->bUsePawnControlRotation = true; // 폰의 뷰/컨트롤 회전 값 사용
-	SpringArm->SocketOffset = FVector(0.f, 50.f, 50.f);
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->bUsePawnControlRotation = false;
+
+	SpringArm->TargetArmLength = 300.f;
+	SpringArm->SocketOffset = FVector(0.f, 80.f, 170.f);
+	Camera->SetFieldOfView(110.f);
+	Camera->SetRelativeRotation(FRotator(-10.f, 0.f, 0.f));
 
 	bUseControllerRotationYaw = false;
 
@@ -73,10 +77,8 @@ void AAOSCharacter::BeginPlay()
 
 	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
 
-	//GetMesh()->HideBoneByName("weapon_r", EPhysBodyOp::PBO_Term);
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
-
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
@@ -119,32 +121,99 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 		CombatComp->UpdateHealth(DamageReceived);
 	}
 
-	if (CharacterState == ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing)
+		return;
+	
+	AProjectile* Proj = Cast<AProjectile>(DamageCauser);
+	if (Proj)
 	{
-		AProjectile* Proj = Cast<AProjectile>(DamageCauser);
-		if (Proj)
+		AProjectileBullet* PB = Cast<AProjectileBullet>(Proj);
+		if (PB && FMath::RandRange(0.f, 1.f) <= 0.25f)
 		{
-			if (FMath::RandRange(0.f, 1.f) <= 0.2f)
-			{
-				CombatComp->PlayHitReactMontage();
-				PlayerKnockBack(DamageCauser, 1000.f);
-			}
+			PlayHitReaction(VoicePain, DamageCauser);
 		}
 		else
 		{
-			CombatComp->PlayHitReactMontage();
-			PlayerKnockBack(DamageCauser, 3000.f);
+			PlayHitReaction(VoicePainHeavy, DamageCauser);
+			PlayerKnockBack(DamageCauser, 1000.f);
 		}
 	}
-
+	else
+	{
+		AEnemyBoss* EB = Cast<AEnemyBoss>(DamageCauser);
+		if (EB)
+		{
+			if (EB->GetDashAttack())
+			{
+				PlayHitReaction(VoicePainHeavy, DamageCauser);
+			}
+			else
+			{
+				PlayerKnockBack(DamageCauser, 1000.f);
+				PlayHitReaction(VoicePain, DamageCauser);
+			}
+		}
+		else if (FMath::RandRange(0.f, 1.f) <= 0.5f)
+		{
+			PlayerKnockBack(DamageCauser, 450.f);
+			PlayHitReaction(VoicePain, DamageCauser);
+		}
+	}
+	
 	PlayHitEffect(HitLocation, ShotFromDirection.Rotation());
+}
+
+FName AAOSCharacter::DistinguishHitDirection(FVector DamageCauserLocation)
+{
+	const FVector TargetLocation = DamageCauserLocation;
+	FVector ToTarget = TargetLocation - GetActorLocation();
+	ToTarget.Normalize();
+	const float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
+
+	FVector Cross = FVector::CrossProduct(ToTarget, GetActorForwardVector());
+	Cross.Normalize();
+	const float CrossDot = FVector::DotProduct(Cross, GetActorUpVector());
+
+	if (Dot >= 0.3f && Dot < 1.0)
+	{
+		return FName("F");
+	}
+	else if (Dot >= -0.3f && Dot < -1.0)
+	{
+		return FName("B");
+	}
+	else
+	{
+		if (CrossDot > 0.f)
+		{
+			return FName("L");
+		}
+		else
+		{
+			return FName("R");
+		}
+	}
 }
 
 void AAOSCharacter::PlayerKnockBack(AActor* DamageCauser, float Power)
 {
 	FVector Direction = GetActorLocation() - DamageCauser->GetActorLocation();
+	Direction.Z = 0.f;
 	Direction.Normalize();
-	LaunchCharacter(Direction * Power, false, true);
+	LaunchCharacter(Direction * Power, false, false);
+	if (CameraShakeHitted)
+	{
+		GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeHitted);
+	}
+}
+
+void AAOSCharacter::PlayHitReaction(USoundCue* Voice, AActor* DamageCauser)
+{
+	if (Voice)
+	{
+		UGameplayStatics::PlaySound2D(this, Voice);
+	}
+	CombatComp->PlayHitReactMontage(DistinguishHitDirection(DamageCauser->GetActorLocation()));
 }
 
 void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
@@ -159,6 +228,29 @@ void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 	}
 }
 
+void AAOSCharacter::InventoryAnimationEnd()
+{
+	bInventoryAnimationPlaying = false;
+}
+
+void AAOSCharacter::ReloadingStart()
+{
+	CharacterState = ECharacterState::ECS_Reloading;
+	if (AnimInstance)
+	{
+		AnimInstance->ActivateReloading();
+	}
+}
+
+void AAOSCharacter::ReloadingEnd()
+{
+	CharacterState = ECharacterState::ECS_Nothing;
+	if (AnimInstance)
+	{
+		AnimInstance->DeactivateReloading();
+	}
+}
+
 void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
 	UE_LOG(LogTemp, Warning, TEXT("radial %f"), DamageReceived);
@@ -166,11 +258,14 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 	{
 		CombatComp->UpdateHealth(DamageReceived);
 	}
+
+	PlayHitReaction(VoicePainHeavy, DamageCauser);
+	PlayerKnockBack(DamageCauser, 1000.f);
 }
 
 void AAOSCharacter::MoveForward(float Value)
 {
-	if (CharacterState != ECharacterState::ECS_Nothing || bDashing)
+	if (CharacterState != ECharacterState::ECS_Nothing && CharacterState != ECharacterState::ECS_Reloading  || bDashing)
 		return;
 
 	bIsMoving = Value != 0.f ? true : false;
@@ -185,7 +280,7 @@ void AAOSCharacter::MoveForward(float Value)
 
 void AAOSCharacter::MoveRight(float Value)
 {
-	if (CharacterState != ECharacterState::ECS_Nothing || bDashing)
+	if (CharacterState != ECharacterState::ECS_Nothing && CharacterState != ECharacterState::ECS_Reloading || bDashing)
 		return;
 
 	bIsMoving = Value != 0.f ? true : false;
@@ -200,11 +295,17 @@ void AAOSCharacter::MoveRight(float Value)
 
 void AAOSCharacter::Lookup(float Value)
 {
+	if (CharacterState == ECharacterState::ECS_Freezed || CharacterState == ECharacterState::ECS_Dead)
+		return;
+
 	AddControllerPitchInput(Value);
 }
 
 void AAOSCharacter::Turn(float Value)
 {
+	if (CharacterState == ECharacterState::ECS_Freezed || CharacterState == ECharacterState::ECS_Dead)
+		return;
+
 	AddControllerYawInput(Value);
 }
 
@@ -214,6 +315,11 @@ void AAOSCharacter::Jump()
 		return;
 
 	MakeNoise(1.f, GetInstigator(), GetActorLocation());
+
+	if (VoiceJump)
+	{
+		UGameplayStatics::PlaySound2D(this, VoiceJump);
+	}
 
 	ACharacter::Jump();
 }
@@ -233,6 +339,7 @@ void AAOSCharacter::RunningButtonReleased()
 	bIsRunning = false;
 
 	GetCharacterMovement()->MaxWalkSpeed = CurrentWalkingSpeed;
+	MakeNoise(1.f, GetInstigator(), GetActorLocation());
 }
 
 void AAOSCharacter::Crouch_DashButtonPressed()
@@ -240,7 +347,7 @@ void AAOSCharacter::Crouch_DashButtonPressed()
 	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
-	if (WeaponType == EWeaponType::EWT_None)
+	if(CombatComp->GetEquippedWeapon() == nullptr)
 	{
 		Crouching();
 	}
@@ -266,6 +373,7 @@ void AAOSCharacter::Dash()
 {
 	if (bDashing || !CombatComp->SpendStamina(10.f)) 
 		return;
+
 	bDashing = true;
 	PlayDashMotage();
 	LaunchCharacter(GetLastMovementInputVector() * DashPower, false, false);
@@ -273,15 +381,11 @@ void AAOSCharacter::Dash()
 
 void AAOSCharacter::Equip_Skill1ButtonPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (OverlappingItem)
 	{
-		// 무기 장착시에 설정하고 무기 빼면 원상복구하기
-		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-
 		CombatComp->PickingUpItem(OverlappingItem);
 		OverlappingItem = nullptr;
 	}
@@ -293,17 +397,19 @@ void AAOSCharacter::Equip_Skill1ButtonPressed()
 
 void AAOSCharacter::AttackButtonPressed()
 {
-	if (CombatComp == nullptr || WeaponType == EWeaponType::EWT_MAX || CharacterState != ECharacterState::ECS_Nothing)
+	bAttackButtonPressing = true;
+
+	if (CombatComp == nullptr || CombatComp->GetEquippedWeapon() == nullptr || CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
-	bAttackButtonPressing = true;
+	bAbleAttack = true;
 
 	if (CombatComp->EquippedWeapon)
 	{
 		DAttackButtonPressed.ExecuteIfBound();
 	}
 
-	if (WeaponType == EWeaponType::EWT_Gun)
+	if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
 	{
 		Fire();
 	}
@@ -316,6 +422,7 @@ void AAOSCharacter::AttackButtonPressed()
 void AAOSCharacter::AttackButtonReleassed()
 {
 	bAttackButtonPressing = false;
+	bAbleAttack = false;
 }
 
 void AAOSCharacter::Fire()
@@ -329,18 +436,16 @@ void AAOSCharacter::Fire()
 
 void AAOSCharacter::StartTimerFire()
 {
-	ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
-
 	bAbleFire = false;
+	ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
 	GetWorldTimerManager().SetTimer(FireTimer, this, &AAOSCharacter::FireReturn, RW->GetFireRate());
-
 }
 
 void AAOSCharacter::FireReturn()
 {
 	bAbleFire = true;
 	ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
-	if (RW->GetAutomaticFire() && bAttackButtonPressing)
+	if (RW->GetAutomaticFire() && bAbleAttack)
 	{
 		Fire();
 	}
@@ -350,6 +455,7 @@ void AAOSCharacter::PlayDashMotage()
 {
 	if (DashMontage)
 	{
+		MakeNoise(1.f, GetInstigator(), GetActorLocation());
 		AnimInstance->Montage_Play(DashMontage);
 	}
 }
@@ -361,18 +467,23 @@ void AAOSCharacter::OnDashMontageEnded()
 
 void AAOSCharacter::AimButtonPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (CombatComp->EquippedWeapon)
 	{
 		DAimButtonPressed.ExecuteIfBound(true);
 
-		if (WeaponType == EWeaponType::EWT_Gun)
+		if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
 		{
 			bIsAiming = true;
+
+			SpringArm->TargetArmLength = 200.f;
+			SpringArm->SocketOffset = FVector(0.f, 50.f, 80.f);
+			Camera->SetFieldOfView(110.f);
+			Camera->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 		}
-		else if (WeaponType == EWeaponType::EWT_MeleeOneHand)
+		else if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
 		{
 			CombatComp->WeaponRightClickSkill();
 		}
@@ -386,15 +497,20 @@ void AAOSCharacter::AimButtonReleased()
 		DAimButtonPressed.ExecuteIfBound(false);
 	}
 
-	if (WeaponType == EWeaponType::EWT_Gun)
+	if (CombatComp->GetEquippedWeapon())
 	{
-		bIsAiming = false;
+		if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
+		{
+			bIsAiming = false;
+
+			SetView(EWeaponType::EWT_Gun);
+		}
 	}
 }
 
 void AAOSCharacter::Reload_Skill2ButtonPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	CombatComp->WeaponSkill2();
@@ -402,8 +518,10 @@ void AAOSCharacter::Reload_Skill2ButtonPressed()
 
 void AAOSCharacter::InventoryKeyPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bInventoryAnimationPlaying)
 		return;
+
+	bInventoryAnimationPlaying = true;
 
 	bIsInventoryOn = bIsInventoryOn ? false : true;
 
@@ -411,12 +529,13 @@ void AAOSCharacter::InventoryKeyPressed()
 	if (AC)
 	{
 		AC->HUDInventoryOn(bIsInventoryOn);
+		GetWorldTimerManager().SetTimer(InventoryAnimationTimer, this, &AAOSCharacter::InventoryAnimationEnd, 0.45f);
 	}
 }
 
 void AAOSCharacter::WeaponQuickSwapKeyPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (CombatComp)
@@ -427,7 +546,7 @@ void AAOSCharacter::WeaponQuickSwapKeyPressed()
 
 void AAOSCharacter::UseItemKeyPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (ItemComp)
@@ -438,7 +557,7 @@ void AAOSCharacter::UseItemKeyPressed()
 
 void AAOSCharacter::ItemChangeKeyPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (ItemComp)
@@ -449,7 +568,7 @@ void AAOSCharacter::ItemChangeKeyPressed()
 
 void AAOSCharacter::Skill3ButtonPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing)
+	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	if (CombatComp->EquippedWeapon)
@@ -533,6 +652,36 @@ void AAOSCharacter::ActivateFreezing(bool IsActivate)
 	}
 }
 
+void AAOSCharacter::SetView(EWeaponType Type)
+{
+	if (Type == EWeaponType::EWT_Gun)
+	{
+		SpringArm->TargetArmLength = 200.f;
+		SpringArm->SocketOffset = FVector(0.f, 80.f, 100.f);
+		Camera->SetFieldOfView(110.f);
+		Camera->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	}
+	else
+	{
+		SpringArm->TargetArmLength = 300.f;
+		SpringArm->SocketOffset = FVector(0.f, 80.f, 170.f);
+		Camera->SetFieldOfView(110.f);
+		Camera->SetRelativeRotation(FRotator(-10.f, 0.f, 0.f));
+	}
+}
+
+void AAOSCharacter::ActivateWeaponControlMode()
+{
+	bUseControllerRotationYaw = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AAOSCharacter::DeactivateWeaponControlMode()
+{
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -560,26 +709,27 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AAOSCharacter::SetOverlappingItem()
 {
-	if (bExistOverlappingItem == false) 
+	if (bExistOverlappingItem == false)
+	{
+		if (OverlappingItemLastFrame)
+		{
+			OverlappingItemLastFrame->GetWidget()->SetVisibility(false);
+			OverlappingItemLastFrame = nullptr;
+		}
 		return;
+	}
 
 	FHitResult HitItem;
 	TraceItem(HitItem);
 
 	if (HitItem.bBlockingHit)
 	{
-
 		AItem* Item = Cast<AItem>(HitItem.Actor);
 		if (Item)
 		{
 			OverlappingItem = Item;
 			OverlappingItem->GetWidget()->SetVisibility(true);
 		}
-		else
-		{
-			OverlappingItem = nullptr;
-		}
-
 		if (OverlappingItemLastFrame)
 		{
 			if (OverlappingItemLastFrame != OverlappingItem)
@@ -587,8 +737,16 @@ void AAOSCharacter::SetOverlappingItem()
 				OverlappingItemLastFrame->GetWidget()->SetVisibility(false);
 			}
 		}
-
 		OverlappingItemLastFrame = OverlappingItem;
+	}
+	else
+	{
+		if (OverlappingItem)
+		{
+			OverlappingItem->GetWidget()->SetVisibility(false);
+			OverlappingItem = nullptr;
+			OverlappingItemLastFrame = nullptr;
+		}
 	}
 }
 
@@ -611,18 +769,26 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 
 	if (bScreenToWorld)
 	{
-		FVector TraceStart = CrosshairWorldPosition;
+		FVector TraceStart = CrosshairWorldPosition - FVector(0.f,0.f,50.f);
 		FVector TraceEnd = TraceStart + CrosshairWorldDirection * 10000.f;
 
-		GetWorld()->LineTraceSingleByChannel(HitItem, TraceStart, TraceEnd, ECC_FindItem);
+		UCollisionProfile* Profile = UCollisionProfile::Get();
+		ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_FindItem);
 
-		// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
-		if (!HitItem.bBlockingHit)
-		{
-			HitItem.ImpactPoint = TraceEnd;
-		}
-
-		DrawDebugLine(GetWorld(), TraceStart+FVector(0.f,0.f,-30.f), HitItem.ImpactPoint, FColor::Blue, false, -1.f, 0U, 2.f);
+		UKismetSystemLibrary::CapsuleTraceSingle
+		(
+			this,
+			TraceStart,
+			TraceEnd,
+			50.f,
+			0.f,
+			TraceType,
+			false,
+			TArray<AActor*>(),
+			EDrawDebugTrace::None,
+			HitItem,
+			true
+		);
 	}
 
 }
@@ -635,6 +801,16 @@ UCameraComponent* AAOSCharacter::GetCamera() const
 USpringArmComponent* AAOSCharacter::GetSpringArm() const
 {
 	return SpringArm;
+}
+
+UAOSAnimInstance* AAOSCharacter::GetAnimInst() const
+{
+	return AnimInstance;
+}
+
+void AAOSCharacter::SetCharacterState(ECharacterState State)
+{
+	CharacterState = State;
 }
 
 bool AAOSCharacter::GetIsRunning() const
@@ -672,6 +848,16 @@ bool AAOSCharacter::GetAttackButtonPressing() const
 	return bAttackButtonPressing;
 }
 
+void AAOSCharacter::CallAttackFunction()
+{
+	AttackButtonPressed();
+}
+
+void AAOSCharacter::SetAbleAttackFalse()
+{
+	bAbleAttack = false;
+}
+
 void AAOSCharacter::SetOverlappingItemCount(int8 Quantity)
 {
 	if (OverlappingItemCount + Quantity <= 0)
@@ -684,14 +870,4 @@ void AAOSCharacter::SetOverlappingItemCount(int8 Quantity)
 		bExistOverlappingItem = true;
 		OverlappingItemCount += Quantity;
 	}
-}
-
-EWeaponType AAOSCharacter::GetWeaponType() const
-{
-	return WeaponType;
-}
-
-void AAOSCharacter::SetWeaponType(EWeaponType Type)
-{
-	WeaponType = Type;
 }

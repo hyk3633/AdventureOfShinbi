@@ -8,7 +8,6 @@
 
 AProjectileMurielSkillShot::AProjectileMurielSkillShot()
 {
-
 }
 
 void AProjectileMurielSkillShot::BeginPlay()

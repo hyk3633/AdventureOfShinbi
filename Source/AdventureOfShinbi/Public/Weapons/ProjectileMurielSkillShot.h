@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapons/ProjectileBullet.h"
+#include "Weapons/ProjectileHoming.h"
 #include "ProjectileMurielSkillShot.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ADVENTUREOFSHINBI_API AProjectileMurielSkillShot : public AProjectileBullet
+class ADVENTUREOFSHINBI_API AProjectileMurielSkillShot : public AProjectileHoming
 {
 	GENERATED_BODY()
 	

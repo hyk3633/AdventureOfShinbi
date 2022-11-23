@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -61,6 +60,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	EWeaponType WeaponType = EWeaponType::EWT_MAX;
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
+
 	FRotator CharacterRotation;
 
 	// (BaseAimRotation - VelocityRotation).Normal
@@ -86,4 +88,14 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float LastMovementOffsetYaw = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsReloading = false;
+
+public:
+
+	void SetWeaponType(EWeaponType Type);
+	void SetRangedWeaponType(ERangedWeaponType Type);
+	void ActivateReloading();
+	void DeactivateReloading();
 };

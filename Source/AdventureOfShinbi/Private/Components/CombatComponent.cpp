@@ -3,8 +3,10 @@
 #include "Components/CombatComponent.h"
 #include "Components/ItemComponent.h"
 #include "Components/TextBlock.h"
+#include "Components/AudioComponent.h"
 #include "TimerManager.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Player/AOSCharacter.h"
 #include "Player/AOSAnimInstance.h"
 #include "Player/AOSController.h"
@@ -24,6 +26,7 @@
 #include "HUD/InventorySlot.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Types/WeaponState.h"
+#include "Sound/SoundCue.h"
 #include "..\..\Public\Components\CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
@@ -331,6 +334,8 @@ void UCombatComponent::PlayReloadMontage()
 
 	Character->SetGunRecoil(1.f);
 
+	Character->SetCharacterState(ECharacterState::ECS_AnimationPlaying);
+
 	AnimInstance->Montage_Play(GunReloadMontage);
 }
 
@@ -339,12 +344,26 @@ void UCombatComponent::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterru
 	if (Montage != GunReloadMontage)
 		return;
 
+	Character->SetCharacterState(ECharacterState::ECS_Nothing);
+
+	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+	if (RW)
+	{
+		Character->SetGunRecoil(RW->GetGunRecoil());
+	}
+
 	Reload();
+
+	if (Character->GetAttackButtonPressing())
+	{
+		Character->CallAttackFunction();
+	}
 }
 
 void UCombatComponent::PlayMontageGunFire()
 {
-	if (AnimInstance == nullptr || GunFireMontage == nullptr) return;
+	if (AnimInstance == nullptr || GunFireMontage == nullptr) 
+		return;
 
 	AnimInstance->Montage_Play(GunFireMontage);
 	AnimInstance->Montage_JumpToSection(FName("GunFireFast"));
@@ -358,13 +377,22 @@ void UCombatComponent::RangedWeaponFire()
 
 	if (RangedWeapon->GetLoadedAmmo() > 0)
 	{
+		bFireFactor = true;
 		PlayMontageGunFire();
 		RangedWeapon->Firing();
+		Character->GetWorldTimerManager().SetTimer(FireFactorTimer, this, &UCombatComponent::DeactivateFireFactor, FireFactorTime);
 	}
-
-	if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()) > 0)
+	else if (RangedWeapon->GetLoadedAmmo() == 0 && Character->GetItemComp()->GetAmmo(RangedWeapon->GetAmmoType()) > 0)
 	{
-		Reload();
+		if (Character->GetAttackButtonPressing())
+		{
+			Character->SetAbleAttackFalse();
+		}
+		PlayReloadMontage();
+	}
+	else
+	{
+		RangedWeapon->PlayNoAmmoSound();
 	}
 
 	if (CharacterController)
@@ -577,12 +605,17 @@ void UCombatComponent::ResetCombo()
 	MeleeAttackComboCount = 0;
 }
 
+void UCombatComponent::DeactivateFireFactor()
+{
+	bFireFactor = false;
+}
+
 void UCombatComponent::GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
 
 }
 
-void UCombatComponent::PlayHitReactMontage()
+void UCombatComponent::PlayHitReactMontage(FName SectionName)
 {
 	if (AnimInstance == nullptr || EquippedWeapon == nullptr)
 		return;
@@ -591,8 +624,7 @@ void UCombatComponent::PlayHitReactMontage()
 	{
 		if (OneHandHitReactMontage)
 		{
-			AnimInstance->Montage_Play(GlaiveUltimateMontage);
-			//AnimInstance->Montage_JumpToSection(Version);
+			AnimInstance->Montage_Play(OneHandHitReactMontage);
 		}
 	}
 	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
@@ -600,7 +632,6 @@ void UCombatComponent::PlayHitReactMontage()
 		if (GlaiveHitReactMontage)
 		{
 			AnimInstance->Montage_Play(GlaiveHitReactMontage);
-			//AnimInstance->Montage_JumpToSection(Version);
 		}
 	}
 	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
@@ -608,9 +639,9 @@ void UCombatComponent::PlayHitReactMontage()
 		if (GunHitReactMontage)
 		{
 			AnimInstance->Montage_Play(GunHitReactMontage);
-			//AnimInstance->Montage_JumpToSection(Version);
 		}
 	}
+	AnimInstance->Montage_JumpToSection(SectionName);
 }
 
 void UCombatComponent::OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted)
@@ -620,14 +651,10 @@ void UCombatComponent::OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterru
 
 void UCombatComponent::PlayMontageDeath()
 {
-	if (AnimInstance == nullptr || DeathMontage == nullptr) return;
+	if (AnimInstance == nullptr || DeathMontage == nullptr) 
+		return;
 
 	AnimInstance->Montage_Play(DeathMontage);
-
-	if (Character->GetWeaponType() == EWeaponType::EWT_None)
-	{
-		AnimInstance->Montage_JumpToSection(FName("UnArmed"));
-	}
 }
 
 void UCombatComponent::ActivateWeaponTrace()
@@ -661,11 +688,24 @@ void UCombatComponent::UpdateHealth(float Damage)
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
 	}
 
-	if (Health == 0.f)
+	if (GetHealthPercentage() < 0.3f && bVoiceLowHealthPlayed == false)
 	{
-		PlayerDeathDelegate.Broadcast();
+		if (VoiceLowHealth)
+		{
+			UGameplayStatics::PlaySound2D(this, VoiceLowHealth);
+		}
+		bVoiceLowHealthPlayed = true;
+	}
+	else if (Health == 0.f)
+	{
+		Character->SetCharacterState(ECharacterState::ECS_Dead);
 		Character->GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		PlayMontageDeath();
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->DropWeapon();
+		}
+		PlayerDeathDelegate.Broadcast();
 	}
 }
 
@@ -717,6 +757,36 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 		}
 	}
 
+	if (Stamina <= MaxStamina * 0.4f)
+	{
+		if (VoiceBreathingRunComp == nullptr)
+		{
+			if (VoiceBreathingRun)
+			{
+				VoiceBreathingRunComp = UGameplayStatics::SpawnSound2D(this, VoiceBreathingRun);
+			}
+		}
+		else
+		{
+			if (VoiceBreathingRunComp->IsPlaying() == false)
+			{
+				VoiceBreathingRunComp->IsPlaying();
+			}
+		}
+	}
+	else
+	{
+		if (VoiceBreathingRunComp)
+		{
+			if (VoiceBreathingRunComp->IsPlaying() == false)
+			{
+				VoiceBreathingRunComp->Deactivate();
+				VoiceBreathingRunComp->DestroyComponent();
+				VoiceBreathingRunComp = nullptr;
+			}
+		}
+	}
+
 	if (CharacterController)
 	{
 		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
@@ -725,7 +795,8 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 
 void UCombatComponent::SetCrosshair()
 {
-	if (CharacterController == nullptr) return;
+	if (CharacterController == nullptr) 
+		return;
 
 	if (HUD)
 	{
@@ -770,18 +841,40 @@ void UCombatComponent::SpreadCrosshair(float DeltaTime)
 		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
 	}
 
-	HUD->SetCrosshairSpread(CrosshairVelocityFactor + CrosshairInAirFactor);
+	if (Character->GetIsAiming())
+	{
+		CrosshairZoomFactor = FMath::FInterpTo(CrosshairInAirFactor, 1.f, DeltaTime, 10.f);
+	}
+	else
+	{
+		CrosshairZoomFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 5.f);
+	}
+
+	if (bFireFactor)
+	{
+		CrosshairFireFactor = FMath::FInterpTo(CrosshairFireFactor, 1.5f, DeltaTime, 10.f);
+	}
+	else
+	{
+		CrosshairFireFactor = FMath::FInterpTo(CrosshairFireFactor, 0.f, DeltaTime, 3.f);
+	}
+
+	HUD->SetCrosshairSpread(CrosshairVelocityFactor + CrosshairInAirFactor + CrosshairFireFactor - CrosshairZoomFactor);
 }
 
 void UCombatComponent::PickingUpItem(AItem* PickedItem)
 {
-	if (HUD == nullptr || PickedItem == nullptr) return;
+	if (HUD == nullptr || PickedItem == nullptr) 
+		return;
+
+	PickedItem->DeactivateItemMovement();
+	PickedItem->PlayGainEffect();
 
 	if (PickedItem->GetIsWeapon())
 	{
 		AWeapon* PickedWeapon = Cast<AWeapon>(PickedItem);
 
-		if (AcquiredWeapons.Num() % 5 == 0)
+		if (AcquiredWeapons.Num() == HUD->GetInventorySlotCount())
 		{
 			HUD->CreateInventorySlot();
 		}
@@ -817,6 +910,8 @@ void UCombatComponent::WeaponQuickSwap()
 		QuickSlot1Weapon->GetInventorySlot()->EquipButtonClicked();
 		QuickSlot2Weapon->GetInventorySlot()->QuickSlot1ButtonClicked();
 	}
+
+
 }
 
 void UCombatComponent::OnChangedWeaponState(AWeapon* Weapon)
@@ -866,8 +961,26 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 		}
 
 		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
-		Character->SetGunRecoil(RW->GetGunRecoil());
-		SocketName = FName("GunSocket");
+		if (RW)
+		{
+			Character->SetGunRecoil(RW->GetGunRecoil());
+			if (RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_Revenent)
+			{
+				SocketName = FName("RevenentSocket");
+			}
+			else if(RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_Wraith)
+			{
+				SocketName = FName("WraithSocket");
+			}
+			else if (RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_AK47)
+			{
+				SocketName = FName("AK47Socket");
+			}
+			else
+			{
+				SocketName = FName("GunSocket");
+			}
+		}
 	}
 	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
 	{
@@ -899,7 +1012,15 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(EquippedWeapon->GetItemIcon());
 
 	EquippedWeapon->SetOwner(Character);
-	Character->SetWeaponType(EquippedWeapon->GetWeaponType());
+	Character->GetAnimInst()->SetWeaponType(EquippedWeapon->GetWeaponType());
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	{
+		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+		if (RW)
+		{
+			Character->GetAnimInst()->SetRangedWeaponType(RW->GetRangedWeaponType());
+		}
+	}
 
 	if (WeaponToChange != nullptr)
 	{
@@ -935,6 +1056,8 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	}
 
 	Character->SetWalkingSpeed(EWalkingState::EWS_Armed);
+	Character->SetView(Weapon->GetWeaponType());
+	Character->ActivateWeaponControlMode();
 }
 
 void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
@@ -943,14 +1066,18 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 	{
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 		EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachRules);
+		Character->GetAnimInst()->SetWeaponType(EWeaponType::EWT_None);
 		EquippedWeapon->SetOwner(nullptr);
 		EquippedWeapon = nullptr;
-		SetCrosshair();
+		
 		CharacterController->SetHUDEquippedWeaponIcon(nullptr);
 		CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(nullptr);
-		Character->SetWeaponType(EWeaponType::EWT_None);
 
 		Character->SetWalkingSpeed(EWalkingState::EWS_UnArmed);
+		Character->SetView(EWeaponType::EWT_None);
+		Character->DeactivateWeaponControlMode();
+
+		SetCrosshair();
 	}
 	else if (Weapon == QuickSlot1Weapon)
 	{
@@ -1123,8 +1250,15 @@ bool UCombatComponent::SpendStamina(float StaminaToSpend)
 
 bool UCombatComponent::SpendMana(float ManaToSpend)
 {
-	if (Mana < ManaToSpend) 
+	if (Mana < ManaToSpend)
+	{
+		if (VoiceLackMana && bVoiceLackManaPlayed == false)
+		{
+			UGameplayStatics::PlaySound2D(this, VoiceLackMana);
+			bVoiceLackManaPlayed = true;
+		}
 		return false;
+	}
 
 	UpdateMana(ManaToSpend);
 	return true;

@@ -8,16 +8,12 @@
 
 AProjectileBossSwordAura::AProjectileBossSwordAura()
 {
-	LifeSpan = 15.f;
+
 }
 
 void AProjectileBossSwordAura::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	AProjectile::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
-
-	BodyParticleComponent->Deactivate();
-
-	PlayHitEffect(Hit, OtherActor);
+	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
 	Target = Cast< AAOSCharacter>(OtherActor);
 	if (Target)

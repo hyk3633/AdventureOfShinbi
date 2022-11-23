@@ -30,6 +30,27 @@ void AShinbiSword::BeginPlay()
 	{
 		AngleOffset.Add(-72.f * i);
 	}
+
+	if (SwordGlowLoop)
+	{
+		const USkeletalMeshSocket* GlowSocket = ItemMesh->GetSocketByName(FName("GlowSocket"));
+		if (GlowSocket == nullptr)
+			return;
+		const FTransform SocketTransform = GlowSocket->GetSocketTransform(ItemMesh);
+
+		SwordGlowLoopComp = UGameplayStatics::SpawnEmitterAttached
+		(
+			SwordGlowLoop,
+			ItemMesh,
+			NAME_None,
+			SocketTransform.GetLocation(),
+			SocketTransform.GetRotation().Rotator(),
+			EAttachLocation::KeepWorldPosition,
+			false,
+			EPSCPoolMethod::None,
+			false
+		);
+	}
 }
 
 void AShinbiSword::Tick(float DeltaTime)
@@ -46,6 +67,38 @@ void AShinbiSword::SetWeaponState(const EWeaponState State)
 	if (GetWeaponState() == EWeaponState::EWS_Equipped)
 	{
 		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
+
+		if (SwordGlowStart)
+		{
+			const USkeletalMeshSocket* GlowSocket = ItemMesh->GetSocketByName(FName("GlowSocket"));
+			if (GlowSocket == nullptr)
+				return;
+			const FTransform SocketTransform = GlowSocket->GetSocketTransform(ItemMesh);
+
+			UGameplayStatics::SpawnEmitterAttached
+			(
+				SwordGlowStart,
+				ItemMesh,
+				NAME_None,
+				SocketTransform.GetLocation(),
+				SocketTransform.GetRotation().Rotator(),
+				EAttachLocation::KeepWorldPosition
+			);
+
+			GetWorldTimerManager().SetTimer(GlowTimer, this, &AShinbiSword::ActivateGlow, 0.3f);
+		}
+	}
+	else
+	{
+		SwordGlowLoopComp->Deactivate();
+	}
+}
+
+void AShinbiSword::ActivateGlow()
+{
+	if (SwordGlowLoopComp)
+	{
+		SwordGlowLoopComp->Activate();
 	}
 }
 

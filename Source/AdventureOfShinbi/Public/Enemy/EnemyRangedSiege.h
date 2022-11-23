@@ -22,6 +22,8 @@ public:
 
 	AEnemyRangedSiege();
 
+	virtual bool CheckRotateToTargetCondition() override;
+
 	void SiegeModeAttack();
 
 	UFUNCTION(BlueprintCallable)

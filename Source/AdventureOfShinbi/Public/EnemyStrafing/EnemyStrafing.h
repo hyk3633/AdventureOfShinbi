@@ -56,8 +56,6 @@ protected:
 
 	FVector WorldDirectionForStrafing();
 
-	virtual void CheckIsKnockUp() override;
-
 	UFUNCTION(BlueprintCallable)
 	void KnockUpEnd();
 

@@ -2,6 +2,7 @@
 
 
 #include "Weapons/RangedHitScanWeapon.h"
+#include "Weapons/Casing.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
@@ -10,8 +11,16 @@
 #include "Enemy/EnemyCharacter.h"
 #include "DrawDebugHelpers.h"
 
+ARangedHitScanWeapon::ARangedHitScanWeapon()
+{
+	AmmoType = EAmmoType::EAT_AR;
+
+	RangedWeaponType = ERangedWeaponType::ERWT_AK47;
+}
+
 void ARangedHitScanWeapon::Firing()
 {
+	ARangedWeapon::Firing();
 	PlayFireEffect(MuzzleFlashParticle, FireSound);
 
 	if (bScatter)
@@ -24,6 +33,28 @@ void ARangedHitScanWeapon::Firing()
 	}
 
 	ConsumeAmmo();
+
+	SpawnCasing();
+}
+
+void ARangedHitScanWeapon::SpawnCasing()
+{
+	if (CasingClass == nullptr)
+		return;
+
+	const USkeletalMeshSocket* EjectSocket = ItemMesh->GetSocketByName(FName("CasingEjectSocket"));
+	if (EjectSocket == nullptr)
+		return;
+	const FTransform SocketTransform = EjectSocket->GetSocketTransform(ItemMesh);
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+
+		GetWorld()->SpawnActor<ACasing>(CasingClass, SocketTransform, SpawnParams);
+	}
 }
 
 void ARangedHitScanWeapon::ScatterFiring()
@@ -39,7 +70,7 @@ void ARangedHitScanWeapon::ScatterFiring()
 		FHitResult TraceHitResult;
 		GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd[i], ECollisionChannel::ECC_Visibility);
 
-		DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint, TraceHitResult.ImpactNormal);
+		DrawTrailParticle(TraceStart);
 		ProcessHitResult(TraceHitResult);
 	}
 }
@@ -54,14 +85,17 @@ void ARangedHitScanWeapon::SingleFiring()
 	FHitResult TraceHitResult;
 	GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
 
-	DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint, TraceHitResult.ImpactNormal);
+	if (TraceHitResult.bBlockingHit == false)
+	{
+		TraceHitResult.ImpactPoint = TraceEnd;
+	}
+
+	DrawTrailParticle(TraceStart);
 	ProcessHitResult(TraceHitResult);
 }
 
 void ARangedHitScanWeapon::GetTraceStart(FVector& Start)
 {
-	CrosshairLineTrace(HitPoint);
-
 	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
@@ -71,6 +105,8 @@ void ARangedHitScanWeapon::GetTraceStart(FVector& Start)
 
 FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 {
+	CrosshairLineTrace(HitPoint);
+
 	if (BulletSpread > 0.f)
 	{
 		const FVector ToTarget = HitPoint - Start;
@@ -83,16 +119,14 @@ FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 	}
 }
 
-void ARangedHitScanWeapon::DrawTrailParticle(const FVector StartPoint, const FVector EndPoint, const FVector EndNormal)
+void ARangedHitScanWeapon::DrawTrailParticle(const FVector StartPoint)
 {
 	if (TrailParticle)
 	{
-		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, StartPoint, EndNormal.Rotation());
+		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, StartPoint, FRotator::ZeroRotator);
 		if (Trail)
 		{
-			FVector Direction = StartPoint - EndPoint;
-			Direction.Normalize();
-			Trail->SetVectorParameter(FName("Target"), Direction);
+			Trail->SetVectorParameter(FName("Target"), HitPoint);
 		}
 	}
 }
@@ -112,6 +146,10 @@ void ARangedHitScanWeapon::ProcessHitResult(const FHitResult& HitResult)
 			{
 				UGameplayStatics::SpawnEmitterAtLocation(this, TargetHitParticle, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 			}
+			if (TargetHitSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, TargetHitSound, HitResult.ImpactPoint);
+			}
 		}
 		else
 		{
@@ -119,11 +157,10 @@ void ARangedHitScanWeapon::ProcessHitResult(const FHitResult& HitResult)
 			{
 				UGameplayStatics::SpawnEmitterAtLocation(this, WorldHitParticle, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
 			}
-		}
-
-		if (HitSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, HitSound, HitResult.ImpactPoint);
+			if (WorldHitSound)
+			{
+				UGameplayStatics::PlaySoundAtLocation(this, WorldHitSound, HitResult.ImpactPoint);
+			}
 		}
 	}
 }

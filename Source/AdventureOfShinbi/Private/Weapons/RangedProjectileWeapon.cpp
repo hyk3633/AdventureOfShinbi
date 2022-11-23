@@ -8,6 +8,7 @@
 
 void ARangedProjectileWeapon::Firing()
 {
+	ARangedWeapon::Firing();
 	PlayFireEffect(MuzzleFlashParticle, FireSound);
 
 	if (bScatterGun)
