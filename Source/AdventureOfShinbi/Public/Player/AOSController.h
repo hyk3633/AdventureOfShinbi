@@ -1,9 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Types/AmmoType.h"
+#include "Types/ItemType.h"
 #include "AOSController.generated.h"
 
 /**
@@ -11,7 +12,15 @@
  */
 
 class AAOSHUD;
+class AAOSGameModeBase;
 class UTexture2D;
+class AWeapon;
+class AItem;
+class UImage;
+class UButton;
+class UTextBlock;
+class UInventorySlot;
+struct FCrosshairs;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AAOSController : public APlayerController
@@ -52,17 +61,95 @@ public:
 
 	void SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon);
 
+	//
+
+	void SetHUDCrosshairs(FCrosshairs Ch);
+
+	void EraseHUDCrosshairs();
+
+	void SetCrosshairSpread(float Spread);
+
+	int32 GetHUDInventorySlotCount();
+
+	void CreateHUDInventorySlot();
+
+	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);
+
+	void UpdateInventory(UInventorySlot* Slot);
+
+	//
+
+	void UpdateItemInventory(int32 Index);
+
+	void CreateHUDItemInventorySlot();
+
+	void ItemChange();
+
+	void UpdateAmmo(EAmmoType AmmoType);
+
+	void AddItemToSlot(AItem* Item);
+
+	void BindToItemSlot(int32 Index);
+
+	void SetItemSlotCountText(int32 Index, int32 Count);
+
+	void DisableItemSlotButton();
+
+	void AllHUDQuickSlotButtonEnabled();
+
+	void AllHUDQuickSlotButtonDisabled();
+
+	void SetHUDItemSlotDismount(int32 Index);
+
+	void DeactivateItemInventorySlotClick(int32 Index);
+
+	void ClearEquippedItemSlotHUD();
+
+	void PlayQuickSlotActivateAnimation();
+
+	void SetEquippedItemSlotCountText(FText Text);
+
+	void SetQuickSlotItemAuto();
+
 protected:
+
+	virtual void PostInitializeComponents() override;
 
 	virtual void BeginPlay() override;
 
+	virtual void OnPossess(APawn* aPawn) override;
+
 	void HUDInventoryOff();
+
+	UFUNCTION()
+	void EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText);
+
+	int32 GetItemCount(AItem* Item);
+
+	bool CheckQuickSlotArrayIsEmpty();
 
 private:
 
+	AAOSGameModeBase* GameMode;
+
 	AAOSHUD* AOSHUD;
+
+	AItem* SelectedItem;
 
 	FTimerHandle InventoryOffDelayTimer;
 
 	float InventoryOffDelayTime = 1.f;
+
+	FTimerHandle QuickSlotAnimationTimer;
+
+	float QuickSlotAnimationTime = 1.0f;
+
+	int8 ActivatedQuickSlotNumber = 0;
+
+public:
+
+	void SetSelectedItem(AItem* Item);
+
+	int8 GetActivatedQuickSlotNumber() const;
+
 };

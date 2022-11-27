@@ -178,6 +178,9 @@ void ARevenant::SetWeaponState(const EWeaponState State)
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &ARevenant::RightButtonClicking);
 			bDelBinded = true;
 		}
+
+		ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		ItemMesh->SetEnableGravity(true);
 	}
 	else
 	{

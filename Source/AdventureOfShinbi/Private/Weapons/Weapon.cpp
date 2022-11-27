@@ -50,8 +50,6 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 {
 	WeaponState = State;
 
-	WeaponStateChanged.Broadcast(this);
-
 	switch (State)
 	{
 	case EWeaponState::EWS_Field:
@@ -94,6 +92,7 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		ItemMesh->SetEnableGravity(false);
 		ItemMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+		ItemMesh->BodyInstance.bNotifyRigidBodyCollision = false;
 
 		OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -102,10 +101,13 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 		break;
 	}
+
+	WeaponStateChanged.Broadcast(this);
 }
 
 EWeaponState AWeapon::GetWeaponState() const
 {
+
 	return WeaponState;
 }
 

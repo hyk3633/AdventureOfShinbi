@@ -79,17 +79,6 @@ void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
 		else
 		{
 			OutHitPoint = HitResult.ImpactPoint;
-
-			/*AEnemyBoss* Boss = Cast<AEnemyBoss>(HitResult.GetActor());
-			if (Boss)
-			{
-				AAOSCharacter* WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-				if (WeaponOwner)
-				{
-					WeaponOwner->DAttackButtonPressed.ExecuteIfBound();
-					UE_LOG(LogTemp, Warning, TEXT("target hit"));
-				}
-			}*/
 		}
 	}
 }
@@ -177,4 +166,9 @@ void ARangedWeapon::PlayNoAmmoSound()
 	{
 		UGameplayStatics::PlaySound2D(this, NoAmmoSound);
 	}
+}
+
+FCrosshairs ARangedWeapon::GetCrosshairs() const
+{
+	return Crosshairs;
 }

@@ -15,11 +15,16 @@
 #include "Components/Button.h"
 #include "Engine/Texture2D.h"
 
+void AAOSHUD::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	AddOverlay();
+}
+
 void AAOSHUD::BeginPlay()
 {
 	Super::BeginPlay();
-
-	AddOverlay();
 
 	CreateInventorySlot();
 	CreateItemInventorySlot();
@@ -101,11 +106,6 @@ void AAOSHUD::DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVect
 	);
 }
 
-void AAOSHUD::SetCrosshairSpread(float Spread)
-{
-	CrosshairSpread = Spread;
-}
-
 void AAOSHUD::CreateInventorySlot()
 {
 	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) 
@@ -141,7 +141,8 @@ int32 AAOSHUD::GetInventorySlotCount()
 
 void AAOSHUD::UpdateInventory()
 {
-	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->InventoryGridPanel == nullptr) return;
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->InventoryGridPanel == nullptr) 
+		return;
 
 	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->SlotArray.Num(); i++)
 	{
@@ -172,7 +173,8 @@ void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 
 void AAOSHUD::CreateItemInventorySlot()
 {
-	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) return;
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr) 
+		return;
 
 	APlayerController* PlayerController = GetOwningPlayerController();
 
@@ -199,9 +201,8 @@ void AAOSHUD::CreateItemInventorySlot()
 
 void AAOSHUD::UpdateItemInventory()
 {
-	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->ItemInventoryGridPanel == nullptr) return;
-
-
+	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->ItemInventoryGridPanel == nullptr) 
+		return;
 
 	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->ItemSlotArray.Num(); i++)
 	{
@@ -217,7 +218,7 @@ void AAOSHUD::AddItemToSlot(int32 SlotNum, AItem* Item)
 	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
 	{
 		CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->SetSlottedItem(Item);
-		Item->SetInventorySlot(CharacterOverlay->InventoryWidget->SlotArray[SlotNum]);
+		Item->SetItemInventorySlot(CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]);
 
 		if (CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->ItemInventorySlotIcon && Item->GetItemIcon())
 		{
@@ -229,4 +230,9 @@ void AAOSHUD::AddItemToSlot(int32 SlotNum, AItem* Item)
 			CharacterOverlay->InventoryWidget->ItemSlotArray[SlotNum]->BindSlotClickEvent();
 		}
 	}
+}
+
+int32 AAOSHUD::GetItemInventorySlotCount()
+{
+	return CharacterOverlay->InventoryWidget->ItemSlotArray.Num();
 }

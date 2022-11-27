@@ -13,6 +13,7 @@ class UWidgetComponent;
 class UPickupWidget;
 class UTexture2D;
 class UInventorySlot;
+class UItemInventorySlot;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AItem : public AActor
@@ -77,6 +78,8 @@ private:
 
 	UInventorySlot* InventorySlot;
 
+	UItemInventorySlot* ItemInventorySlot;
+
 	float RunningTime = 0.f;
 
 public:
@@ -87,6 +90,7 @@ public:
 	EItemType GetItemType() const;
 	UTexture2D* GetItemIcon() const;
 	void SetInventorySlot(UInventorySlot* Slot);
+	void SetItemInventorySlot(UItemInventorySlot* Slot);
 	UInventorySlot* GetInventorySlot() const;
 
 };

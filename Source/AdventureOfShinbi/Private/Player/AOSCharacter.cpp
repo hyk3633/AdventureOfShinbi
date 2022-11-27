@@ -1,6 +1,10 @@
+
+
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
 #include "Player/AOSAnimInstance.h"
+#include "Player/AOSPlayerState.h"
+#include "System/AOSGameModeBase.h"
 #include "Enemy/EnemyCharacter.h"
 #include "EnemyBoss/EnemyBoss.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
@@ -71,21 +75,11 @@ AAOSCharacter::AAOSCharacter()
 	ItemComp = CreateDefaultSubobject<UItemComponent>(TEXT("Item Component"));
 }
 
-void AAOSCharacter::BeginPlay()
+void AAOSCharacter::RestartPlayerCharacter()
 {
-	Super::BeginPlay();
-
-	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
-
-	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
-	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
-}
-
-void AAOSCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	SetOverlappingItem();
+	CharacterController = Cast<AAOSController>(GetController());
+	ItemComp->RestartItemComp();
+	CombatComp->RestartCombatComp();
 }
 
 void AAOSCharacter::PostInitializeComponents()
@@ -104,8 +98,32 @@ void AAOSCharacter::PostInitializeComponents()
 	}
 }
 
+void AAOSCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	CharacterController = Cast<AAOSController>(GetController());
+
+	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
+
+	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
+	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
+	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
+
+	CombatComp->PlayerDeathDelegate.AddUObject(this, &AAOSCharacter::HandlePlayerDeath);
+}
+
+void AAOSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	SetOverlappingItem();
+}
+
 void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
+	if (CharacterState == ECharacterState::ECS_Dead)
+		return;
 	UE_LOG(LogTemp, Warning, TEXT("any damage %f"), DamageReceived);
 	if (CombatComp)
 	{
@@ -115,6 +133,8 @@ void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, co
 
 void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
+	if (CharacterState == ECharacterState::ECS_Dead)
+		return;
 	UE_LOG(LogTemp, Warning, TEXT("point damage %f"), DamageReceived);
 	if (CombatComp)
 	{
@@ -251,8 +271,15 @@ void AAOSCharacter::ReloadingEnd()
 	}
 }
 
+void AAOSCharacter::PlayerRespawn()
+{
+	GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->RespawnPlayer();
+}
+
 void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
+	if (CharacterState == ECharacterState::ECS_Dead)
+		return;
 	UE_LOG(LogTemp, Warning, TEXT("radial %f"), DamageReceived);
 	if (CombatComp)
 	{
@@ -261,6 +288,14 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 
 	PlayHitReaction(VoicePainHeavy, DamageCauser);
 	PlayerKnockBack(DamageCauser, 1000.f);
+}
+
+void AAOSCharacter::HandlePlayerDeath()
+{
+	SetCharacterState(ECharacterState::ECS_Dead);
+	GetMovementComponent()->StopMovementImmediately();
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetWorldTimerManager().SetTimer(PlayerRespawnTimer, this, &AAOSCharacter::PlayerRespawn, PlayerRespawnTime);
 }
 
 void AAOSCharacter::MoveForward(float Value)
@@ -525,10 +560,9 @@ void AAOSCharacter::InventoryKeyPressed()
 
 	bIsInventoryOn = bIsInventoryOn ? false : true;
 
-	AAOSController* AC = Cast<AAOSController>(Controller);
-	if (AC)
+	if (CharacterController)
 	{
-		AC->HUDInventoryOn(bIsInventoryOn);
+		CharacterController->HUDInventoryOn(bIsInventoryOn);
 		GetWorldTimerManager().SetTimer(InventoryAnimationTimer, this, &AAOSCharacter::InventoryAnimationEnd, 0.45f);
 	}
 }
@@ -560,9 +594,9 @@ void AAOSCharacter::ItemChangeKeyPressed()
 	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
-	if (ItemComp)
+	if (CharacterController)
 	{
-		ItemComp->ItemChange();
+		CharacterController->ItemChange();
 	}
 }
 
@@ -781,11 +815,11 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 			TraceStart,
 			TraceEnd,
 			50.f,
-			0.f,
+			30.f,
 			TraceType,
 			false,
 			TArray<AActor*>(),
-			EDrawDebugTrace::None,
+			EDrawDebugTrace::ForOneFrame,
 			HitItem,
 			true
 		);

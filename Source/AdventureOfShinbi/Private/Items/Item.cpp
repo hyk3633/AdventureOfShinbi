@@ -19,7 +19,7 @@ AItem::AItem()
 	ItemMesh->SetSimulatePhysics(false);
 	ItemMesh->SetEnableGravity(false);
 	ItemMesh->SetCollisionObjectType(ECC_Item);
-	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 
@@ -30,7 +30,7 @@ AItem::AItem()
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	OverlapSphere->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
-	OverlapSphere->SetSphereRadius(100.f);
+	OverlapSphere->SetSphereRadius(300.f);
 
 	Widget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
 	Widget->SetupAttachment(ItemMesh);
@@ -78,6 +78,7 @@ void AItem::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 	if (Player)
 	{
 		Player->SetOverlappingItemCount(1);
+		ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 	}
 }
 
@@ -87,6 +88,7 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	if (Player)
 	{
 		Player->SetOverlappingItemCount(-1);
+		ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
 	}
 }
 
@@ -136,6 +138,11 @@ UTexture2D* AItem::GetItemIcon() const
 void AItem::SetInventorySlot(UInventorySlot* Slot)
 {
 	InventorySlot = Slot;
+}
+
+void AItem::SetItemInventorySlot(UItemInventorySlot* Slot)
+{
+	ItemInventorySlot = Slot;
 }
 
 UInventorySlot* AItem::GetInventorySlot() const

@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,9 +8,9 @@
 
 class AAOSCharacter;
 class UAOSAnimInstance;
+class AAOSGameModeBase;
 class AAOSController;
 class UItemComponent;
-class AAOSHUD;
 class UAnimMontage;
 class AItem;
 class AWeapon;
@@ -57,7 +56,7 @@ public:
 
 protected:
 
-	virtual void InitializeComponent() override;
+	void RestartCombatComp();
 
 	virtual void BeginPlay() override;
 
@@ -174,13 +173,13 @@ private:
 
 	AAOSCharacter* Character;
 
+	AAOSGameModeBase* GameMode;
+
 	UAOSAnimInstance* AnimInstance;
 
 	AAOSController* CharacterController;
 
 	UItemComponent* ItemComp;
-
-	AAOSHUD* HUD;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
 	float Health = 100.f;
@@ -329,8 +328,6 @@ private:
 	float CrosshairInAirFactor = 0.f;
 	float CrosshairZoomFactor = 0.f;
 	float CrosshairFireFactor = 0.f;
-
-	TArray<AWeapon*> AcquiredWeapons;
 
 	FTimerHandle DamageDebuffTimer;
 	FTimerHandle HealBanTimer;

@@ -24,8 +24,6 @@ public:
 
 	virtual void DrawHUD() override;
 
-	void SetCrosshairSpread(float Spread);
-
 	// 인벤토리 
 
 	void CreateInventorySlot();
@@ -43,6 +41,8 @@ public:
 	void UpdateItemInventory();
 
 	void AddItemToSlot(int32 SlotNum, AItem* Item);
+
+	int32 GetItemInventorySlotCount();
 
 public:
 
@@ -67,7 +67,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> ItemInventorySlotClass;
 
+	UPROPERTY(EditAnywhere)
+	float CrosshairSpread;
+
 protected:
+
+	virtual void PostInitializeComponents() override;
 
 	virtual void BeginPlay() override;
 
@@ -76,9 +81,6 @@ protected:
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread);
 
 private:
-
-	UPROPERTY(EditAnywhere)
-	float CrosshairSpread;
 
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpreadMax = 16.f;

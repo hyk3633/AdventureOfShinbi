@@ -1,10 +1,18 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 
 #include "Player/AOSController.h"
+#include "Player/AOSCharacter.h"
+#include "System/AOSGameModeBase.h"
+#include "Weapons/Weapon.h"
+#include "Weapons/RangedWeapon.h"
+#include "Items/ItemRecovery.h"
+#include "Items/ItemAmmo.h"
 #include "HUD/AOSCharacterOverlay.h"
 #include "HUD/AOSHUD.h"
 #include "HUD/Inventory.h"
+#include "HUD/ItemInventorySlot.h"
+#include "Components/CombatComponent.h"
+#include "Components/ItemComponent.h"
 #include "Components/TextBlock.h"
 #include "Components/Button.h"
 #include "Components/ProgressBar.h"
@@ -12,12 +20,42 @@
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/VerticalBox.h"
+#include "Kismet/GameplayStatics.h"
+
+void AAOSController::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+}
 
 void AAOSController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AOSHUD = Cast<AAOSHUD>(GetHUD());
+}
+
+void AAOSController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+
+	AOSHUD = GetHUD<AAOSHUD>();
+	if (AOSHUD)
+	{
+		AOSHUD->CharacterOverlay->InventoryWidget->OnItemQuickSlotSelected.BindUObject(this, &AAOSController::EquipToItemQuickSlot);
+	}
+
+	GameMode = GetWorld()->GetAuthGameMode<AAOSGameModeBase>();
+	if (GameMode)
+	{
+		if (GameMode->IsPlayerRespawn())
+		{
+			AAOSCharacter* Cha = Cast<AAOSCharacter>(aPawn);
+			if (Cha)
+			{
+				Cha->RestartPlayerCharacter();
+			}
+		}
+	}
 }
 
 void AAOSController::SetHUDHealthBar(float HealthAmount, float MaxHealthAmount)
@@ -146,6 +184,110 @@ void AAOSController::HUDInventoryOff()
 	AOSHUD->CharacterOverlay->InventoryWidget->SetIsEnabled(false);
 }
 
+void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText)
+{
+	const int32 ItemIndex = GameMode->GetItemIndex(SelectedItem);
+
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
+	AOSHUD->CharacterOverlay->InventoryWidget->AllQuickSlotButtonDisabled();
+	GetWorldTimerManager().ClearTimer(QuickSlotAnimationTimer);
+
+	if (SelectedItem)
+	{
+		if (QuickSlotIcon && QuickSlotButton && QuickSlotCountText)
+		{
+			// 선택한 아이템이 퀵슬롯에 이미 등록되어 있을 경우
+			AItem* QuickSlotItem = GameMode->GetQuickSlotItem(SlotIndex);
+			if (QuickSlotItem == SelectedItem)
+			{
+				SelectedItem = nullptr;
+				return;
+			}
+			// 퀵슬롯이 이미 차 있을 경우
+			else if (QuickSlotItem != nullptr)
+			{
+				const int32 QuickSlotItemIndex = GameMode->GetItemIndex(QuickSlotItem);
+				AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[QuickSlotItemIndex]->
+					ItemQuickSlotButtonText->SetText(FText::FromString(TEXT("퀵슬롯에 장착")));
+				AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[QuickSlotItemIndex]->SetItemEquippedQuickSlot(false);
+			}
+
+			if (CheckQuickSlotArrayIsEmpty())
+			{
+				ActivatedQuickSlotNumber = SlotIndex;
+				FSlateBrush Brush;
+				Brush.DrawAs = ESlateBrushDrawType::Image;
+				Brush.SetImageSize(FVector2D(110.f));
+				AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrush(Brush);
+				AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrushFromTexture(SelectedItem->GetItemIcon());
+				AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(FText::FromString(FString::FromInt(GetItemCount(SelectedItem))));
+				AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetVisibility(ESlateVisibility::Visible);
+			}
+
+			GameMode->SetQuickSlotItem(SlotIndex, SelectedItem, QuickSlotIcon, QuickSlotButton, QuickSlotCountText);
+
+			FSlateBrush Brush;
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(110.f));
+			QuickSlotIcon->SetBrush(Brush);
+			QuickSlotIcon->SetBrushFromTexture(SelectedItem->GetItemIcon());
+			QuickSlotCountText->SetText(FText::FromString(FString::FromInt(GetItemCount(SelectedItem))));
+			QuickSlotCountText->SetVisibility(ESlateVisibility::Visible);
+
+			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonEquipToQuickSlot->SetIsEnabled(true);
+			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
+			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->DeactivateItemInventorySlotClick();
+			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->SetItemEquippedQuickSlot(true);
+			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->
+				ItemQuickSlotButtonText->SetText(FText::FromString(TEXT("퀵슬롯 장착 해제")));
+			SelectedItem = nullptr;
+		}
+	}
+}
+
+int32 AAOSController::GetItemCount(AItem* Item)
+{
+	if (Item->GetItemType() == EItemType::EIT_Recovery)
+	{
+		AItemRecovery* IR = Cast<AItemRecovery>(Item);
+		const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(IR->GetRecoveryType());
+		return RecoveryItemCount;
+	}
+	else if (Item->GetItemType() == EItemType::EIT_Ammo)
+	{
+		AItemAmmo* IA = Cast<AItemAmmo>(Item);
+		const int32 AmmoQuantity = GameMode->GetAmmoQuantity(IA->GetAmmoType());
+		return AmmoQuantity;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+bool AAOSController::CheckQuickSlotArrayIsEmpty()
+{
+	for (int8 i = 0; i < 5; i++)
+	{
+		if (GameMode->GetQuickSlotItem(i) != nullptr)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void AAOSController::SetSelectedItem(AItem* Item)
+{
+	SelectedItem = Item;
+}
+
+int8 AAOSController::GetActivatedQuickSlotNumber() const
+{
+	return ActivatedQuickSlotNumber;
+}
+
 void AAOSController::SetHUDLoadedAmmoText(int32 Ammo)
 {
 	AOSHUD = AOSHUD == nullptr ? Cast<AAOSHUD>(GetHUD()) : AOSHUD;
@@ -247,4 +389,190 @@ void AAOSController::SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon)
 void AAOSController::SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon)
 {
 
+}
+
+void AAOSController::SetHUDCrosshairs(FCrosshairs Ch)
+{
+	AOSHUD->CrosshairCenter = Ch.CrosshairCenter;
+	AOSHUD->CrosshairLeft	= Ch.CrosshairLeft;
+	AOSHUD->CrosshairRight	= Ch.CrosshairRight;
+	AOSHUD->CrosshairTop	= Ch.CrosshairTop;
+	AOSHUD->CrosshairBottom = Ch.CrosshairBottom;
+}
+
+void AAOSController::EraseHUDCrosshairs()
+{
+	AOSHUD->CrosshairCenter = nullptr;
+	AOSHUD->CrosshairLeft	= nullptr;
+	AOSHUD->CrosshairRight	= nullptr;
+	AOSHUD->CrosshairTop	= nullptr;
+	AOSHUD->CrosshairBottom = nullptr;
+}
+
+void AAOSController::SetCrosshairSpread(float Spread)
+{
+	AOSHUD->CrosshairSpread = Spread;
+}
+
+int32 AAOSController::GetHUDInventorySlotCount()
+{
+	return AOSHUD->CharacterOverlay->InventoryWidget->SlotArray.Num();
+}
+
+void AAOSController::CreateHUDInventorySlot()
+{
+	AOSHUD->CreateInventorySlot();
+}
+
+void AAOSController::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
+{
+	AOSHUD->AddWeaponToSlot(SlotNum, Weapon);
+}
+
+void AAOSController::UpdateInventory(UInventorySlot* Slot)
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->SlotArray.Remove(Slot);
+	AOSHUD->CharacterOverlay->InventoryWidget->SlotArray.Add(Slot);
+	AOSHUD->UpdateInventory();
+}
+
+void AAOSController::UpdateItemInventory(int32 Index)
+{
+	UItemInventorySlot* Slot = AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index];
+	Slot->InitializeIcon();
+	Slot->SetSlottedItem(nullptr);
+
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray.Remove(Slot);
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray.Add(Slot);
+	AOSHUD->UpdateItemInventory();
+}
+
+void AAOSController::CreateHUDItemInventorySlot()
+{
+	if (GameMode->GetItemCount() == AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray.Num())
+	{
+		AOSHUD->CreateItemInventorySlot();
+	}
+}
+
+void AAOSController::ItemChange()
+{
+	ActivatedQuickSlotNumber = (ActivatedQuickSlotNumber + 1) % 5;
+
+	for (int8 i = 0; i < 4; i++)
+	{
+		AItem* QuickSlotItem = GameMode->GetQuickSlotItem(ActivatedQuickSlotNumber);
+		if (QuickSlotItem)
+		{
+			FSlateBrush Brush;
+			Brush.DrawAs = ESlateBrushDrawType::Image;
+			Brush.SetImageSize(FVector2D(110.f));
+			AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrush(Brush);
+			AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrushFromTexture(QuickSlotItem->GetItemIcon());
+			AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(FText::FromString(FString::FromInt(GetItemCount(QuickSlotItem))));
+			AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetVisibility(ESlateVisibility::Visible);
+
+			return;
+		}
+		else
+		{
+			ActivatedQuickSlotNumber = (ActivatedQuickSlotNumber + 1) % 5;
+		}
+	}
+}
+
+void AAOSController::UpdateAmmo(EAmmoType AmmoType)
+{
+	const int32 AmmoQuatity = GameMode->GetAmmoQuantity(AmmoType);
+	FText AmmoCount = FText::FromString(FString::FromInt(AmmoQuatity));
+
+	const int32 AmmoIndex = GameMode->GetAmmoIndex(AmmoType);
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[AmmoIndex]->ItemSlotCountText->SetText(AmmoCount);
+}
+
+void AAOSController::AddItemToSlot(AItem* Item)
+{
+	AOSHUD->AddItemToSlot(GameMode->GetItemCount() - 1, Item);
+}
+
+void AAOSController::BindToItemSlot(int32 Index)
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index]->OnItemMenuSelect.BindUObject(GetPawn<AAOSCharacter>()->GetItemComp(), &UItemComponent::ItemUseOrEquip);
+}
+
+void AAOSController::SetItemSlotCountText(int32 Index, int32 Count)
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index]->SetItemSlotCountText(Count);
+}
+
+void AAOSController::DisableItemSlotButton()
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[GameMode->GetItemCount() - 1]->ItemInventorySlotIconButton->SetIsEnabled(false);
+}
+
+void AAOSController::AllHUDQuickSlotButtonEnabled()
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->AllQuickSlotButtonEnabled();
+	GetWorldTimerManager().SetTimer(QuickSlotAnimationTimer, this, &AAOSController::PlayQuickSlotActivateAnimation, QuickSlotAnimationTime, true, 0.f);
+}
+
+void AAOSController::AllHUDQuickSlotButtonDisabled()
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->AllQuickSlotButtonDisabled();
+	GetWorldTimerManager().ClearTimer(QuickSlotAnimationTimer);
+}
+
+void AAOSController::SetHUDItemSlotDismount(int32 Index)
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index]->
+		ItemQuickSlotButtonText->SetText(FText::FromString(TEXT("퀵슬롯에 장착")));
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index]->SetItemEquippedQuickSlot(false);
+}
+
+void AAOSController::DeactivateItemInventorySlotClick(int32 Index)
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[Index]->DeactivateItemInventorySlotClick();
+}
+
+void AAOSController::ClearEquippedItemSlotHUD()
+{
+	FSlateBrush Brush;
+	Brush.DrawAs = ESlateBrushDrawType::NoDrawType;
+	Brush.SetImageSize(FVector2D(110.f));
+	AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrush(Brush);
+	AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetVisibility(ESlateVisibility::Hidden);
+}
+
+void AAOSController::PlayQuickSlotActivateAnimation()
+{
+	AOSHUD->CharacterOverlay->InventoryWidget->PlayAnimation
+	(
+		AOSHUD->CharacterOverlay->InventoryWidget->Highlighting,
+		0.f,
+		1,
+		EUMGSequencePlayMode::PingPong,
+		1.f,
+		true
+	);
+}
+
+void AAOSController::SetEquippedItemSlotCountText(FText Text)
+{
+	AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(Text);
+}
+
+void AAOSController::SetQuickSlotItemAuto()
+{
+	if (CheckQuickSlotArrayIsEmpty() == false)
+	{
+		for (int8 i = 0; i < GameMode->GetQuickSlotItemArrLength(); i++)
+		{
+			FQuickSlotItem QItem = GameMode->GetQuickSlotItemArr(i);
+			if (QItem.QuickSlotItem)
+			{
+				SelectedItem = QItem.QuickSlotItem;
+				EquipToItemQuickSlot(i, QItem.QuickSlotIcon, QItem.QuickSlotButton, QItem.QuickSlotItemCountText);
+			}
+		}
+	}
 }

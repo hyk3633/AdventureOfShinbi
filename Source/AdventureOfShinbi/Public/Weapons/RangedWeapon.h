@@ -15,6 +15,30 @@ class AItemAmmo;
 class USoundCue;
 class UTexture2D;
 
+USTRUCT(BlueprintType)
+struct FCrosshairs
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
+	UTexture2D* CrosshairCenter;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
+	UTexture2D* CrosshairLeft;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
+	UTexture2D* CrosshairRight;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
+	UTexture2D* CrosshairTop;
+
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
+	UTexture2D* CrosshairBottom;
+
+};
+
 UCLASS()
 class ADVENTUREOFSHINBI_API ARangedWeapon : public AWeapon
 {
@@ -88,6 +112,8 @@ private:
 
 	FVector2D ViewPortSize;
 
+	FCrosshairs Crosshairs;
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
@@ -120,4 +146,5 @@ public:
 	float GetZoomScope() const;
 	void ConsumeAmmo();
 	void PlayNoAmmoSound();
+	FCrosshairs GetCrosshairs() const;
 };

@@ -6,6 +6,7 @@
 #include "Types/WeaponType.h"
 #include "AOSCharacter.generated.h"
 
+class AAOSController;
 class UInputComponent;
 class USpringArmComponent;
 class UCameraComponent;
@@ -59,11 +60,13 @@ public:
 
 	OnAimButtonPressedDelegate DAimButtonPressed;
 
+	void RestartPlayerCharacter();
+
 protected:
 
-	virtual void BeginPlay() override;
-
 	virtual void PostInitializeComponents() override;
+
+	virtual void BeginPlay() override;
 
 	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
@@ -105,6 +108,9 @@ protected:
 	void TraceItem(FHitResult& HitItem);
 
 private:
+
+	UFUNCTION()
+	void HandlePlayerDeath();
 
 	void MoveForward(float Value);
 	void MoveRight(float Value);
@@ -153,7 +159,11 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void ReloadingEnd();
 
+	void PlayerRespawn();
+
 private:
+
+	AAOSController* CharacterController;
 
 	UPROPERTY(EditAnywhere)
 	USpringArmComponent* SpringArm;
@@ -185,6 +195,9 @@ private:
 
 	bool bInventoryAnimationPlaying = false;
 	FTimerHandle InventoryAnimationTimer;
+
+	FTimerHandle PlayerRespawnTimer;
+	float PlayerRespawnTime = 5.f;
 
 	bool bDashing = false;
 
