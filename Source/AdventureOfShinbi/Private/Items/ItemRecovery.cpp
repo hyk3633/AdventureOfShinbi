@@ -84,3 +84,13 @@ ERecoveryType AItemRecovery::GetRecoveryType() const
 {
 	return RecoveryType;
 }
+
+void AItemRecovery::SetQuickSlotIndex(int8 Index)
+{
+	QuickSlotIndex = Index;
+}
+
+int8 AItemRecovery::GetQuickSlotIndex() const
+{
+	return QuickSlotIndex;
+}

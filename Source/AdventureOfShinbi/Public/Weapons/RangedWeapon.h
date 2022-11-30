@@ -96,9 +96,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GunRecoil = 0.35f;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Info")
-	ERangedWeaponType RangedWeaponType = ERangedWeaponType::ERWT_MAX;
-
 private:
 
 	AItem* AmmoItem;
@@ -134,7 +131,6 @@ protected:
 public:
 
 	AItem* GetAmmoItem() const;
-	ERangedWeaponType GetRangedWeaponType() const;
 	float GetHeadShotDamage();
 	EAmmoType GetAmmoType() const;
 	int32 GetMagazine() const;

@@ -54,27 +54,27 @@ void UInventory::AllQuickSlotButtonDisabled()
 
 void UInventory::QuickSlot1Clicked()
 {
-	OnItemQuickSlotSelected.ExecuteIfBound(0, ItemInventoryQuickSlot1Icon, ItemInventoryQuickSlot1Button, ItemInventoryQuickSlot1CountText);
+	OnItemQuickSlotSelected.ExecuteIfBound(0, ItemInventoryQuickSlot1Icon, ItemInventoryQuickSlot1CountText);
 }
 
 void UInventory::QuickSlot2Clicked()
 {
-	OnItemQuickSlotSelected.ExecuteIfBound(1, ItemInventoryQuickSlot2Icon, ItemInventoryQuickSlot2Button, ItemInventoryQuickSlot2CountText);
+	OnItemQuickSlotSelected.ExecuteIfBound(1, ItemInventoryQuickSlot2Icon, ItemInventoryQuickSlot2CountText);
 }
 
 void UInventory::QuickSlot3Clicked()
 {
-	OnItemQuickSlotSelected.ExecuteIfBound(2, ItemInventoryQuickSlot3Icon, ItemInventoryQuickSlot3Button, ItemInventoryQuickSlot3CountText);
+	OnItemQuickSlotSelected.ExecuteIfBound(2, ItemInventoryQuickSlot3Icon, ItemInventoryQuickSlot3CountText);
 }
 
 void UInventory::QuickSlot4Clicked()
 {
-	OnItemQuickSlotSelected.ExecuteIfBound(3, ItemInventoryQuickSlot4Icon, ItemInventoryQuickSlot4Button, ItemInventoryQuickSlot4CountText);
+	OnItemQuickSlotSelected.ExecuteIfBound(3, ItemInventoryQuickSlot4Icon, ItemInventoryQuickSlot4CountText);
 }
 
 void UInventory::QuickSlot5Clicked()
 {
-	OnItemQuickSlotSelected.ExecuteIfBound(4, ItemInventoryQuickSlot5Icon, ItemInventoryQuickSlot5Button, ItemInventoryQuickSlot5CountText);
+	OnItemQuickSlotSelected.ExecuteIfBound(4, ItemInventoryQuickSlot5Icon, ItemInventoryQuickSlot5CountText);
 }
 
 void UInventory::InventoryChange()

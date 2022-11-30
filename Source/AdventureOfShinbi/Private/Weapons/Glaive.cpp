@@ -19,7 +19,7 @@ AGlaive::AGlaive()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	WeaponType = EWeaponType::EWT_Glave;
+	WeaponType = EWeaponType::EWT_Glaive;
 	CapsuleRadius = 50.f;
 	CapsuleHalfHeight = 50.f;
 }

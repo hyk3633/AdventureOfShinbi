@@ -92,5 +92,6 @@ public:
 	void SetInventorySlot(UInventorySlot* Slot);
 	void SetItemInventorySlot(UItemInventorySlot* Slot);
 	UInventorySlot* GetInventorySlot() const;
+	UItemInventorySlot* GetItemInventorySlot() const;
 
 };

@@ -20,6 +20,7 @@ class UParticleSystem;
 class USoundCue;
 
 DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
+DECLARE_DELEGATE(OnLevelTransitionDelegate);
 DECLARE_DELEGATE_OneParam(OnAimButtonPressedDelegate, bool bPress);
 
 UENUM(BlueprintType)
@@ -57,6 +58,8 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	OnAttackButtonPressedDelegate DAttackButtonPressed;
+
+	OnLevelTransitionDelegate DLevelTransition;
 
 	OnAimButtonPressedDelegate DAimButtonPressed;
 
@@ -266,6 +269,8 @@ private:
 	float SlowedWalkingSpeed = 150.f;
 	UPROPERTY(EditAnywhere, Category = "Character | Moving Speed")
 	float SlowedCroucedSpeed = 100.f;
+
+	bool bOverlappedLTV = false;
 	
 public:
 
@@ -293,5 +298,6 @@ public:
 	void SetView(EWeaponType Type);
 	void ActivateWeaponControlMode();
 	void DeactivateWeaponControlMode();
-
+	void SetOverlappedLTV(bool bIsOverlap);
+	void SetCharacterController();
 };

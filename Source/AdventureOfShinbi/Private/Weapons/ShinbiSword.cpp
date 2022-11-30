@@ -17,7 +17,7 @@ AShinbiSword::AShinbiSword()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	WeaponType = EWeaponType::EWT_MeleeOneHand;
+	WeaponType = EWeaponType::EWT_ShinbiSword;
 	CapsuleRadius = 15.f;
 	CapsuleHalfHeight = 10.f;
 }
@@ -90,7 +90,10 @@ void AShinbiSword::SetWeaponState(const EWeaponState State)
 	}
 	else
 	{
-		SwordGlowLoopComp->Deactivate();
+		if (SwordGlowLoopComp)
+		{
+			SwordGlowLoopComp->Deactivate();
+		}
 	}
 }
 

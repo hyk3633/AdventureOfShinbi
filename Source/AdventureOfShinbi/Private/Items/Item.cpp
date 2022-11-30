@@ -150,6 +150,11 @@ UInventorySlot* AItem::GetInventorySlot() const
 	return InventorySlot;
 }
 
+UItemInventorySlot* AItem::GetItemInventorySlot() const
+{
+	return ItemInventorySlot;
+}
+
 void AItem::DeactivateItemMovement()
 {
 	bOnSpin = false;

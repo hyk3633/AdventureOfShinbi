@@ -100,11 +100,6 @@ void UAOSAnimInstance::SetWeaponType(EWeaponType Type)
 	WeaponType = Type;
 }
 
-void UAOSAnimInstance::SetRangedWeaponType(ERangedWeaponType Type)
-{
-	RangedWeaponType = Type;
-}
-
 void UAOSAnimInstance::ActivateReloading()
 {
 	bIsReloading = true;

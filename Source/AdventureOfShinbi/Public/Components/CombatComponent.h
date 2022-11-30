@@ -32,6 +32,12 @@ public:
 
 	UCombatComponent();
 
+	void RestartCombatComp();
+
+	void SettingAfterLevelTransition();
+
+	void PickingUpItem(AItem* PickedItem);
+
 	void MeleeAttack();
 
 	void GunFire();
@@ -56,8 +62,6 @@ public:
 
 protected:
 
-	void RestartCombatComp();
-
 	virtual void BeginPlay() override;
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -80,10 +84,6 @@ protected:
 	void PlayMontageUltimateWolfRush();
 
 	void UltimateWolfRushCoolTimeEnd();
-
-	/**  */
-
-	void PlayMontageTwoHandAttack();
 
 	/** ÃÑ±â·ù */
 
@@ -148,8 +148,6 @@ protected:
 	void SetCrosshair();
 
 	void SpreadCrosshair(float DeltaTime);
-
-	void PickingUpItem(AItem* PickedItem);
 
 	void WeaponQuickSwap();
 
@@ -337,9 +335,11 @@ private:
 
 	bool bEnableCheck = true;
 
-
 public:
 
+	void SetController(AAOSController* Controller);
+	void SetGameMode(AAOSGameModeBase* Gamemode);
+	void SetAnimInstance(UAOSAnimInstance* AnimInst);
 	AWeapon* GetEquippedWeapon() const;
 	float GetHealthPercentage() const;
 	bool SpendStamina(float StaminaToSpend);
@@ -348,5 +348,9 @@ public:
 	bool GetHealBanActivated() const;
 	bool GetEnableCheck() const;
 	void SetEnableCheck(bool bCheck);
+	float GetHealth() const;
+	float GetMana() const;
+	void SetHealth(float PreHealth);
+	void SetMana(float PreMana);
 
 };

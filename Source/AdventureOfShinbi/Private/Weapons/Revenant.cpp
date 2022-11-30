@@ -21,7 +21,7 @@ ARevenant::ARevenant()
 
 	AmmoType = EAmmoType::EAT_Shell;
 
-	RangedWeaponType = ERangedWeaponType::ERWT_Revenent;
+	WeaponType = EWeaponType::EWT_Revenent;
 }
 
 void ARevenant::BeginPlay()

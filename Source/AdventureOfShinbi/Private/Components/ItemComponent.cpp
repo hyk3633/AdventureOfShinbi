@@ -71,9 +71,9 @@ void UItemComponent::AddItem(AItem* Item)
 
 void UItemComponent::UseActivatedQuickSlotItem()
 {
-	if (GameMode->GetQuickSlotItem(CharacterController->GetActivatedQuickSlotNumber()))
+	if (GameMode->GetQuickSlotItem(GameMode->GetActivatedQuickSlotNumber()))
 	{
-		UseItem(GameMode->GetQuickSlotItem(CharacterController->GetActivatedQuickSlotNumber()));
+		UseItem(GameMode->GetQuickSlotItem(GameMode->GetActivatedQuickSlotNumber()));
 	}
 }
 
@@ -126,12 +126,15 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	CharacterController->SetItemSlotCountText(AmmoIndex, AmmoQuantity);
 	
 	// 현재 장착된 무기가 총이고 총의 탄약 타입과 획득한 탄약의 타입이 같으면 탄약 정보 ui 갱신
-	if (CombatComp->GetEquippedWeapon() && CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
+	if (CombatComp->GetEquippedWeapon())
 	{
 		ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->GetEquippedWeapon());
-		if (RW->GetAmmoType() == Ammo->GetAmmoType())
+		if (RW)
 		{
-			CharacterController->SetHUDTotalAmmoText(AmmoQuantity);
+			if (RW->GetAmmoType() == Ammo->GetAmmoType())
+			{
+				CharacterController->SetHUDTotalAmmoText(AmmoQuantity);
+			}
 		}
 	}
 }
@@ -181,7 +184,7 @@ void UItemComponent::DismountItem(AItem* Item)
 
 			CharacterController->DeactivateItemInventorySlotClick(ItemIndex);
 
-			if (CharacterController->GetActivatedQuickSlotNumber() == i)
+			if (GameMode->GetActivatedQuickSlotNumber() == i)
 			{
 				CharacterController->ClearEquippedItemSlotHUD();
 			}
@@ -220,7 +223,7 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 					const FText RecoveryItemCountText = FText::FromString(FString::FromInt(RecoveryItemCount));
 					GameMode->SetQuickSlotCountText(i, RecoveryItemCountText);
 
-					if (CharacterController->GetActivatedQuickSlotNumber() == i)
+					if (GameMode->GetActivatedQuickSlotNumber() == i)
 					{
 						CharacterController->SetEquippedItemSlotCountText(RecoveryItemCountText);
 					}
@@ -348,5 +351,10 @@ void UItemComponent::SetCombatComp(UCombatComponent* Combat)
 void UItemComponent::SetController(AAOSController* Cont)
 {
 	CharacterController = Cont;
+}
+
+void UItemComponent::SetGameMode(AAOSGameModeBase* Gamemode)
+{
+	GameMode = Gamemode;
 }
 

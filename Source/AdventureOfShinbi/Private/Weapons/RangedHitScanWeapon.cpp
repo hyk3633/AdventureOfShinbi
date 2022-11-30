@@ -15,7 +15,7 @@ ARangedHitScanWeapon::ARangedHitScanWeapon()
 {
 	AmmoType = EAmmoType::EAT_AR;
 
-	RangedWeaponType = ERangedWeaponType::ERWT_AK47;
+	WeaponType = EWeaponType::EWT_AK47;
 }
 
 void ARangedHitScanWeapon::Firing()

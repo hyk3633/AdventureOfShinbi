@@ -11,6 +11,7 @@
 #include "Components/SphereComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/Weapon.h"
+#include "Weapons/RangedWeapon.h"
 #include "Weapons/Projectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -177,9 +178,8 @@ void AEnemyBoss::DetectAttack()
 	if (bEvadeSkillCoolTimeEnd == false)
 		return;
 
-	EWeaponType TargetWeaponType = Target->GetCombatComp()->GetEquippedWeapon()->GetWeaponType();
-
-	if (bPhase2 && TargetWeaponType == EWeaponType::EWT_Gun && GetDistanceTo(Target) > 700.f)
+	ARangedWeapon* RW = Cast<ARangedWeapon>(Target->GetCombatComp()->GetEquippedWeapon());
+	if (bPhase2 && RW && GetDistanceTo(Target) > 700.f)
 	{
 		EvadeSkillNum = FMath::RandRange(1, 2);
 	}
@@ -1073,10 +1073,9 @@ void AEnemyBoss::BackAttackMontageEnd(bool IsSuccess)
 
 void AEnemyBoss::Evade()
 {
-	EWeaponType TargetWeaponType = Target->GetCombatComp()->GetEquippedWeapon()->GetWeaponType();
-
+	ARangedWeapon* RW = Cast<ARangedWeapon>(Target->GetCombatComp()->GetEquippedWeapon());
 	FName Dir;
-	if (TargetWeaponType == EWeaponType::EWT_Gun)
+	if (RW)
 	{
 		int8 RanNum = FMath::RandRange(0, 1);
 		Dir = RanNum ? FName("L") : FName("R");

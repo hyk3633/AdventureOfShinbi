@@ -111,6 +111,7 @@ void AAOSCharacter::BeginPlay()
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 
 	CombatComp->PlayerDeathDelegate.AddUObject(this, &AAOSCharacter::HandlePlayerDeath);
+
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
@@ -419,7 +420,11 @@ void AAOSCharacter::Equip_Skill1ButtonPressed()
 	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
-	if (OverlappingItem)
+	if (bOverlappedLTV)
+	{
+		DLevelTransition.ExecuteIfBound();
+	}
+	else if (OverlappingItem)
 	{
 		CombatComp->PickingUpItem(OverlappingItem);
 		OverlappingItem = nullptr;
@@ -434,23 +439,20 @@ void AAOSCharacter::AttackButtonPressed()
 {
 	bAttackButtonPressing = true;
 
-	if (CombatComp == nullptr || CombatComp->GetEquippedWeapon() == nullptr || CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
+	if (CombatComp == nullptr || CombatComp->EquippedWeapon == nullptr || CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
 
 	bAbleAttack = true;
 
-	if (CombatComp->EquippedWeapon)
-	{
-		DAttackButtonPressed.ExecuteIfBound();
-	}
+	DAttackButtonPressed.ExecuteIfBound();
 
-	if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
+	if (CombatComp->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive || CombatComp->EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 	{
-		Fire();
+		CombatComp->MeleeAttack();
 	}
 	else
 	{
-		CombatComp->MeleeAttack();
+		Fire();
 	}
 }
 
@@ -509,7 +511,8 @@ void AAOSCharacter::AimButtonPressed()
 	{
 		DAimButtonPressed.ExecuteIfBound(true);
 
-		if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
+		ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->EquippedWeapon);
+		if (RW)
 		{
 			bIsAiming = true;
 
@@ -518,7 +521,7 @@ void AAOSCharacter::AimButtonPressed()
 			Camera->SetFieldOfView(110.f);
 			Camera->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 		}
-		else if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+		else if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 		{
 			CombatComp->WeaponRightClickSkill();
 		}
@@ -534,12 +537,9 @@ void AAOSCharacter::AimButtonReleased()
 
 	if (CombatComp->GetEquippedWeapon())
 	{
-		if (CombatComp->GetEquippedWeapon()->GetWeaponType() == EWeaponType::EWT_Gun)
-		{
-			bIsAiming = false;
+		bIsAiming = false;
 
-			SetView(EWeaponType::EWT_Gun);
-		}
+		SetView(CombatComp->GetEquippedWeapon()->GetWeaponType());
 	}
 }
 
@@ -688,7 +688,7 @@ void AAOSCharacter::ActivateFreezing(bool IsActivate)
 
 void AAOSCharacter::SetView(EWeaponType Type)
 {
-	if (Type == EWeaponType::EWT_Gun)
+	if (Type == EWeaponType::EWT_AK47 || Type == EWeaponType::EWT_Revenent || Type == EWeaponType::EWT_Wraith)
 	{
 		SpringArm->TargetArmLength = 200.f;
 		SpringArm->SocketOffset = FVector(0.f, 80.f, 100.f);
@@ -714,6 +714,16 @@ void AAOSCharacter::DeactivateWeaponControlMode()
 {
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+void AAOSCharacter::SetOverlappedLTV(bool bIsOverlap)
+{
+	bOverlappedLTV = bIsOverlap;
+}
+
+void AAOSCharacter::SetCharacterController()
+{
+	CharacterController = Cast<AAOSController>(GetController());
 }
 
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

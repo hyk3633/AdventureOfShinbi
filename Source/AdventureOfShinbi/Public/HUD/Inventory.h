@@ -19,25 +19,7 @@ class UUniformGridPanel;
 class UInventorySlot;
 class UItemInventorySlot;
 
-DECLARE_DELEGATE_FourParams(Delegate_ItemQuickSelect, int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText);
-
-USTRUCT()
-struct FItemInventoryQuickSlot
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-
-	UPROPERTY()
-	UImage* ItemIcon;
-
-	UPROPERTY()
-	UTextBlock* SlotEquipText;
-
-	UPROPERTY()
-	EItemType ItemType;
-
-};
+DECLARE_DELEGATE_ThreeParams(Delegate_ItemQuickSelect, int8 SlotIndex, UImage* QuickSlotIcon, UTextBlock* QuickSlotCountText);
 
 UCLASS()
 class ADVENTUREOFSHINBI_API UInventory : public UUserWidget
@@ -51,6 +33,17 @@ public:
 	void AllQuickSlotButtonEnabled();
 
 	void AllQuickSlotButtonDisabled();
+
+	UFUNCTION()
+	void QuickSlot1Clicked();
+	UFUNCTION()
+	void QuickSlot2Clicked();
+	UFUNCTION()
+	void QuickSlot3Clicked();
+	UFUNCTION()
+	void QuickSlot4Clicked();
+	UFUNCTION()
+	void QuickSlot5Clicked();
 
 	// 인벤토리 변경 버튼
 
@@ -137,19 +130,6 @@ public:
 	UWidgetAnimation* Highlighting;
 
 	Delegate_ItemQuickSelect OnItemQuickSlotSelected;
-
-protected:
-
-	UFUNCTION()
-	void QuickSlot1Clicked();
-	UFUNCTION()
-	void QuickSlot2Clicked();
-	UFUNCTION()
-	void QuickSlot3Clicked();
-	UFUNCTION()
-	void QuickSlot4Clicked();
-	UFUNCTION()
-	void QuickSlot5Clicked();
 
 private:
 

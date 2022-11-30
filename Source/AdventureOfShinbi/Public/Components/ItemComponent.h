@@ -106,5 +106,5 @@ public:
 	void SetCombatComp(UCombatComponent* Combat);
 
 	void SetController(AAOSController* Cont);
-
+	void SetGameMode(AAOSGameModeBase* Gamemode);
 };

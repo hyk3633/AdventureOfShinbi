@@ -11,6 +11,9 @@
  * 
  */
 
+class UAOSGameInstance;
+class AAOSCharacter;
+class AAOSController;
 class APlayerStart;
 class UTexture2D;
 class AWeapon;
@@ -18,6 +21,13 @@ class AItem;
 class UImage;
 class UButton;
 class UTextBlock;
+class AShinbiSword;
+class AGlaive;
+class ARangedHitScaneWeapon;
+class AWraith;
+class ARevenent;
+class AItemRecovery;
+class AItemAmmo;
 
 USTRUCT()
 struct FQuickSlotItem
@@ -31,9 +41,6 @@ public:
 
 	UPROPERTY()
 	UImage* QuickSlotIcon;
-
-	UPROPERTY()
-	UButton* QuickSlotButton;
 
 	UPROPERTY()
 	UTextBlock* QuickSlotItemCountText;
@@ -53,6 +60,8 @@ public:
 
 	bool IsPlayerRespawn();
 
+	void LoadPlayerData();
+
 	// ¹«±â 
 
 	void AddWeaponToArr(AWeapon* Weapon);
@@ -66,6 +75,8 @@ public:
 	void KeepQuickSlot2Weapon(AWeapon* Weapon);
 
 	int32 GetWeaponCount() const;
+
+	AWeapon* GetWeaponItem(int32 Index) const;
 
 	AWeapon* GetEquippedWeapon();
 	AWeapon* GetQuickSlot1Weapon();
@@ -105,7 +116,7 @@ public:
 
 	AItem* GetQuickSlotItem(int8 Index);
 
-	void SetQuickSlotItem(int32 Index, AItem* Item, UImage* Icon, UButton* Button, UTextBlock* CountText);
+	void SetQuickSlotItem(int32 Index, AItem* Item, UImage* Icon, UTextBlock* CountText);
 
 	void SetQuickSlotCountText(int32 Index, FText Text);
 
@@ -115,10 +126,25 @@ public:
 
 	FQuickSlotItem GetQuickSlotItemArr(int32 Index);
 
+	int8 GetActivatedQuickSlotNumber() const;
+
+	void SetActivatedQuickSlotNumber(int8 Number);
+
 protected:
 
+	void LoadPlayerInfo();
+
+	void LoadWeaponInfo();
+
+	void LoadItemInfo();
 
 private:
+
+	UAOSGameInstance* GI;
+
+	AAOSCharacter* Character;
+
+	AAOSController* CharacterController;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AOS GameMode")
 	APlayerStart* PlayerStart;
@@ -140,5 +166,40 @@ private:
 
 	TArray<FQuickSlotItem> QuickSlotItemArray;
 
+	int8 ActivatedQuickSlotNumber = 0;
+
 	int32 PlayerDeathCount = 0;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AWeapon> ShinbiSwordClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AWeapon> GlaiveClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AWeapon> AK47Class;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AWeapon> WraithClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AWeapon> RevenentClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> HealthRecoveryClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> ManaRecoveryClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> StaminaRecoveryClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> ARAmmoClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> ShotgunAmmoClass;
+
+	UPROPERTY(EditAnywhere, Category = "Item Class")
+	TSubclassOf<AItem> SniperAmmoClass;
 };

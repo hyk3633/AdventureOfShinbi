@@ -105,11 +105,6 @@ AItem* ARangedWeapon::GetAmmoItem() const
 	return AmmoItem;
 }
 
-ERangedWeaponType ARangedWeapon::GetRangedWeaponType() const
-{
-	return RangedWeaponType;
-}
-
 float ARangedWeapon::GetHeadShotDamage()
 {
 	return GetWeaponDamage() * DamageMultiplier;

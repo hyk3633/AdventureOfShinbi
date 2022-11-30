@@ -60,9 +60,12 @@ private:
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 500.0))
 	float RecoveryQuatity = 50.f;
 
+	int8 QuickSlotIndex = -1;
+
 public:
 
 	UStaticMeshComponent* GetStaticMesh() const;
 	ERecoveryType GetRecoveryType() const;
-
+	void SetQuickSlotIndex(int8 Index);
+	int8 GetQuickSlotIndex() const;
 };

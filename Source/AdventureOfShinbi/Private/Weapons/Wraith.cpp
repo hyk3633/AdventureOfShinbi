@@ -12,7 +12,7 @@ AWraith::AWraith()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	RangedWeaponType = ERangedWeaponType::ERWT_Wraith;
+	WeaponType = EWeaponType::EWT_Wraith;
 
 	AssaultMode.Barrel = FVector(0.f, -32.3f, 0.f);
 	AssaultMode.Scope = FVector(0.f, 0.f, -4.f);

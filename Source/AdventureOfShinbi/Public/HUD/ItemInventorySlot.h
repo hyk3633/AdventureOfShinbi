@@ -33,6 +33,9 @@ public:
 
 	void InitializeIcon();
 
+	UFUNCTION()
+	void QuickSlotButtonClicked();
+
 	UPROPERTY(meta = (BindWidget))
 	UImage* ItemInventorySlotIcon;
 
@@ -68,9 +71,6 @@ protected:
 
 	UFUNCTION()
 	void UseButtonClicked();
-
-	UFUNCTION()
-	void QuickSlotButtonClicked();
 
 	UFUNCTION()
 	void CancelButtonClicked();

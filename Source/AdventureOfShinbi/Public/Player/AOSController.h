@@ -111,6 +111,10 @@ public:
 
 	void SetQuickSlotItemAuto();
 
+	void SetEquippedQuickItem(int8 SlotIndex, AItem* Item);
+
+	void EnrollToItemQuickSlot(int8 Index);
+
 protected:
 
 	virtual void PostInitializeComponents() override;
@@ -122,7 +126,7 @@ protected:
 	void HUDInventoryOff();
 
 	UFUNCTION()
-	void EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UButton* QuickSlotButton, UTextBlock* QuickSlotCountText);
+	void EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UTextBlock* QuickSlotCountText);
 
 	int32 GetItemCount(AItem* Item);
 
@@ -149,7 +153,5 @@ private:
 public:
 
 	void SetSelectedItem(AItem* Item);
-
-	int8 GetActivatedQuickSlotNumber() const;
 
 };

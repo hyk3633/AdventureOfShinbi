@@ -43,31 +43,52 @@ void UCombatComponent::RestartCombatComp()
 	}
 
 	GameMode = GetWorld()->GetAuthGameMode<AAOSGameModeBase>();
+	if (GameMode && GameMode->GetWeaponCount() > 0)
+	{
+		for (int32 i = 0; i < GameMode->GetWeaponCount(); i++)
+		{
+			GameMode->GetWeaponItem(i)->SetWeaponState(EWeaponState::EWS_PickedUp);
+			GameMode->GetWeaponItem(i)->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
+		}
+		if (GameMode->GetEquippedWeapon())
+		{
+			GameMode->GetEquippedWeapon()->SetWeaponState(EWeaponState::EWS_Equipped);
+		}
+		if (GameMode->GetQuickSlot1Weapon())
+		{
+			GameMode->GetQuickSlot1Weapon()->SetWeaponState(EWeaponState::EWS_QuickSlot1);
+		}
+		if (GameMode->GetQuickSlot2Weapon())
+		{
+			GameMode->GetQuickSlot2Weapon()->SetWeaponState(EWeaponState::EWS_QuickSlot2);
+		}
+	}
+}
+
+void UCombatComponent::SettingAfterLevelTransition()
+{
+	CharacterController = Character->GetController<AAOSController>();
+	if (CharacterController)
+	{
+		CharacterController->SetHUDHealthBar(Health, MaxHealth);
+		CharacterController->SetHUDManaBar(Mana, MaxMana);
+		CharacterController->SetHUDStaminaBar(Stamina, MaxStamina);
+	}
+
+	GameMode = GetWorld()->GetAuthGameMode<AAOSGameModeBase>();
 	if (GameMode)
 	{
 		if (GameMode->GetEquippedWeapon())
 		{
-			GameMode->GetEquippedWeapon()->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
-			AWeapon* TempWeapon = GameMode->GetEquippedWeapon();
-			EquippedWeapon = TempWeapon;
-			EquippedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
-			TempWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+			GameMode->GetEquippedWeapon()->GetInventorySlot()->EquipButtonClicked();
 		}
 		if (GameMode->GetQuickSlot1Weapon())
 		{
-			GameMode->GetQuickSlot1Weapon()->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
-			AWeapon* TempWeapon = GameMode->GetQuickSlot1Weapon();
-			QuickSlot1Weapon = TempWeapon;
-			QuickSlot1Weapon->SetWeaponState(EWeaponState::EWS_PickedUp);
-			TempWeapon->SetWeaponState(EWeaponState::EWS_QuickSlot1);
+			GameMode->GetQuickSlot1Weapon()->GetInventorySlot()->QuickSlot1ButtonClicked();
 		}
 		if (GameMode->GetQuickSlot2Weapon())
 		{
-			GameMode->GetQuickSlot2Weapon()->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
-			AWeapon* TempWeapon = GameMode->GetQuickSlot2Weapon();
-			QuickSlot2Weapon = TempWeapon;
-			QuickSlot2Weapon->SetWeaponState(EWeaponState::EWS_PickedUp);
-			TempWeapon->SetWeaponState(EWeaponState::EWS_QuickSlot2);
+			GameMode->GetQuickSlot2Weapon()->GetInventorySlot()->QuickSlot2ButtonClicked();
 		}
 	}
 }
@@ -124,13 +145,10 @@ void UCombatComponent::MeleeAttack()
 
 		switch (EquippedWeapon->GetWeaponType())
 		{
-		case EWeaponType::EWT_MeleeOneHand:
+		case EWeaponType::EWT_ShinbiSword:
 			PlayMontageOneHandAttack();
 			break;
-		case EWeaponType::EWT_MeleeTwoHand:
-			PlayMontageTwoHandAttack();
-			break;
-		case EWeaponType::EWT_Glave:
+		case EWeaponType::EWT_Glaive:
 			GlaiveAttack();
 			break;
 		}
@@ -152,14 +170,14 @@ void UCombatComponent::WeaponRightClickSkill()
 
 void UCombatComponent::WeaponSkill1()
 {
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 	{
 		if (bAbleCirclingWolves)
 		{
 			PlayMontageCirclingWolves();
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive)
 	{
 		if (CheckAbleGlaiveUltiSkill())
 		{
@@ -170,21 +188,21 @@ void UCombatComponent::WeaponSkill1()
 
 void UCombatComponent::WeaponSkill2()
 {
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 	{
 		if (bAbleUltimateWolfRush)
 		{
 			PlayMontageUltimateWolfRush();
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive)
 	{
 		if (CheckAbleGlaiveUltiSkill())
 		{
 			PlayMontageGlaiveUltimateAttack(FName("U2"));
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	else
 	{
 		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
 		if (RW)
@@ -345,21 +363,6 @@ void UCombatComponent::UltimateWolfRushCoolTimeEnd()
 	bAbleUltimateWolfRush = true;
 }
 
-void UCombatComponent::PlayMontageTwoHandAttack()
-{
-	if (AnimInstance == nullptr || MeleeTwoHandAttackMontage == nullptr) return;
-
-	AnimInstance->Montage_Play(MeleeTwoHandAttackMontage);
-	if (Character->GetCharacterMovement()->IsFalling())
-	{
-		//AnimInstance->Montage_JumpToSection(FName("MeleeOneHandAir"));
-	}
-	else
-	{
-		AnimInstance->Montage_JumpToSection(FName("TwoHandA"));
-	}
-}
-
 void UCombatComponent::PlayReloadMontage()
 {
 	if (GunReloadMontage == nullptr)
@@ -436,7 +439,7 @@ void UCombatComponent::RangedWeaponFire()
 
 void UCombatComponent::Zoom(float DeltaTime)
 {
-	if (Character == nullptr || EquippedWeapon == nullptr || EquippedWeapon->GetWeaponType() != EWeaponType::EWT_Gun) 
+	if (Character == nullptr || EquippedWeapon == nullptr) 
 		return;
 
 	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
@@ -655,21 +658,21 @@ void UCombatComponent::PlayHitReactMontage(FName SectionName)
 	if (AnimInstance == nullptr || EquippedWeapon == nullptr)
 		return;
 
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
+	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 	{
 		if (OneHandHitReactMontage)
 		{
 			AnimInstance->Montage_Play(OneHandHitReactMontage);
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
+	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive)
 	{
 		if (GlaiveHitReactMontage)
 		{
 			AnimInstance->Montage_Play(GlaiveHitReactMontage);
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	else
 	{
 		if (GunHitReactMontage)
 		{
@@ -831,7 +834,7 @@ void UCombatComponent::SetCrosshair()
 	if (CharacterController == nullptr) 
 		return;
 
-	if (EquippedWeapon && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	if (EquippedWeapon)
 	{
 		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
 		if (RangedWeapon)
@@ -967,68 +970,57 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	SetCrosshair();
 
 	FName SocketName;
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
+	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
+	if (RW)
 	{
-		ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(EquippedWeapon);
-
-		AItemAmmo* Ammo = Cast<AItemAmmo>(RangedWeapon->GetAmmoItem());
+		AItemAmmo* Ammo = Cast<AItemAmmo>(RW->GetAmmoItem());
 		if (Ammo)
 		{
 			if (GameMode->IsAmmoTypeExist(Ammo->GetAmmoType()) == false)
 			{
-				Character->GetItemComp()->AddAmmoItem(RangedWeapon->GetAmmoItem());
+				Character->GetItemComp()->AddAmmoItem(RW->GetAmmoItem());
 			}
 		}
 
-		CharacterController->SetHUDLoadedAmmoText(RangedWeapon->GetLoadedAmmo());
-		CharacterController->SetHUDTotalAmmoText(GameMode->GetAmmoQuantity(RangedWeapon->GetAmmoType()));
+		CharacterController->SetHUDLoadedAmmoText(RW->GetLoadedAmmo());
+		CharacterController->SetHUDTotalAmmoText(GameMode->GetAmmoQuantity(RW->GetAmmoType()));
 		CharacterController->HUDAmmoInfoOn();
 
-		if (RangedWeapon->GetLoadedAmmo() == 0 && GameMode->GetAmmoQuantity(RangedWeapon->GetAmmoType()) > 0)
+		if (RW->GetLoadedAmmo() == 0 && GameMode->GetAmmoQuantity(RW->GetAmmoType()) > 0)
 		{
 			Reload();
 		}
 
-		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
-		if (RW)
+		Character->SetGunRecoil(RW->GetGunRecoil());
+		if (RW->GetWeaponType() == EWeaponType::EWT_Revenent)
 		{
-			Character->SetGunRecoil(RW->GetGunRecoil());
-			if (RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_Revenent)
-			{
-				SocketName = FName("RevenentSocket");
-			}
-			else if(RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_Wraith)
-			{
-				SocketName = FName("WraithSocket");
-			}
-			else if (RW->GetRangedWeaponType() == ERangedWeaponType::ERWT_AK47)
-			{
-				SocketName = FName("AK47Socket");
-			}
-			else
-			{
-				SocketName = FName("GunSocket");
-			}
+			SocketName = FName("RevenentSocket");
+		}
+		else if (RW->GetWeaponType() == EWeaponType::EWT_Wraith)
+		{
+			SocketName = FName("WraithSocket");
+		}
+		else if (RW->GetWeaponType() == EWeaponType::EWT_AK47)
+		{
+			SocketName = FName("AK47Socket");
+		}
+		else
+		{
+			SocketName = FName("GunSocket");
 		}
 	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Bow)
+	else
 	{
-		CharacterController->HUDAmmoInfoOff();
-	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeOneHand)
-	{
-		SocketName = FName("OneHandSocket");
-		CharacterController->HUDAmmoInfoOff();
-	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_MeleeTwoHand)
-	{
-		SocketName = FName("TwoHandSocket");
-		CharacterController->HUDAmmoInfoOff();
-	}
-	else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glave)
-	{
-		SocketName = FName("GlaveSocket");
-		CharacterController->HUDAmmoInfoOff();
+		if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
+		{
+			SocketName = FName("OneHandSocket");
+			CharacterController->HUDAmmoInfoOff();
+		}
+		else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive)
+		{
+			SocketName = FName("GlaveSocket");
+			CharacterController->HUDAmmoInfoOff();
+		}
 	}
 
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(SocketName);
@@ -1041,15 +1033,7 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(EquippedWeapon->GetItemIcon());
 
 	EquippedWeapon->SetOwner(Character);
-	Character->GetAnimInst()->SetWeaponType(EquippedWeapon->GetWeaponType());
-	if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Gun)
-	{
-		ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
-		if (RW)
-		{
-			Character->GetAnimInst()->SetRangedWeaponType(RW->GetRangedWeaponType());
-		}
-	}
+	AnimInstance->SetWeaponType(EquippedWeapon->GetWeaponType());
 
 	if (WeaponToChange != nullptr)
 	{
@@ -1097,7 +1081,7 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 	{
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 		EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachRules);
-		Character->GetAnimInst()->SetWeaponType(EWeaponType::EWT_None);
+		AnimInstance->SetWeaponType(EWeaponType::EWT_None);
 		EquippedWeapon->SetOwner(nullptr);
 		EquippedWeapon = nullptr;
 		
@@ -1211,6 +1195,21 @@ void UCombatComponent::HealBanEnd()
 	}
 }
 
+void UCombatComponent::SetController(AAOSController* Controller)
+{
+	CharacterController = Controller;
+}
+
+void UCombatComponent::SetGameMode(AAOSGameModeBase* Gamemode)
+{
+	GameMode = Gamemode;
+}
+
+void UCombatComponent::SetAnimInstance(UAOSAnimInstance* AnimInst)
+{
+	AnimInstance = AnimInst;
+}
+
 AWeapon* UCombatComponent::GetEquippedWeapon() const
 {
 	return EquippedWeapon;
@@ -1264,4 +1263,24 @@ bool UCombatComponent::GetEnableCheck() const
 void UCombatComponent::SetEnableCheck(bool bCheck)
 {
 	bEnableCheck = bCheck;
+}
+
+float UCombatComponent::GetHealth() const
+{
+	return Health;
+}
+
+float UCombatComponent::GetMana() const
+{
+	return Mana;
+}
+
+void UCombatComponent::SetHealth(float PreHealth)
+{
+	Health = PreHealth;
+}
+
+void UCombatComponent::SetMana(float PreMana)
+{
+	Mana = PreMana;
 }
