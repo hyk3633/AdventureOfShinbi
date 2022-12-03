@@ -17,7 +17,7 @@ class AWeapon;
 class UCurveFloat;
 class USoundCue;
 
-DECLARE_MULTICAST_DELEGATE(DPlayerDeathDelegate);
+DECLARE_MULTICAST_DELEGATE(OnPlayerDeathDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
@@ -50,7 +50,7 @@ public:
 
 	void WeaponSkill3();
 
-	DPlayerDeathDelegate PlayerDeathDelegate;
+	OnPlayerDeathDelegate PlayerDeathDelegate;
 
 	void HealBan(float HealBanDurationTime);
 

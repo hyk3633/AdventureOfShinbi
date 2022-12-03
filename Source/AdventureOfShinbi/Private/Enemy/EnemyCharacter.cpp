@@ -10,6 +10,7 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "System/AOSGameModeBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -141,6 +142,11 @@ void AEnemyCharacter::BeginPlay()
 		AIController->SetTarget(AiInfo.TargetPlayer);
 		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
 	}
+
+	GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->DPlayerRespawn.AddUFunction(this, FName("ResetAIState"));
+
+	InitialLocation = GetActorLocation();
+	InitialRotation = GetActorRotation();
 }
 
 void AEnemyCharacter::Tick(float DeltaTime)
@@ -287,13 +293,8 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 
 	if (IsPlayerDeathDelegateBined == false)
 	{
-		Cha->GetCombatComp()->PlayerDeathDelegate.AddLambda([this]() -> void {
-			AiInfo.bIsPlayerDead = true;
-			if (AIController)
-			{
-				AIController->UpdateAiInfo();
-			}
-		});
+		Cha->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AEnemyCharacter::PlayerDead);
+		IsPlayerDeathDelegateBined = true;
 	}
 
 	if (Stimulus.Type.Name == FName("Default__AISense_Sight"))
@@ -505,14 +506,12 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 
 	GetWorldTimerManager().SetTimer(HitForgetTimer, this, &AEnemyCharacter::ForgetHit, HitMemoryTime);
 
-	if (HealthWidget)
-	{
-		SetHealthBar();
-		HealthWidget->SetVisibility(true);
-	}
+	SetHealthBar();
 
 	if (Health == 0)
 	{
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetMovementComponent()->StopMovementImmediately();
 		bDeath = true;
 		if (AIController)
 		{
@@ -563,6 +562,32 @@ void AEnemyCharacter::Attack()
 		AIController->UpdateAiInfo();
 	}
 	PlayAttackMontage();
+}
+
+void AEnemyCharacter::ResetAIState()
+{
+	IsPlayerDeathDelegateBined = false;
+	AiInfo.TargetPlayer = nullptr;
+	AiInfo.DetectedLocation = FVector::ZeroVector;
+	AiInfo.bTargetIsVisible = false;
+	AiInfo.bTargetIsHeard = false;
+	AiInfo.bSightStimulusExpired = true;
+	AiInfo.bIsKnockUp = false;
+	AiInfo.bStunned = false;
+	AiInfo.bStiffed = false;
+	AiInfo.bTargetInAttackRange = false;
+	AiInfo.bTargetHitsMe = false;
+	AiInfo.bIsPlayerDead = false;
+	bIsAttacking = false;
+	Health = MaxHealth;
+
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
+
+	SetActorLocation(InitialLocation);
+	SetActorRotation(InitialRotation);
 }
 
 void AEnemyCharacter::PlayAttackMontage()
@@ -761,7 +786,7 @@ void AEnemyCharacter::RotateToTarget(float DeltaTime)
 		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation());
 		LookAtRotation = FRotator(0.f, LookAtRotation.Yaw, 0.f);
 
-		float RotateRate = bIsAttacking ? 10.f : 20.f;
+		float RotateRate = bIsAttacking ? AttackingRotateRate : NormalRotateRate;
 
 		Rotation = FMath::RInterpTo(GetActorRotation(), LookAtRotation, DeltaTime, RotateRate);
 		SetActorRotation(Rotation);
@@ -780,6 +805,11 @@ bool AEnemyCharacter::CheckRotateToTargetCondition()
 
 void AEnemyCharacter::SetHealthBar()
 {
+	if (HealthWidget)
+	{
+		HealthWidget->SetVisibility(true);
+	}
+
 	UEnemyHealthBar* Bar = Cast<UEnemyHealthBar>(HealthWidget->GetWidget());
 	if (Bar)
 	{
@@ -882,6 +912,11 @@ void AEnemyCharacter::SetDamage(float DamageUpRate)
 	}
 }
 
+float AEnemyCharacter::GetHealth() const
+{
+	return Health;
+}
+
 bool AEnemyCharacter::GetIsDead() const
 {
 	return bDeath;
@@ -895,6 +930,15 @@ float AEnemyCharacter::GetEnemyDamage() const
 USphereComponent* AEnemyCharacter::GetAttackRange() const
 {
 	return AttackRange;
+}
+
+void AEnemyCharacter::PlayerDead()
+{
+	AiInfo.bIsPlayerDead = true;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
 }
 
 float AEnemyCharacter::GetAcceptableRaius() const

@@ -35,6 +35,11 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* StaminaBar;
 
+	// 보스 체력바
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* BossHealthBar;
+
 	// 탄약 정보
 
 	UPROPERTY(meta = (BindWidget))

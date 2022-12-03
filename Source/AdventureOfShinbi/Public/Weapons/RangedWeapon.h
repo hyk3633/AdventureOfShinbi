@@ -50,21 +50,6 @@ public:
 
 	virtual void Firing();
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
-	UTexture2D* CrosshairCenter;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
-	UTexture2D* CrosshairLeft;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
-	UTexture2D* CrosshairRight;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
-	UTexture2D* CrosshairTop;
-	
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
-	UTexture2D* CrosshairBottom;
-
 protected:
 
 	virtual void BeginPlay() override;
@@ -109,6 +94,7 @@ private:
 
 	FVector2D ViewPortSize;
 
+	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	FCrosshairs Crosshairs;
 
 protected:

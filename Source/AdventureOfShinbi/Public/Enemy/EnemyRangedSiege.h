@@ -40,6 +40,8 @@ protected:
 
 	virtual void HandleStiffAndStun(FName& BoneName) override;
 
+	virtual void ResetAIState() override;
+
 	void SiegeModeProjectileFire();
 
 	void PlaySiegeModeFireMontage();

@@ -33,6 +33,8 @@ void ALevelTransitionVolume::BeginPlay()
 	BoxComp->OnComponentBeginOverlap.AddDynamic(this, &ALevelTransitionVolume::OnBoxOverlap);
 	BoxComp->OnComponentEndOverlap.AddDynamic(this, &ALevelTransitionVolume::OnBoxOverlapEnd);
 
+	GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->DPlayerRespawn.AddUObject(this, &ALevelTransitionVolume::ReBindFunction);
+
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 	if (Cha)
 	{
@@ -55,6 +57,15 @@ void ALevelTransitionVolume::OnBoxOverlapEnd(UPrimitiveComponent* OverlappedComp
 	if (Cha)
 	{
 		Cha->SetOverlappedLTV(false);
+	}
+}
+
+void ALevelTransitionVolume::ReBindFunction()
+{
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (Cha)
+	{
+		Cha->DLevelTransition.BindUObject(this, &ALevelTransitionVolume::LevelTransition);
 	}
 }
 

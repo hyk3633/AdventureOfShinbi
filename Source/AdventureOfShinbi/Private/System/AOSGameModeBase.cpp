@@ -4,7 +4,7 @@
 #include "Player/AOSCharacter.h"
 #include "Player/AOSAnimInstance.h"
 #include "Player/AOSController.h"
-#include "Player/AOSPlayerState.h"
+#include "EnemyBoss/EnemyBoss.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "Components/CombatComponent.h"
@@ -15,6 +15,7 @@
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
 #include "HUD/ItemInventorySlot.h"
+#include "Sound/SoundCue.h"
 
 AAOSGameModeBase::AAOSGameModeBase()
 {
@@ -26,6 +27,8 @@ void AAOSGameModeBase::RespawnPlayer()
 {
 	PlayerDeathCount++;
 
+	DPlayerRespawn.Broadcast();
+
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (PlayerPawn)
 	{
@@ -33,9 +36,19 @@ void AAOSGameModeBase::RespawnPlayer()
 		PlayerPawn->Destroy();
 	}
 
-	TArray<AActor*> PlayerStarts;
-	UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
-	RestartPlayerAtPlayerStart(GetWorld()->GetFirstPlayerController(), PlayerStarts[0]);
+	if (PlayerStart == nullptr)
+	{
+		TArray<AActor*> PlayerStarts;
+		UGameplayStatics::GetAllActorsOfClass(this, APlayerStart::StaticClass(), PlayerStarts);
+		PlayerStart = Cast<APlayerStart>(PlayerStarts[0]);
+	}
+	RestartPlayerAtPlayerStart(GetWorld()->GetFirstPlayerController(), PlayerStart);
+
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (Cha)
+	{
+		Cha->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AAOSGameModeBase::ShowDeathSignWidget);
+	}
 }
 
 bool AAOSGameModeBase::IsPlayerRespawn()
@@ -66,6 +79,31 @@ void AAOSGameModeBase::LoadPlayerData()
 	LoadItemInfo();
 
 	LoadWeaponInfo();
+}
+
+void AAOSGameModeBase::BindBossDefeatEvent()
+{
+	TArray<AActor*> Actors;
+	UGameplayStatics::GetAllActorsOfClass(this, AEnemyBoss::StaticClass(), Actors);
+	if (Actors[0])
+	{
+		AEnemyBoss* Boss = Cast<AEnemyBoss>(Actors[0]);
+		if (Boss)
+		{
+			Boss->DBossDefeat.BindUObject(this, &AAOSGameModeBase::ShowBossDefeatedSignWidget);
+		}
+	}
+}
+
+void AAOSGameModeBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	Character = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (Character)
+	{
+		Character->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AAOSGameModeBase::ShowDeathSignWidget);
+	}
 }
 
 void AAOSGameModeBase::LoadPlayerInfo()
@@ -204,6 +242,50 @@ void AAOSGameModeBase::LoadItemInfo()
 			CharacterController->SetItemSlotCountText(i, ItemInfo.ItemCount);
 		}
 	}
+}
+
+void AAOSGameModeBase::ShowDeathSignWidget()
+{
+	if (DeathSignWidgetClass)
+	{
+		DeathSignWidget = CreateWidget<UUserWidget>(GetWorld(), DeathSignWidgetClass);
+		if (DeathSignWidget)
+		{
+			DeathSignWidget->AddToViewport();
+			GetWorldTimerManager().SetTimer(DeathSignTimer, this, &AAOSGameModeBase::DeathSignDestroy, 5.5f);
+		}
+	}
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySound2D(this, DeathSound);
+	}
+}
+
+void AAOSGameModeBase::DeathSignDestroy()
+{
+	DeathSignWidget->RemoveFromViewport();
+}
+
+void AAOSGameModeBase::ShowBossDefeatedSignWidget()
+{
+	if (BossDefeatedSignWidgetClass)
+	{
+		BossDefeatedSignWidget = CreateWidget<UUserWidget>(GetWorld(), BossDefeatedSignWidgetClass);
+		if (BossDefeatedSignWidget)
+		{
+			BossDefeatedSignWidget->AddToViewport();
+			GetWorldTimerManager().SetTimer(BossDefeatedSignTimer, this, &AAOSGameModeBase::BossDefeatedSignDestroy, 12.f);
+		}
+	}
+	if (BossDefeatedSound)
+	{
+		UGameplayStatics::PlaySound2D(this, BossDefeatedSound);
+	}
+}
+
+void AAOSGameModeBase::BossDefeatedSignDestroy()
+{
+	BossDefeatedSignWidget->RemoveFromViewport();
 }
 
 void AAOSGameModeBase::AddWeaponToArr(AWeapon* Weapon)
@@ -385,4 +467,9 @@ int8 AAOSGameModeBase::GetActivatedQuickSlotNumber() const
 void AAOSGameModeBase::SetActivatedQuickSlotNumber(int8 Number)
 {
 	ActivatedQuickSlotNumber = Number;
+}
+
+void AAOSGameModeBase::SetPlayerStart(APlayerStart* RespawnPoint)
+{
+	PlayerStart = RespawnPoint;
 }

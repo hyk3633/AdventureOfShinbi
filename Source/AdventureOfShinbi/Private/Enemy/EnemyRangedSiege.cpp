@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Enemy/EnemyRangedSiege.h"
@@ -36,6 +35,13 @@ void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
 		return;
 
 	Super::HandleStiffAndStun(BoneName);
+}
+
+void AEnemyRangedSiege::ResetAIState()
+{
+	Super::ResetAIState();
+
+	bSiegeMode = false;
 }
 
 bool AEnemyRangedSiege::CheckRotateToTargetCondition()

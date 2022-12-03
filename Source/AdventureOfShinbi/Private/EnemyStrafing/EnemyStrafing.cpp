@@ -41,6 +41,13 @@ void AEnemyStrafing::Tick(float DeltaTime)
 	DoStrafing();
 }
 
+void AEnemyStrafing::ResetAIState()
+{
+	Super::ResetAIState();
+
+	bStrafing = false;
+}
+
 void AEnemyStrafing::DoStrafing()
 {
 	const bool StrafingCondition = CheckStrafingCondition();

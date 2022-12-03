@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "HUD/AOSHUD.h"
@@ -6,8 +5,12 @@
 #include "HUD/Inventory.h"
 #include "HUD/InventorySlot.h"
 #include "HUD/ItemInventorySlot.h"
+#include "System/AOSGameModeBase.h"
+#include "Player/AOSCharacter.h"
 #include "Weapons/Weapon.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/CombatComponent.h"
 #include "Components/TextBlock.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"

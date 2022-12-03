@@ -5,6 +5,7 @@
 #include "Enemy/EnemyAnimInstance.h"
 #include "Enemy/EnemyAIController.h"
 #include "Player/AOSCharacter.h"
+#include "Player/AOSController.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/CombatComponent.h"
@@ -46,16 +47,12 @@ void AEnemyBoss::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Target = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
-	if (Target)
-	{
-		Target->DAttackButtonPressed.BindUObject(this, &AEnemyBoss::DetectAttack);
-	}
-
 	BossController = Cast<ABossAIController>(GetController());
-	if (BossController)
+
+	PlayerController = Cast<AAOSController>(UGameplayStatics::GetPlayerController(this, 0));
+	if (PlayerController)
 	{
-		BossController->SetTarget(Target);
+		PlayerController->SetHUDBossHealthBar(GetHealthPercentage());
 	}
 
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyBoss::BlizzardMontageEnd);
@@ -65,6 +62,26 @@ void AEnemyBoss::BeginPlay()
 	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, 15.f);
 	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, 15.f);
 	GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, 15.f);
+}
+
+void AEnemyBoss::SetTarget()
+{
+	Target = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (Target)
+	{
+		Target->DAttackButtonPressed.BindUObject(this, &AEnemyBoss::DetectAttack);
+	}
+
+	if (BossController)
+	{
+		BossController->SetTarget(Target);
+	}
+
+	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, 15.f);
+	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, 10.f);
+	GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, 10.f);
+
+	SetHealthBar();
 }
 
 void AEnemyBoss::Tick(float DeltaTime)
@@ -87,7 +104,8 @@ void AEnemyBoss::RotateToTarget(float DeltaTime)
 	if (
 		bDeath == false &&
 		bFreezingAttack == false &&
-		AiInfo.bIsPlayerDead == false
+		AiInfo.bIsPlayerDead == false &&
+		Target != nullptr
 		)
 	{
 		FRotator Rotation = GetActorRotation();
@@ -105,12 +123,33 @@ void AEnemyBoss::RotateToTarget(float DeltaTime)
 void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
 	HandleHealthChange(DamageReceived);
+	PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, BoneName);
 
-	if (GetHealthPercentage() <= 0.6f)
+	if (GetHealthPercentage() == 0.f)
+	{
+		if (BossController)
+		{
+			BossController->UpdateAiInfo();
+		}
+		if (PlayerController)
+		{
+			PlayerController->BossHealthBarOff();
+		}
+		DBossDefeat.ExecuteIfBound();
+	}
+	else if (GetHealthPercentage() <= 0.6f)
 	{
 		bPhase2 = true;
 		DashDelayTime = 0.5f;
 		MaxDashCount = 6;
+	}
+}
+
+void AEnemyBoss::SetHealthBar()
+{
+	if (PlayerController)
+	{
+		PlayerController->SetHUDBossHealthBar(GetHealthPercentage());
 	}
 }
 
@@ -191,6 +230,45 @@ void AEnemyBoss::DetectAttack()
 	bAbleEvadeSkill = true;
 	if (BossController)
 	{
+		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
+	}
+}
+
+void AEnemyBoss::ResetAIState()
+{
+	Super::ResetAIState();
+
+	bPhase2					 = false;
+	bFreezingCoolTimeEnd	 = false;
+	bRangedAttackCoolTimeEnd = false;
+	bEvadeSkillCoolTimeEnd	 = false;
+	bAbleEvadeSkill			 = false;
+	bFreezingAttack			 = false;
+	bBlizzardDebuffOn		 = false;
+	bDashAttack				 = false;
+	bActivateBurst			 = false;
+	bAbleBackAttack			 = false;
+	bAbleIceWall			 = false;
+
+	GetWorldTimerManager().ClearTimer(FreezingCoolTimer);
+	GetWorldTimerManager().ClearTimer(BlizzardDebuffTimer);
+	GetWorldTimerManager().ClearTimer(DashDelayTimer);
+	GetWorldTimerManager().ClearTimer(RangedAttackCoolTimer);
+	GetWorldTimerManager().ClearTimer(EvadeSkillCoolTimer);
+	GetWorldTimerManager().ClearTimer(BackAttackAppearTimer);
+	GetWorldTimerManager().ClearTimer(DisappearTimer);
+	GetWorldTimerManager().ClearTimer(IceWallAttackDisappearTimer);
+	GetWorldTimerManager().ClearTimer(IceWallAttackAppearTimer);
+
+	if (PlayerController)
+	{
+		PlayerController->BossHealthBarOff();
+	}
+
+	if (BossController)
+	{
+		BossController->UpdateAiInfo();
+		BossController->SetRangedAttackCoolTimeEnd(bRangedAttackCoolTimeEnd);
 		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
 	}
 }
@@ -325,7 +403,7 @@ void AEnemyBoss::RangedAttack()
 	{
 		RandNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
 	}
-	else if (DistToTarget > 600.f && DistToTarget <= 800.f)
+	else if (DistToTarget > 500.f && DistToTarget <= 800.f)
 	{
 		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
 	}

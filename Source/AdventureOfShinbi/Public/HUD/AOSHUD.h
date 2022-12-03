@@ -44,6 +44,16 @@ public:
 
 	int32 GetItemInventorySlotCount();
 
+protected:
+
+	virtual void PostInitializeComponents() override;
+
+	virtual void BeginPlay() override;
+
+	void AddOverlay();
+
+	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread);
+
 public:
 
 	UPROPERTY(EditAnywhere, Category = "HUD")
@@ -69,16 +79,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpread;
-
-protected:
-
-	virtual void PostInitializeComponents() override;
-
-	virtual void BeginPlay() override;
-
-	void AddOverlay();
-
-	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread);
 
 private:
 

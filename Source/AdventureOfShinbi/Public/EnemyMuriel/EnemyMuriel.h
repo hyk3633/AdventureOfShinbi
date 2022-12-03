@@ -13,8 +13,6 @@ class AEnemyCharacter;
 class UParticleSystem;
 class USoundCue;
 
-DECLARE_MULTICAST_DELEGATE(FOnSkillEndDelegate);
-
 UCLASS()
 class ADVENTUREOFSHINBI_API AEnemyMuriel : public AEnemyStrafing
 {
@@ -24,15 +22,13 @@ public:
 
 	AEnemyMuriel();
 
-	void ProvideBuff();
+	virtual void RangedAttack() override;
 
 	void SummonMinion();
 
-	void FireSkillShot();
+	void ProvideBuff();
 
 	void FindTeleportPosition();
-
-	FOnSkillEndDelegate OnSkillEnd;
 
 protected:
 
@@ -40,20 +36,9 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void TakePointDamage
-	(
-		AActor* DamagedActor,
-		float DamageReceived,
-		class AController* InstigatedBy,
-		FVector HitLocation,
-		class UPrimitiveComponent* FHitComponent,
-		FName BoneName,
-		FVector ShotFromDirection,
-		const class UDamageType* DamageType,
-		AActor* DamageCauser
-	) override;
-
 	virtual void HandleStiffAndStun(FName& BoneName) override;
+
+	virtual void ResetAIState() override;
 
 	/** 소환 스킬 */
 
@@ -89,6 +74,8 @@ protected:
 
 	/** 스킬 샷 스킬 */
 
+	void FireSkillShot();
+
 	void PlaySkillShotFireMontage();
 
 	UFUNCTION(BlueprintCallable)
@@ -121,8 +108,6 @@ private:
 	// true 이면 화이트, false 이면 블랙
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Main")
 	bool bWhite = true;
-
-	bool bIsCasting = false;
 
 	/** 버프 옵션 */
 
@@ -224,17 +209,15 @@ private:
 	FTimerHandle TeleportCoolTimer;
 	float TeleportCoolTime = 40.f;
 
-	bool bAbleTeleportMinion = true;
 	UPROPERTY(VisibleInstanceOnly, Category = "Enemy | Muriel | CoolTime")
 	bool bTeleportMinionCoolTimeEnd = true;
 
 public:
 
-	bool GetMurielType() const;
-	bool GetIsCasting() const;
 	FName GetFriendlyTag() const;
+	bool GetMurielType() const;
 	bool GetBuffCoolTimeEnd() const;
 	bool GetSummonCoolTimeEnd() const;
-	bool GetSkillShotCoolTimeEnd() const;
+	bool GetTeleportMinionCoolTimeEnd() const;
 	float GetSkillShotDurationTime() const;
 };

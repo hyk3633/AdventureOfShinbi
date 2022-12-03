@@ -24,20 +24,20 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
     if (nullptr == Muriel)
         return;
 
-    if (Muriel->GetIsCasting())
+    if (Muriel->GetIsAttacking())
         return;
 
     TArray<AActor*> Allies;
     UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), Muriel->GetFriendlyTag(), Allies);
 
-    int8 LowHealthCount = 0;
     int8 AlliesNearbyCount = 0;
+    int8 LowHealthCount = 0;
     for (AActor* const& TaggedActor : Allies)
     {
         AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
         if (Friendly)
         {
-            if (Muriel->GetDistanceTo(Friendly) <= 1000.f)
+            if (Muriel->GetDistanceTo(Friendly) <= 1250.f)
             {
                 AlliesNearbyCount++;
                 if (Friendly->GetHealthPercentage() <= 0.6f)
@@ -47,15 +47,17 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
             }
         }
     }
-
-    if (AlliesNearbyCount < 2 && Muriel->GetSummonCoolTimeEnd())
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("LackOfAllies"), true);
-    }
     
-    if (LowHealthCount >= 2 && Muriel->GetBuffCoolTimeEnd())
+    if (Muriel->GetSummonCoolTimeEnd() && AlliesNearbyCount <= 1)
     {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("ProvideBuff"), true);
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSummonMinion"), true);
     }
-    
+    else if (Muriel->GetBuffCoolTimeEnd() && LowHealthCount >= 2)
+    {
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleBuff"), true);
+    }
+    else if (Muriel->GetTeleportMinionCoolTimeEnd() && AlliesNearbyCount >= 1)
+    {
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), true);
+    }
 }

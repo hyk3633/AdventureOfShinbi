@@ -164,6 +164,8 @@ private:
 
 	void PlayerRespawn();
 
+	void CameraSaturaion(float DeltaTime);
+
 private:
 
 	AAOSController* CharacterController;
@@ -200,7 +202,7 @@ private:
 	FTimerHandle InventoryAnimationTimer;
 
 	FTimerHandle PlayerRespawnTimer;
-	float PlayerRespawnTime = 5.f;
+	float PlayerRespawnTime = 5.5f;
 
 	bool bDashing = false;
 
@@ -234,7 +236,13 @@ private:
 	UParticleSystem* HitParticle;
 
 	UPROPERTY(EditAnywhere, Category = "Character | Effect")
+	UParticleSystem* RespawnParticle;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Effect")
 	USoundCue* HitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Effect")
+	USoundCue* RespawnSound;
 
 	UPROPERTY(EditAnywhere, Category = "Character | Voice")
 	USoundCue* VoiceJump;
@@ -271,6 +279,9 @@ private:
 	float SlowedCroucedSpeed = 100.f;
 
 	bool bOverlappedLTV = false;
+
+	bool bCameraSaturationOn = false;
+	float InitialSaturation = 1.f;
 	
 public:
 

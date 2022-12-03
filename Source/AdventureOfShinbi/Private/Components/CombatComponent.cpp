@@ -1084,10 +1084,11 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 		AnimInstance->SetWeaponType(EWeaponType::EWT_None);
 		EquippedWeapon->SetOwner(nullptr);
 		EquippedWeapon = nullptr;
-		
+
 		GameMode->KeepEquippedWeapon(nullptr);
 		CharacterController->SetHUDEquippedWeaponIcon(nullptr);
 		CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(nullptr);
+		CharacterController->HUDAmmoInfoOff();
 
 		Character->SetWalkingSpeed(EWalkingState::EWS_UnArmed);
 		Character->SetView(EWeaponType::EWT_None);

@@ -3,7 +3,6 @@
 #include "Player/AOSCharacter.h"
 #include "Player/AOSController.h"
 #include "Player/AOSAnimInstance.h"
-#include "Player/AOSPlayerState.h"
 #include "System/AOSGameModeBase.h"
 #include "Enemy/EnemyCharacter.h"
 #include "EnemyBoss/EnemyBoss.h"
@@ -80,6 +79,15 @@ void AAOSCharacter::RestartPlayerCharacter()
 	CharacterController = Cast<AAOSController>(GetController());
 	ItemComp->RestartItemComp();
 	CombatComp->RestartCombatComp();
+
+	if (RespawnParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), RespawnParticle, GetActorLocation(), GetActorRotation());
+	}
+	if (RespawnSound)
+	{
+		UGameplayStatics::PlaySound2D(this, RespawnSound);
+	}
 }
 
 void AAOSCharacter::PostInitializeComponents()
@@ -119,6 +127,7 @@ void AAOSCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	SetOverlappingItem();
+	CameraSaturaion(DeltaTime);
 }
 
 void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
@@ -277,6 +286,15 @@ void AAOSCharacter::PlayerRespawn()
 	GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->RespawnPlayer();
 }
 
+void AAOSCharacter::CameraSaturaion(float DeltaTime)
+{
+	if (bCameraSaturationOn)
+	{
+		InitialSaturation = FMath::FInterpTo(InitialSaturation, 0.f, DeltaTime, 1.f);
+		Camera->PostProcessSettings.ColorSaturation = FVector4(InitialSaturation, InitialSaturation, InitialSaturation);
+	}
+}
+
 void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
 	if (CharacterState == ECharacterState::ECS_Dead)
@@ -293,6 +311,7 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 
 void AAOSCharacter::HandlePlayerDeath()
 {
+	bCameraSaturationOn = true;
 	SetCharacterState(ECharacterState::ECS_Dead);
 	GetMovementComponent()->StopMovementImmediately();
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);

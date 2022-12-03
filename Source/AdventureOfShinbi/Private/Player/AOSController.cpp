@@ -94,6 +94,30 @@ void AAOSController::SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmoun
 	}
 }
 
+void AAOSController::BossHealthBarOn()
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->BossHealthBar)
+	{
+		AOSHUD->CharacterOverlay->BossHealthBar->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void AAOSController::BossHealthBarOff()
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->BossHealthBar)
+	{
+		AOSHUD->CharacterOverlay->BossHealthBar->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void AAOSController::SetHUDBossHealthBar(float HealthPercentage)
+{
+	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->BossHealthBar)
+	{
+		AOSHUD->CharacterOverlay->BossHealthBar->SetPercent(HealthPercentage);
+	}
+}
+
 void AAOSController::SetHUDEquippedItemIcon(UTexture2D* Icon)
 {
 	if (AOSHUD->CharacterOverlay && AOSHUD->CharacterOverlay->EquippedItemIcon)

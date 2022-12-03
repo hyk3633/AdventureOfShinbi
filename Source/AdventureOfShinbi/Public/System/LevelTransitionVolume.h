@@ -27,6 +27,9 @@ protected:
 	void OnBoxOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION()
+	void ReBindFunction();
+
+	UFUNCTION()
 	void LevelTransition();
 
 private:

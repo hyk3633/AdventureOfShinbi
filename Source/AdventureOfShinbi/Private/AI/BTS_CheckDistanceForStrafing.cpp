@@ -65,8 +65,12 @@ void UBTS_CheckDistanceForStrafing::TickNode(UBehaviorTreeComponent& OwnerComp, 
                     OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
                     ControllingEnemy->OnStrafingEnd.Broadcast();
                 }
-
-                return;
+            }
+            else
+            {
+                KeepingTime = 0.f;
+                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
+                ControllingEnemy->OnStrafingEnd.Broadcast();
             }
         }
     }

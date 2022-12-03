@@ -19,7 +19,7 @@ void ABossAIController::UpdateAiInfo()
 	{
 		BBComp->SetValueAsBool(FName("IsAttacking"), PossessedCharacter->GetIsAttacking());
 		BBComp->SetValueAsBool(FName("Stunned"), PossessedCharacter->GetAiInfo().bStunned);
-		BBComp->SetValueAsBool(FName("IsEnemyDead"), PossessedCharacter->GetIsDead());
+		BBComp->SetValueAsBool(FName("IsDead"), PossessedCharacter->GetIsDead());
 		BBComp->SetValueAsBool(FName("TargetInAttackRange"), PossessedCharacter->GetAiInfo().bTargetInAttackRange);
 		BBComp->SetValueAsBool(FName("IsPlayerDead"), PossessedCharacter->GetAiInfo().bIsPlayerDead);
 	}

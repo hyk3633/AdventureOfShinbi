@@ -28,6 +28,9 @@ class AWraith;
 class ARevenent;
 class AItemRecovery;
 class AItemAmmo;
+class USoundCue;
+
+DECLARE_MULTICAST_DELEGATE(PlayerRespawnDelegate);
 
 USTRUCT()
 struct FQuickSlotItem
@@ -61,6 +64,8 @@ public:
 	bool IsPlayerRespawn();
 
 	void LoadPlayerData();
+
+	void BindBossDefeatEvent();
 
 	// ¹«±â 
 
@@ -130,13 +135,29 @@ public:
 
 	void SetActivatedQuickSlotNumber(int8 Number);
 
+	void SetPlayerStart(APlayerStart* RespawnPoint);
+
+	PlayerRespawnDelegate DPlayerRespawn;
+
 protected:
+
+	virtual void BeginPlay() override;
 
 	void LoadPlayerInfo();
 
 	void LoadWeaponInfo();
 
 	void LoadItemInfo();
+
+	UFUNCTION()
+	void ShowDeathSignWidget();
+
+	void DeathSignDestroy();
+
+	UFUNCTION()
+	void ShowBossDefeatedSignWidget();
+
+	void BossDefeatedSignDestroy();
 
 private:
 
@@ -146,7 +167,6 @@ private:
 
 	AAOSController* CharacterController;
 
-	UPROPERTY(EditDefaultsOnly, Category = "AOS GameMode")
 	APlayerStart* PlayerStart;
 
 	AWeapon* EquippedWeapon = nullptr;
@@ -170,36 +190,56 @@ private:
 
 	int32 PlayerDeathCount = 0;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> ShinbiSwordClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> GlaiveClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> AK47Class;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> WraithClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> RevenentClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> HealthRecoveryClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> ManaRecoveryClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> StaminaRecoveryClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> ARAmmoClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> ShotgunAmmoClass;
 
-	UPROPERTY(EditAnywhere, Category = "Item Class")
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> SniperAmmoClass;
+
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Player Death")
+	TSubclassOf<UUserWidget> DeathSignWidgetClass;
+
+	UUserWidget* DeathSignWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Player Death")
+	USoundCue* DeathSound;
+
+	FTimerHandle DeathSignTimer;
+
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Boss Defeated")
+	TSubclassOf<UUserWidget> BossDefeatedSignWidgetClass;
+
+	UUserWidget* BossDefeatedSignWidget;
+
+	UPROPERTY(EditAnywhere, Category = "Game Mode | Boss Defeated")
+	USoundCue* BossDefeatedSound;
+
+	FTimerHandle BossDefeatedSignTimer;
 };

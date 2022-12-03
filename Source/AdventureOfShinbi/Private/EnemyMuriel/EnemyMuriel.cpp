@@ -5,6 +5,7 @@
 #include "Enemy/EnemyCharacter.h"
 #include "Enemy/EnemyAnimInstance.h"
 #include "Player/AOSCharacter.h"
+#include "System/AOSGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -15,7 +16,12 @@
 
 AEnemyMuriel::AEnemyMuriel()
 {
+    PrimaryActorTick.bCanEverTick = true;
 
+    AttackingRotateRate = 100.f;
+    NormalRotateRate = 100.f;
+
+    SightStimulusExpireTime = 0.f;
 }
 
 void AEnemyMuriel::BeginPlay()
@@ -31,8 +37,6 @@ void AEnemyMuriel::BeginPlay()
     {
         FriendlyTag = FName("Black");
     }
-
-    AiInfo.TargetPlayer = UGameplayStatics::GetPlayerPawn(this, 0);
 }
 
 void AEnemyMuriel::Tick(float DeltaTime)
@@ -41,93 +45,52 @@ void AEnemyMuriel::Tick(float DeltaTime)
 
 }
 
-void AEnemyMuriel::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
-{
-    Super::TakePointDamage(DamagedActor, DamageReceived, InstigatedBy, HitLocation, FHitComponent, BoneName, ShotFromDirection, DamageType, DamageCauser);
-
-    if (bTeleportMinionCoolTimeEnd)
-    {
-        AAIController* AiController = Cast<AAIController>(GetController());
-        if (AiController)
-        {
-            AiController->GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), true);
-        }
-        bAbleTeleportMinion = true;
-    }
-}
-
 void AEnemyMuriel::HandleStiffAndStun(FName& BoneName)
 {
-    if (bIsCasting || bIsAttacking) 
+    if (bIsAttacking) 
         return;
 
     Super::HandleStiffAndStun(BoneName);
 }
 
-void AEnemyMuriel::ProvideBuff()
+void AEnemyMuriel::ResetAIState()
 {
-    bBuffCoolTimeEnd = false;
-    bIsCasting = true;
-    PlayBuffMontage();
+    Super::ResetAIState();
+
+    GetWorldTimerManager().ClearTimer(BuffCoolTimer);
+    GetWorldTimerManager().ClearTimer(SummonCoolTimer);
+    GetWorldTimerManager().ClearTimer(TeleportCoolTimer);
+    GetWorldTimerManager().ClearTimer(SkillShotCoolTimer);
+    bBuffCoolTimeEnd = true;
+    bSummonCoolTimeEnd = true;
+    bSkillShotCoolTimeEnd = true;
+    bTeleportMinionCoolTimeEnd = true;
 }
 
-void AEnemyMuriel::SummonMinion() // ¼öÁ¤
+void AEnemyMuriel::RangedAttack()
 {
-    if (EnemyClassArr.Num() == 0) 
+    if (bSkillShotCoolTimeEnd && FMath::RandRange(0.f, 1.f) <= 0.3)
+    {
+        FireSkillShot();
+    }
+    else
+    {
+        Super::RangedAttack();
+    }
+}
+
+void AEnemyMuriel::SummonMinion()
+{
+    if (EnemyClassArr.Num() == 0)
         return;
 
     bSummonCoolTimeEnd = false;
-    bIsCasting = true;
-    PlaySummonMontage();
-}
-
-void AEnemyMuriel::FireSkillShot()
-{
-    bSkillShotCoolTimeEnd = false;
     bIsAttacking = true;
-
-    PlaySkillShotFireMontage();
-    GetWorldTimerManager().SetTimer(SkillShotCoolTimer, this, &AEnemyMuriel::SkillShotCoolTimeEnd, SkillShotCoolTime);
-}
-
-void AEnemyMuriel::FindTeleportPosition()
-{    
-    AAOSCharacter* AC = Cast<AAOSCharacter>(AiInfo.TargetPlayer);
-    if (AC)
+    if (AIController)
     {
-        bool bTeleportIsSafe = CheckSpawnPosition(TeleportPosition, AC, 200.f);
-        if (bTeleportIsSafe == false) 
-            return;
-
-        TArray<AActor*> Allies;
-        UGameplayStatics::GetAllActorsWithTag(this, FriendlyTag, Allies);
-        if (Allies.Num() == 0)
-        {
-            bAbleTeleportMinion = false;
-            return;
-        }
-
-        float FarestDistance = 0.f;
-        for (AActor* const& TaggedActor : Allies)
-        {
-            if (FarestDistance < TaggedActor->GetDistanceTo(AC))
-            {
-                FarestDistance = TaggedActor->GetDistanceTo(AC);
-                FarestMinion = TaggedActor;
-            }
-        }
-
-        TeleportRotation = (AC->GetActorForwardVector() * -1.f).Rotation();
-
-        bTeleportMinionCoolTimeEnd = false;
-        bIsCasting = true;
-
-        PlayTeleportMinionMontage();
-        TeleportMinionToPlayer();
-
-        GetWorldTimerManager().SetTimer(TeleportCoolTimer, this, &AEnemyMuriel::TeleportMinionCoolTimeEnd, TeleportCoolTime);
+        AIController->UpdateAiInfo();
     }
-    
+    PlaySummonMontage();
 }
 
 void AEnemyMuriel::Summon()
@@ -165,7 +128,12 @@ void AEnemyMuriel::Summon()
     else
     {
         bSummonCoolTimeEnd = true;
-        bIsCasting = false;
+        bIsAttacking = false;
+        if (AIController)
+        {
+            AIController->UpdateAiInfo();
+        }
+        OnAttackEnd.Broadcast();
     }
 }
 
@@ -234,13 +202,28 @@ void AEnemyMuriel::PlaySummonParticle(FVector Position)
 
 void AEnemyMuriel::OnSummonMontageEnded()
 {
-    OnSkillEnd.Broadcast();
-    bIsCasting = false;
+    bIsAttacking = false;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
+    OnAttackEnd.Broadcast();
 }
 
 void AEnemyMuriel::SummonCoolTimeEnd()
 {
     bSummonCoolTimeEnd = true;
+}
+
+void AEnemyMuriel::ProvideBuff()
+{
+    bBuffCoolTimeEnd = false;
+    bIsAttacking = true;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
+    PlayBuffMontage();
 }
 
 void AEnemyMuriel::Buff()
@@ -249,7 +232,12 @@ void AEnemyMuriel::Buff()
     if (TargetsToBuff.Num() == 0)
     {
         bBuffCoolTimeEnd = true;
-        bIsCasting = false;
+        bIsAttacking = false;
+        if (AIController)
+        {
+            AIController->UpdateAiInfo();
+        }
+        OnAttackEnd.Broadcast();
         return;
     }
 
@@ -287,8 +275,12 @@ void AEnemyMuriel::PlayBuffMontage()
 
 void AEnemyMuriel::OnBuffMontageEnded()
 {
-    bIsCasting = false;
-    OnSkillEnd.Broadcast();
+    bIsAttacking = false;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
+    OnAttackEnd.Broadcast();
 }
 
 void AEnemyMuriel::BuffCoolTimeEnd()
@@ -342,6 +334,18 @@ void AEnemyMuriel::PlayBuffParticle(const ACharacter* BuffTarget)
     }
 }
 
+void AEnemyMuriel::FireSkillShot()
+{
+    bSkillShotCoolTimeEnd = false;
+    bIsAttacking = true;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
+    PlaySkillShotFireMontage();
+    GetWorldTimerManager().SetTimer(SkillShotCoolTimer, this, &AEnemyMuriel::SkillShotCoolTimeEnd, SkillShotCoolTime);
+}
+
 void AEnemyMuriel::PlaySkillShotFireMontage()
 {
     if (EnemyAnim == nullptr || SkillShotFireMontage == nullptr) 
@@ -358,12 +362,70 @@ void AEnemyMuriel::FireSkillShotProjectile()
 void AEnemyMuriel::OnSkillShotFireMontageEnded()
 {
     bIsAttacking = false;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
     OnAttackEnd.Broadcast();
 }
 
 void AEnemyMuriel::SkillShotCoolTimeEnd()
 {
     bSkillShotCoolTimeEnd = true;
+}
+
+void AEnemyMuriel::FindTeleportPosition()
+{
+    AAOSCharacter* AC = Cast<AAOSCharacter>(AiInfo.TargetPlayer);
+    if (AC)
+    {
+        bool bTeleportIsSafe = CheckSpawnPosition(TeleportPosition, AC, 200.f);
+        if (bTeleportIsSafe == false)
+        {
+            bIsAttacking = false;
+            if (AIController)
+            {
+                AIController->UpdateAiInfo();
+            }
+            return;
+        }
+
+        TArray<AActor*> Allies;
+        UGameplayStatics::GetAllActorsWithTag(this, FriendlyTag, Allies);
+        if (Allies.Num() == 0)
+        {
+            bIsAttacking = false;
+            if (AIController)
+            {
+                AIController->UpdateAiInfo();
+            }
+            return;
+        }
+
+        float FarestDistance = 0.f;
+        for (AActor* const& TaggedActor : Allies)
+        {
+            if (FarestDistance < TaggedActor->GetDistanceTo(AC))
+            {
+                FarestDistance = TaggedActor->GetDistanceTo(AC);
+                FarestMinion = TaggedActor;
+            }
+        }
+
+        TeleportRotation = (AC->GetActorForwardVector() * -1.f).Rotation();
+
+        bTeleportMinionCoolTimeEnd = false;
+        bIsAttacking = true;
+        if (AIController)
+        {
+            AIController->UpdateAiInfo();
+        }
+
+        PlayTeleportMinionMontage();
+        TeleportMinionToPlayer();
+
+        GetWorldTimerManager().SetTimer(TeleportCoolTimer, this, &AEnemyMuriel::TeleportMinionCoolTimeEnd, TeleportCoolTime);
+    }
 }
 
 void AEnemyMuriel::TeleportMinionToPlayer()
@@ -401,14 +463,12 @@ void AEnemyMuriel::PlayTeleportMinionMontage()
 
 void AEnemyMuriel::OnTeleportMinionMontageEnded()
 {
-    bIsCasting = false;
-    bAbleTeleportMinion = false;
-    AAIController* AiController = Cast<AAIController>(GetController());
-    if (AiController)
+    bIsAttacking = false;
+    if (AIController)
     {
-        AiController->GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), false);
+        AIController->UpdateAiInfo();
     }
-    OnSkillEnd.Broadcast();
+    OnAttackEnd.Broadcast();
 }
 
 void AEnemyMuriel::TeleportMinionDelayEnd()
@@ -428,19 +488,9 @@ void AEnemyMuriel::TeleportMinionCoolTimeEnd()
     bTeleportMinionCoolTimeEnd = true;
 }
 
-FName AEnemyMuriel::GetFriendlyTag() const
-{
-	return FriendlyTag;
-}
-
 bool AEnemyMuriel::GetMurielType() const
 {
     return bWhite;
-}
-
-bool AEnemyMuriel::GetIsCasting() const
-{
-    return bIsCasting;
 }
 
 float AEnemyMuriel::GetSkillShotDurationTime() const
@@ -458,7 +508,12 @@ bool AEnemyMuriel::GetSummonCoolTimeEnd() const
     return bSummonCoolTimeEnd;
 }
 
-bool AEnemyMuriel::GetSkillShotCoolTimeEnd() const
+FName AEnemyMuriel::GetFriendlyTag() const
 {
-    return bSkillShotCoolTimeEnd;
+    return FriendlyTag;
+}
+
+bool AEnemyMuriel::GetTeleportMinionCoolTimeEnd() const
+{
+    return bTeleportMinionCoolTimeEnd;
 }

@@ -138,6 +138,9 @@ protected:
 
 	void PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName);
 
+	UFUNCTION()
+	virtual void ResetAIState();
+
 	virtual void PlayAttackMontage();
 
 	void PlayHitReactionMontage();
@@ -175,7 +178,7 @@ protected:
 
 	virtual bool CheckRotateToTargetCondition();
 
-	void SetHealthBar();
+	virtual void SetHealthBar();
 
 	UFUNCTION(BlueprintCallable)
 	void ActivateWeaponTrace1();
@@ -193,6 +196,9 @@ protected:
 	void SightStimulusExpire();
 
 	USphereComponent* GetAttackRange() const;
+
+	UFUNCTION()
+	void PlayerDead();
 
 protected:
 
@@ -239,6 +245,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
 	float StunChance = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
+	float SightStimulusExpireTime = 10.f;
+
+	float AttackingRotateRate = 15.f;
+
+	float NormalRotateRate = 25.f;
 
 private:
 
@@ -310,9 +323,6 @@ private:
 
 	FTimerHandle SightStimulusExpireTimer;
 
-	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
-	float SightStimulusExpireTime = 10.f;
-
 	UPROPERTY(EditAnywhere)
 	UWidgetComponent* HealthWidget;
 
@@ -343,6 +353,10 @@ private:
 
 	FTimerHandle KnockUpDelayTimer;
 
+	FVector InitialLocation;
+
+	FRotator InitialRotation;
+
 public:
 
 	float GetAcceptableRaius() const;
@@ -355,6 +369,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetPatrolPoint() const;
 
+	float GetHealth() const;
 	float GetHealthPercentage() const;
 	float GetMaxHealth() const;
 	float GetEnemyDamage() const;

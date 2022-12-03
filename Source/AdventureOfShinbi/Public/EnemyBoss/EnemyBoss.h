@@ -12,10 +12,13 @@
 
 class AAOSCharacter;
 class ABossAIController;
+class AAOSController;
 class UBoxComponent;
 class UAnimMontage;
 class UParticleSystem;
 class USoundCue;
+
+DECLARE_DELEGATE(BossDefeatDelegate);
 
 UENUM()
 enum class EBoxState : uint8
@@ -36,11 +39,15 @@ public:
 
 	AEnemyBoss();
 
+	void SetTarget();
+
 	virtual void Attack() override;
 
 	virtual void RangedAttack() override;
 
 	void EvadeSkill();
+
+	BossDefeatDelegate DBossDefeat;
 
 protected:
 
@@ -63,6 +70,8 @@ protected:
 		AActor* DamageCauser
 	) override;
 
+	virtual void SetHealthBar() override;
+
 	virtual void OnAttackRangeOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 
 	UFUNCTION()
@@ -70,6 +79,8 @@ protected:
 
 	UFUNCTION()
 	void DetectAttack();
+
+	virtual void ResetAIState() override;
 
 	virtual bool Weapon1BoxTrace() override;
 
@@ -229,6 +240,8 @@ private:
 	AAOSCharacter* Target;
 
 	ABossAIController* BossController;
+
+	AAOSController* PlayerController;
 
 	bool bPhase2 = false;
 

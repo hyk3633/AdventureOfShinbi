@@ -35,6 +35,14 @@ public:
 	void SetHUDManaBar(float ManaAmount, float MaxManaAmount);
 	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
 
+	// 보스 
+
+	void BossHealthBarOn();
+
+	void BossHealthBarOff();
+
+	void SetHUDBossHealthBar(float HealthPercentage);
+
 	// 메인 ui 세팅
 
 	void SetHUDEquippedItemIcon(UTexture2D* Icon);
