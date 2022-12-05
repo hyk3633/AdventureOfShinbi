@@ -13,6 +13,13 @@ AEnemyStrafing::AEnemyStrafing()
 
 	PatrolSpeed = 250.f;
 	ChaseSpeed = 450.f;
+
+	Damage = 350.f;
+	Health = 2000.f;
+	MaxHealth = 2000.f;
+	Defense = 40.f;
+	DefaultValue = 3.f;
+	RandRangeValue = 50;
 }
 
 void AEnemyStrafing::StartStrafing()

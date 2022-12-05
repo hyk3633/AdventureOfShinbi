@@ -22,7 +22,7 @@ AProjectileShinbiWolf::AProjectileShinbiWolf()
 
 	bIsPlayersProjectile = true;
 
-	Damage = 50.f;
+	Damage = 400.f;
 }
 
 void AProjectileShinbiWolf::BeginPlay()
@@ -79,6 +79,7 @@ void AProjectileShinbiWolf::OnHit(UPrimitiveComponent* HitComp, AActor* OtherAct
 	GetWorldTimerManager().SetTimer(DestroyDelayTimer, this, &AProjectileShinbiWolf::DestoryProj, DestroyDelayTime);
 
 	WolfMesh->SetVisibility(false);
+	BoxCollision->SetSimulatePhysics(false);
 	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ProjectileMovementComponent->StopMovementImmediately();
 
@@ -97,6 +98,8 @@ void AProjectileShinbiWolf::WolfAttackMode()
 	GetWorldTimerManager().SetTimer(LifeTimer, this, &AProjectileShinbiWolf::LifeOver, LifeTime);
 
 	WolfMode = EShinbiWolfMode::ESW_WolfAttack;
+
+	Damage = 400.f;
 
 	if (WolfAttackTrail)
 	{
@@ -122,6 +125,8 @@ void AProjectileShinbiWolf::CirclingWolvesMode()
 	ProjectileMovementComponent->bRotationFollowsVelocity = false;
 
 	WolfMode = EShinbiWolfMode::ESW_CirclingWolves;
+
+	Damage = 180.f;
 
 	BoxCollision->SetNotifyRigidBodyCollision(false);
 	BoxCollision->SetCollisionResponseToChannel(ECC_Enemy, ECollisionResponse::ECR_Overlap);
@@ -160,6 +165,8 @@ void AProjectileShinbiWolf::UltimateWolfRushMode()
 	GetWorldTimerManager().SetTimer(LifeTimer, this, &AProjectileShinbiWolf::LifeOver, LifeTime);
 
 	WolfMode = EShinbiWolfMode::ESW_UltimateWolf;
+
+	Damage = 350.f;
 
 	if (WolfAttackTrail)
 	{

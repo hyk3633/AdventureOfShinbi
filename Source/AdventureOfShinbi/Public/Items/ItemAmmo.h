@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -24,7 +23,7 @@ public:
 
 	virtual void PlayGainEffect() override;
 
-	void HandleItemAfterGain();
+	virtual void HandleItemAfterGain() override;
 
 protected:
 

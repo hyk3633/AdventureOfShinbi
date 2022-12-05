@@ -18,6 +18,8 @@ public:
 
 	AProjectile();
 
+	void SetDamage(float Value);
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -48,8 +50,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
 	float Damage = 10.f;
 
-	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (ClampMin = "1.0", ClampMax = "1000.0"))
-	float HeadShotDamage = 10.f;
+	float HeadShotDamage = Damage * 1.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Projectile | Setting", meta = (EditCondition = "bIsExplosive", ClampMin = "1.0", ClampMax = "1000.0"))
 	float ExplosionRadius = 30.f;

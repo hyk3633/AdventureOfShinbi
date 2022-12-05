@@ -114,7 +114,7 @@ void AAOSCharacter::BeginPlay()
 
 	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
 
-	OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
+	//OnTakeAnyDamage.AddDynamic(this, &AAOSCharacter::TakeAnyDamage);
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 
@@ -145,10 +145,20 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 {
 	if (CharacterState == ECharacterState::ECS_Dead)
 		return;
-	UE_LOG(LogTemp, Warning, TEXT("point damage %f"), DamageReceived);
+
 	if (CombatComp)
 	{
-		CombatComp->UpdateHealth(DamageReceived);
+		AEnemyCharacter* EC = Cast<AEnemyCharacter>(DamageCauser->GetInstigator());
+		if (EC)
+		{
+			const int32 RandInt = FMath::RandRange(1, EC->GetRandRangeValue());
+			const float RandValue = EC->GetDefaultValue() * RandInt;
+			const float Dmg = (DamageReceived - (CombatComp->Defense / 2)) + RandValue;
+
+			CombatComp->UpdateHealth(Dmg);
+
+			UE_LOG(LogTemp, Warning, TEXT("point damage %f"), Dmg);
+		}
 	}
 
 	if (CharacterState != ECharacterState::ECS_Nothing)
@@ -299,10 +309,17 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 {
 	if (CharacterState == ECharacterState::ECS_Dead)
 		return;
-	UE_LOG(LogTemp, Warning, TEXT("radial %f"), DamageReceived);
-	if (CombatComp)
+
+	AEnemyCharacter* EC = Cast<AEnemyCharacter>(DamageCauser->GetInstigator());
+	if (EC)
 	{
-		CombatComp->UpdateHealth(DamageReceived);
+		const int32 RandInt = FMath::RandRange(1, EC->GetRandRangeValue());
+		const float RandValue = EC->GetDefaultValue() * RandInt;
+		const float Dmg = (DamageReceived - (CombatComp->Defense / 2)) + RandValue;
+
+		CombatComp->UpdateHealth(Dmg);
+
+		UE_LOG(LogTemp, Warning, TEXT("radial %f"), Dmg);
 	}
 
 	PlayHitReaction(VoicePainHeavy, DamageCauser);
@@ -445,6 +462,7 @@ void AAOSCharacter::Equip_Skill1ButtonPressed()
 	}
 	else if (OverlappingItem)
 	{
+		OverlappingItem->PlayGainEffect();
 		CombatComp->PickingUpItem(OverlappingItem);
 		OverlappingItem = nullptr;
 	}
@@ -572,17 +590,15 @@ void AAOSCharacter::Reload_Skill2ButtonPressed()
 
 void AAOSCharacter::InventoryKeyPressed()
 {
-	if (CharacterState != ECharacterState::ECS_Nothing || bInventoryAnimationPlaying)
+	if (CharacterState != ECharacterState::ECS_Nothing)
 		return;
 
-	bInventoryAnimationPlaying = true;
-
-	bIsInventoryOn = bIsInventoryOn ? false : true;
-
-	if (CharacterController)
+	if (CharacterController && bInventoryAnimationPlaying == false)
 	{
+		bIsInventoryOn = bIsInventoryOn ? false : true;
+		bInventoryAnimationPlaying = true;
 		CharacterController->HUDInventoryOn(bIsInventoryOn);
-		GetWorldTimerManager().SetTimer(InventoryAnimationTimer, this, &AAOSCharacter::InventoryAnimationEnd, 0.45f);
+		GetWorldTimerManager().SetTimer(InventoryAnimationTimer, this, &AAOSCharacter::InventoryAnimationEnd, 0.7f);
 	}
 }
 
@@ -681,6 +697,14 @@ void AAOSCharacter::SetWalkingSpeed(EWalkingState State)
 		CurrentWalkingSpeed = SlowedWalkingSpeed;
 		GetCharacterMovement()->MaxWalkSpeed = SlowedWalkingSpeed;
 		GetCharacterMovement()->MaxWalkSpeedCrouched = SlowedCroucedSpeed;
+		if (SlowSignClass)
+		{
+			SlowSign = CreateWidget<UUserWidget>(GetWorld(), SlowSignClass);
+			if (SlowSign)
+			{
+				SlowSign->AddToViewport();
+			}
+		}
 	}
 	else
 	{
@@ -688,6 +712,11 @@ void AAOSCharacter::SetWalkingSpeed(EWalkingState State)
 		CurrentWalkingSpeed = OriginWalkingSpeed;
 		GetCharacterMovement()->MaxWalkSpeed = OriginWalkingSpeed;
 		GetCharacterMovement()->MaxWalkSpeedCrouched = OriginCrouchedSpeed;
+		if (SlowSign)
+		{
+			SlowSign->Destruct();
+			SlowSign = nullptr;
+		}
 	}
 }
 
@@ -697,11 +726,24 @@ void AAOSCharacter::ActivateFreezing(bool IsActivate)
 	{
 		GetMesh()->bPauseAnims = true;
 		CharacterState = ECharacterState::ECS_Freezed;
+		if (FreezingSignClass)
+		{
+			FreezingSign = CreateWidget<UUserWidget>(GetWorld(), FreezingSignClass);
+			if (FreezingSign)
+			{
+				FreezingSign->AddToViewport();
+			}
+		}
 	}
 	else
 	{
 		GetMesh()->bPauseAnims = false;
 		CharacterState = ECharacterState::ECS_Nothing;
+		if (FreezingSign)
+		{
+			FreezingSign->Destruct();
+			FreezingSign = nullptr;
+		}
 	}
 }
 

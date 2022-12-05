@@ -39,8 +39,6 @@ void AAOSController::OnPossess(APawn* aPawn)
 {
 	Super::OnPossess(aPawn);
 
-	UE_LOG(LogTemp, Warning, TEXT("OnPossess"));
-
 	AOSHUD = GetHUD<AAOSHUD>();
 	if (AOSHUD)
 	{

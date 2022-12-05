@@ -41,6 +41,13 @@ AEnemyBoss::AEnemyBoss()
 	ChaseAnimRate = 1.f;
 	PatrolSpeed = 400.f;
 	ChaseSpeed = 700.f;
+
+	Damage = 400.f;
+	Health = 5000.f;
+	MaxHealth = 5000.f;
+	Defense = 50.f;
+	DefaultValue = 2.f;
+	RandRangeValue = 10;
 }
 
 void AEnemyBoss::BeginPlay()
@@ -122,8 +129,20 @@ void AEnemyBoss::RotateToTarget(float DeltaTime)
 
 void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
-	HandleHealthChange(DamageReceived);
-	PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, BoneName);
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(DamageCauser);
+	if (Cha)
+	{
+		const int32 RandInt = FMath::RandRange(1, Cha->GetCombatComp()->GetRandRangeValue());
+		const float RandValue = Cha->GetCombatComp()->GetDefaultValue() * RandInt;
+		float Dmg = (DamageReceived - (Defense / 2)) + RandValue;
+
+		const bool bIsCritical = RandInt / Cha->GetCombatComp()->GetRandRangeValue() > 0.7f;
+		const bool bIsHeadShot = BoneName == FName("head") ? true : false;
+		Dmg = bIsHeadShot ? Dmg * 1.5f : Dmg;
+
+		HandleHealthChange(DamageReceived);
+		PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, bIsHeadShot, bIsCritical);
+	}
 
 	if (GetHealthPercentage() == 0.f)
 	{
@@ -207,7 +226,7 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		UGameplayStatics::PlaySoundAtLocation(this, DashHitSound, Cha->GetActorLocation());
 	}
 
-	UGameplayStatics::ApplyPointDamage(Cha, Damage, LaunchDirection, SweepResult, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyPointDamage(Cha, 500.f, LaunchDirection, SweepResult, GetController(), this, UDamageType::StaticClass());
 
 	SetBoxState(EBoxState::EBS_Disabled);
 }
@@ -376,7 +395,7 @@ void AEnemyBoss::Attack()
 		BossController->UpdateAiInfo();
 	}
 
-	if (bFreezingCoolTimeEnd && FMath::RandRange(0.f,1.f) < 0.3f)
+	if (bFreezingCoolTimeEnd && bBlizzardDebuffOn == false && FMath::RandRange(0.f,1.f) < 0.3f)
 	{
 		Freezing();
 	}
@@ -403,7 +422,7 @@ void AEnemyBoss::RangedAttack()
 	{
 		RandNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
 	}
-	else if (DistToTarget > 500.f && DistToTarget <= 800.f)
+	else if (DistToTarget > 400.f && DistToTarget <= 800.f)
 	{
 		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
 	}
@@ -637,7 +656,7 @@ void AEnemyBoss::BlizzardDotDamage(float DeltaTime)
 {
 	if (bBlizzardDebuffOn == false)
 		return;
-	UGameplayStatics::ApplyDamage(Target, DeltaTime * 4.f, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(Target, DeltaTime * 100.f, GetController(), this, UDamageType::StaticClass());
 }
 
 void AEnemyBoss::BlizzardDebuffEnd()
@@ -834,7 +853,7 @@ void AEnemyBoss::RisingIcicle()
 		{
 			if (Target == SphereHit.GetActor())
 			{
-				UGameplayStatics::ApplyPointDamage(Target, 70.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyPointDamage(Target, 600.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
 				Target->LaunchCharacter(Target->GetActorUpVector() * 500.f, true, false);
 			}
 		}
@@ -861,7 +880,7 @@ void AEnemyBoss::BurstShockWave()
 			this,
 			BurstDamage,
 			WeaponHitResult.ImpactPoint,
-			100.f,
+			800.f,
 			UDamageType::StaticClass(),
 			Ignore,
 			this,

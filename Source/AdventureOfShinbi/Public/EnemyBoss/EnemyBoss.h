@@ -279,7 +279,7 @@ private:
 	UAnimMontage* Attack3Montage;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Attack")
-	float BurstDamage = 100.f;
+	float BurstDamage = 800.f;
 
 	/** ºù°á */
 

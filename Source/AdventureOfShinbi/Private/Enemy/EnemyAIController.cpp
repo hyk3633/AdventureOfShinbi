@@ -59,7 +59,6 @@ void AEnemyAIController::UpdateAiInfo()
 		BBComp->SetValueAsBool(FName("TargetInAttackRange"), PossessedCharacter->GetAiInfo().bTargetInAttackRange);
 		BBComp->SetValueAsBool(FName("TargetHitsMe"), PossessedCharacter->GetAiInfo().bTargetHitsMe);
 		BBComp->SetValueAsBool(FName("IsPlayerDead"), PossessedCharacter->GetAiInfo().bIsPlayerDead);
-		UE_LOG(LogTemp, Warning, TEXT("%s %d"), *PossessedCharacter->GetName(),PossessedCharacter->GetAiInfo().bIsPlayerDead);
 	}
 }
 

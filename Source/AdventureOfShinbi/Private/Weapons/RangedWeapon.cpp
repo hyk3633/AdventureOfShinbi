@@ -44,11 +44,7 @@ void ARangedWeapon::BeginPlay()
 
 	if (AmmoItem)
 	{
-		AItemAmmo* IA = Cast<AItemAmmo>(AmmoItem);
-		if (IA)
-		{
-			IA->GetStaticMesh()->SetVisibility(false);
-		}
+		AmmoItem->HandleItemAfterGain();
 	}
 }
 
@@ -103,11 +99,6 @@ void ARangedWeapon::PlayFireEffect(UParticleSystem* Flash, USoundCue* Sound)
 AItem* ARangedWeapon::GetAmmoItem() const
 {
 	return AmmoItem;
-}
-
-float ARangedWeapon::GetHeadShotDamage()
-{
-	return GetWeaponDamage() * DamageMultiplier;
 }
 
 EAmmoType ARangedWeapon::GetAmmoType() const

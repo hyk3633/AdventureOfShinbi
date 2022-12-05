@@ -132,11 +132,11 @@ protected:
 		AActor* DamageCauser
 	);
 
-	virtual void HandleStiffAndStun(FName& BoneName);
+	virtual void HandleStiffAndStun(bool IsHeadShot);
 
 	void HandleHealthChange(float DamageReceived);
 
-	void PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName);
+	void PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, bool IsHeadShot, bool IsCritical);
 
 	UFUNCTION()
 	virtual void ResetAIState();
@@ -225,8 +225,23 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Enemy | Stats")
 	EEnemyState EnemyState = EEnemyState::EES_Patrol;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
+	float Health = 800.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
+	float MaxHealth = 800.f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats", meta = (ClampMin = "1.0"))
+	float Defense = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats", meta = (ClampMin = "1.0"))
+	float DefaultValue = 15.f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Stats", meta = (ClampMin = "1"))
+	int32 RandRangeValue = 25;
+
 	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
-	float Damage;
+	float Damage = 300.f;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
 	float PatrolSpeed = 300.f;
@@ -309,15 +324,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Dissolve")
 	TArray<UMaterialInstance*> DissolveMatInst;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
-	float Health;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy | Stats", meta = (AllowPrivateAccess = "true"))
-	float MaxHealth;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy | Stats")
-	float Defense;
-
 	UPROPERTY(EditAnywhere, Category = "Enemy | AI")
 	float HitMemoryTime = 10.f;
 
@@ -372,8 +378,11 @@ public:
 	float GetHealth() const;
 	float GetHealthPercentage() const;
 	float GetMaxHealth() const;
-	float GetEnemyDamage() const;
+	virtual float GetEnemyDamage() const;
 
 	FAiInfo GetAiInfo() const;
 	FVector GetPatrolPoint();
+
+	float GetDefaultValue() const;
+	int32 GetRandRangeValue() const;
 };

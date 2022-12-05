@@ -107,26 +107,7 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 
 EWeaponState AWeapon::GetWeaponState() const
 {
-
 	return WeaponState;
-}
-
-float AWeapon::GetWeaponDamage()
-{
-	AAOSCharacter* AC = Cast<AAOSCharacter>(GetOwner());
-	if (AC)
-	{
-		if (AC->GetCombatComp()->GetDmgDebuffActivated())
-		{
-			return Damage - FMath::RoundToFloat(Damage * 0.3);
-		}
-		else
-		{
-			return Damage;
-		}
-	}
-
-	return Damage;
 }
 
 void AWeapon::DropWeapon()

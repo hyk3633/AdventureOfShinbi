@@ -89,9 +89,6 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AItem> AmmoClass;
 
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Status", meta = (ClampMin = "1", ClampMax = "100"))
-	int8 DamageMultiplier = 5;
-
 	FVector2D ViewPortSize;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
@@ -117,7 +114,6 @@ protected:
 public:
 
 	AItem* GetAmmoItem() const;
-	float GetHeadShotDamage();
 	EAmmoType GetAmmoType() const;
 	int32 GetMagazine() const;
 	int32 GetLoadedAmmo() const;

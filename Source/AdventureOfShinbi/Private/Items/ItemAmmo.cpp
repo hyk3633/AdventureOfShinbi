@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Items/ItemAmmo.h"
@@ -28,6 +27,7 @@ void AItemAmmo::PlayGainEffect()
 
 void AItemAmmo::HandleItemAfterGain()
 {
+	Super::HandleItemAfterGain();
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MeshComponent->SetVisibility(false);
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);

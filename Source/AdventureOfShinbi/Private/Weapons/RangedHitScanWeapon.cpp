@@ -16,6 +16,8 @@ ARangedHitScanWeapon::ARangedHitScanWeapon()
 	AmmoType = EAmmoType::EAT_AR;
 
 	WeaponType = EWeaponType::EWT_AK47;
+
+	Damage = 40.f;
 }
 
 void ARangedHitScanWeapon::Firing()
@@ -138,9 +140,17 @@ void ARangedHitScanWeapon::ProcessHitResult(const FHitResult& HitResult)
 		ACharacter* DamagedActor = Cast<ACharacter>(HitResult.Actor);
 		if (DamagedActor)
 		{
-			float Dmg = HitResult.BoneName == FName("head") ? GetHeadShotDamage() : GetWeaponDamage();
+			float Dmg = HitResult.BoneName == FName("head") ? Damage * 1.5f : Damage;
 			APawn* OwnerPawn = Cast<APawn>(GetOwner());
-			UGameplayStatics::ApplyPointDamage(DamagedActor,Dmg,HitResult.ImpactNormal,HitResult,OwnerPawn->GetInstigatorController(),OwnerPawn,UDamageType::StaticClass());
+			UGameplayStatics::ApplyPointDamage
+			(
+				DamagedActor,
+				Dmg,HitResult.
+				ImpactNormal,
+				HitResult,
+				OwnerPawn->GetInstigatorController(),
+				OwnerPawn,UDamageType::StaticClass()
+			);
 		
 			if (TargetHitParticle)
 			{

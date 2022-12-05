@@ -282,6 +282,16 @@ private:
 
 	bool bCameraSaturationOn = false;
 	float InitialSaturation = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Sign")
+	TSubclassOf<UUserWidget> FreezingSignClass;
+
+	UUserWidget* FreezingSign;
+
+	UPROPERTY(EditAnywhere, Category = "Character | Sign")
+	TSubclassOf<UUserWidget> SlowSignClass;
+
+	UUserWidget* SlowSign;
 	
 public:
 

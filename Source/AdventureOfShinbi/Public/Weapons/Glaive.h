@@ -78,7 +78,7 @@ private:
 	float FormChangeSpeed = 10.f;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Setting")
-	float SkillDamage = 50.f;
+	float SkillDamage = 1250.f;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Setting")
 	TSubclassOf<UCameraShakeBase> CameraShakeUltimate;

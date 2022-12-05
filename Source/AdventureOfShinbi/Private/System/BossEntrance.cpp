@@ -30,9 +30,12 @@ void ABossEntrance::BeginPlay()
 
 	TArray<AActor*> Actors;
 	UGameplayStatics::GetAllActorsOfClass(this, AEnemyBoss::StaticClass(), Actors);
-	if (Actors[0])
+	if (Actors.Num() > 0)
 	{
-		Boss = Cast<AEnemyBoss>(Actors[0]);
+		if (Actors[0])
+		{
+			Boss = Cast<AEnemyBoss>(Actors[0]);
+		}
 	}
 	
 	BoxComp->OnComponentBeginOverlap.AddDynamic(this, &ABossEntrance::OnBoxOverlap);

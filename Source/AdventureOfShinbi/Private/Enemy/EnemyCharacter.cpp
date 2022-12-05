@@ -434,9 +434,25 @@ void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived
 		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
 	}
 
-	HandleStiffAndStun(BoneName);
-	HandleHealthChange(DamageReceived);
-	PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, BoneName);
+	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(DamageCauser);
+	if (Cha)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cha"));
+
+		const int32 RandInt = FMath::RandRange(1, Cha->GetCombatComp()->GetRandRangeValue());
+		const float RandValue = Cha->GetCombatComp()->GetDefaultValue() * RandInt;
+		float Dmg = (DamageReceived - (Defense / 2)) + RandValue;
+
+		const bool bIsCritical = RandInt / Cha->GetCombatComp()->GetRandRangeValue() > 0.7f;
+		const bool bIsHeadShot = BoneName == FName("head") ? true : false;
+		Dmg = bIsHeadShot ? Dmg * 1.5f : Dmg;
+
+		HandleStiffAndStun(bIsHeadShot);
+		HandleHealthChange(Dmg);
+		PopupDamageAmountWidget(InstigatedBy, HitLocation, Dmg, bIsHeadShot, bIsCritical);
+	}
 }
 
 void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
@@ -451,12 +467,12 @@ void AEnemyCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 	}
 }
 
-void AEnemyCharacter::HandleStiffAndStun(FName& BoneName)
+void AEnemyCharacter::HandleStiffAndStun(bool IsHeadShot)
 {
 	if (bDeath) 
 		return;
 
-	if (BoneName == FName("head"))
+	if (IsHeadShot)
 	{
 		float Chances = UKismetMathLibrary::RandomFloatInRange(0.f, 1.f);
 		if (StunChance > Chances)
@@ -521,7 +537,7 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 	}
 }
 
-void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, FName HittedBoneName)
+void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController, FVector PopupLocation, float DamageNumber, bool IsHeadShot, bool IsCritical)
 {
 	if (bDeath) 
 		return;
@@ -532,16 +548,30 @@ void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController,
 	{
 		FVector2D ScreenLocation;
 		PlayerController->ProjectWorldLocationToScreen(PopupLocation, ScreenLocation);
+		ScreenLocation.X += FMath::RandRange(-5.f, 5.f);
+		ScreenLocation.Y += FMath::RandRange(-5.f, 5.f);
 
 		UDamageAmount* DamageAmount = CreateWidget<UDamageAmount>(PlayerController, DamageAmountTextClass);
 
 		if (DamageAmount)
 		{
 			DamageAmount->DamageText->SetText(FText::AsNumber(DamageNumber));
-			if (HittedBoneName == FName("head"))
+			if (IsHeadShot)
 			{
-				FSlateColor Color = FSlateColor(FLinearColor(1.f, 0.f, 0.f));
-				DamageAmount->DamageText->SetColorAndOpacity(Color);
+				DamageAmount->DamageText->SetColorAndOpacity(FLinearColor::Red);
+			}
+			else if (IsCritical)
+			{
+				DamageAmount->DamageText->SetColorAndOpacity(FLinearColor(1.f,0.3f,0.f));
+			}
+			else
+			{
+				DamageAmount->DamageText->SetColorAndOpacity(FLinearColor(1.f, 1.f, 0.f));
+			}
+
+			if (IsCritical)
+			{
+				DamageAmount->DamageText->SetRenderScale(FVector2D(1.5f, 1.5f));
 			}
 
 			DamageAmount->AddToViewport();
@@ -915,6 +945,16 @@ void AEnemyCharacter::SetDamage(float DamageUpRate)
 float AEnemyCharacter::GetHealth() const
 {
 	return Health;
+}
+
+float AEnemyCharacter::GetDefaultValue() const
+{
+	return DefaultValue;
+}
+
+int32 AEnemyCharacter::GetRandRangeValue() const
+{
+	return RandRangeValue;
 }
 
 bool AEnemyCharacter::GetIsDead() const

@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "Player/AOSCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/UserWidget.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
 
 ALevelTransitionVolume::ALevelTransitionVolume()
@@ -48,6 +49,7 @@ void ALevelTransitionVolume::OnBoxOverlap(UPrimitiveComponent* OverlappedCompone
 	if (Cha)
 	{
 		Cha->SetOverlappedLTV(true);
+		ShowLevelTrasitionSign();
 	}
 }
 
@@ -57,6 +59,10 @@ void ALevelTransitionVolume::OnBoxOverlapEnd(UPrimitiveComponent* OverlappedComp
 	if (Cha)
 	{
 		Cha->SetOverlappedLTV(false);
+		if (LevelTrasnsitionSign)
+		{
+			LevelTrasnsitionSign->Destruct();
+		}
 	}
 }
 
@@ -74,5 +80,17 @@ void ALevelTransitionVolume::LevelTransition()
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->SavePlayerData();
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->AcitavateShouldLoadData();
 	UGameplayStatics::OpenLevel(this, FName(LevelName));
+}
+
+void ALevelTransitionVolume::ShowLevelTrasitionSign()
+{
+	if (LevelTrasnsitionSignClass)
+	{
+		LevelTrasnsitionSign = CreateWidget<UUserWidget>(GetWorld(), LevelTrasnsitionSignClass);
+		if (LevelTrasnsitionSign)
+		{
+			LevelTrasnsitionSign->AddToViewport();
+		}
+	}
 }
 

@@ -32,6 +32,8 @@ protected:
 	UFUNCTION()
 	void LevelTransition();
 
+	void ShowLevelTrasitionSign();
+
 private:
 
 	UPROPERTY(EditAnywhere)
@@ -42,5 +44,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Level Transition")
 	FString LevelName;
+
+	UPROPERTY(EditAnywhere, Category = "Level Transition")
+	TSubclassOf<UUserWidget> LevelTrasnsitionSignClass;
+
+	UUserWidget* LevelTrasnsitionSign;
 
 };

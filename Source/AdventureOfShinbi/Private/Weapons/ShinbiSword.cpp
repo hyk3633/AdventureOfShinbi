@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/ShinbiSword.h"
@@ -20,6 +19,28 @@ AShinbiSword::AShinbiSword()
 	WeaponType = EWeaponType::EWT_ShinbiSword;
 	CapsuleRadius = 15.f;
 	CapsuleHalfHeight = 10.f;
+
+	Damage = 200.f;
+}
+
+float AShinbiSword::GetSkillMana(EShinbiSkill ShinbiSkill)
+{
+	if (ShinbiSkill == EShinbiSkill::ESS_WolfAttack)
+	{
+		return WolfAttackMana;
+	}
+	else if (ShinbiSkill == EShinbiSkill::ESS_CirclingWolves)
+	{
+		return CirclingWolvesMana;
+	}
+	else if (ShinbiSkill == EShinbiSkill::ESS_UltimateWolfAttack)
+	{
+		return UltimateWolfAttackMana;
+	}
+	else
+	{
+		return 0.f;
+	}
 }
 
 void AShinbiSword::BeginPlay()

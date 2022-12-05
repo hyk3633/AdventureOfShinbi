@@ -38,7 +38,7 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void HandleStiffAndStun(FName& BoneName) override;
+	virtual void HandleStiffAndStun(bool IsHeadShot) override;
 
 	virtual void ResetAIState() override;
 
@@ -68,10 +68,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	UAnimMontage* SiegeModeHitReactionMontage;
 
-	bool bSiegeMode = false;
-
 public:
 
-	bool GetSiegeMode() const;
-	
+	virtual float GetEnemyDamage() const override;
 };

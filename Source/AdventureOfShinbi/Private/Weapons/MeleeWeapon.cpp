@@ -1,8 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/MeleeWeapon.h"
 #include "Components/BoxComponent.h"
+#include "Components/CombatComponent.h"
 #include "Player/AOSCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -43,11 +43,20 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 	TArray<AActor*> HitEnemies;
 	for (FHitResult Result : WeaponHitResults)
 	{
+		if (Result.GetActor() == nullptr)
+			continue;
+
 		if (HitEnemies.Contains(Result.GetActor()) == false)
 		{
 			HitEnemies.Add(Result.GetActor());
 
 			PlayAttackEffect(Result.ImpactPoint, Result.ImpactNormal.Rotation());
+
+			AAOSCharacter* AC = Cast<AAOSCharacter>(GetOwner());
+			if (AC)
+			{
+				Damage = AC->GetCombatComp()->GetDmgDebuffActivated() ? Damage * 0.7 : Damage;
+			}
 
 			UGameplayStatics::ApplyPointDamage
 			(
@@ -56,7 +65,7 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 				Result.ImpactPoint,
 				Result,
 				OwnerPawn->GetController(),
-				this,
+				GetOwner(),
 				UDamageType::StaticClass()
 			);
 

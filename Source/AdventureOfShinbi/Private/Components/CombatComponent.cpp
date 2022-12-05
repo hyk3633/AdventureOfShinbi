@@ -19,6 +19,7 @@
 #include "Items/ItemAmmo.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/MeleeWeapon.h"
+#include "Weapons/ShinbiSword.h"
 #include "Weapons/Glaive.h"
 #include "Weapons/RangedWeapon.h"
 #include "Weapons/RangedHitScanWeapon.h"
@@ -224,7 +225,14 @@ void UCombatComponent::HealBan(float HealBanDurationTime)
 {
 	bHealBanActivated = true;
 
-	// ÀÌÆåÆ® Àç»ý
+	if (HealBanSignClass)
+	{
+		HealBanSign = CreateWidget<UUserWidget>(GetWorld(), HealBanSignClass);
+		if (HealBanSign)
+		{
+			HealBanSign->AddToViewport();
+		}
+	}
 
 	Character->GetWorldTimerManager().SetTimer(HealBanTimer, this, &UCombatComponent::HealBanEnd, HealBanDurationTime);
 }
@@ -233,7 +241,14 @@ void UCombatComponent::DecreaseDamage(float DmgDecreaDurationTime)
 {
 	bDmgDebuffActivated = true;
 
-	// ÀÌÆåÆ® Àç»ý
+	if (AttackDebuffSignClass)
+	{
+		AttackDebuffSign = CreateWidget<UUserWidget>(GetWorld(), AttackDebuffSignClass);
+		if (AttackDebuffSign)
+		{
+			AttackDebuffSign->AddToViewport();
+		}
+	}
 
 	Character->GetWorldTimerManager().SetTimer(DamageDebuffTimer, this, &UCombatComponent::DmgDebuffEnd, DmgDecreaDurationTime);
 }
@@ -307,6 +322,13 @@ void UCombatComponent::PlayMontageWolfAttack()
 	if (AnimInstance == nullptr || WolfAttackMontage == nullptr)
 		return;
 
+	AShinbiSword* SS = Cast<AShinbiSword>(EquippedWeapon);
+	if (SS == nullptr)
+		return;
+
+	if(SpendMana(SS->GetSkillMana(EShinbiSkill::ESS_WolfAttack)) == false)
+		return;
+
 	bAbleWolfAttack = false;
 
 	AnimInstance->Montage_Play(WolfAttackMontage);
@@ -330,6 +352,13 @@ void UCombatComponent::PlayMontageCirclingWolves()
 	if (AnimInstance == nullptr || CirclingWolvesMontage == nullptr)
 		return;
 
+	AShinbiSword* SS = Cast<AShinbiSword>(EquippedWeapon);
+	if (SS == nullptr)
+		return;
+
+	if (SpendMana(SS->GetSkillMana(EShinbiSkill::ESS_CirclingWolves)) == false)
+		return;
+
 	bAbleCirclingWolves = false;
 
 	AnimInstance->Montage_Play(CirclingWolvesMontage);
@@ -349,6 +378,15 @@ void UCombatComponent::PlayMontageUltimateWolfRush()
 {
 	if (AnimInstance == nullptr || UltimateWolfRushMontage == nullptr)
 		return;
+
+	AShinbiSword* SS = Cast< AShinbiSword>(EquippedWeapon);
+	if (SS == nullptr)
+		return;
+
+	if (SpendMana(SS->GetSkillMana(EShinbiSkill::ESS_UltimateWolfAttack)) == false)
+		return;
+
+	bAbleUltimateWolfRush = false;
 
 	AnimInstance->Montage_Play(UltimateWolfRushMontage);
 }
@@ -586,7 +624,8 @@ void UCombatComponent::PlayMontageGlaiveUltimateAttack(FName Version)
 	if (Glaive == nullptr)
 		return;
 
-	SpendMana(Glaive->GetUltiSkillMana());
+	if (SpendMana(Glaive->GetUltiSkillMana()) == false)
+		return;
 
 	AnimInstance->Montage_Play(GlaiveUltimateMontage);
 	AnimInstance->Montage_JumpToSection(Version);
@@ -896,7 +935,6 @@ void UCombatComponent::PickingUpItem(AItem* PickedItem)
 		return;
 
 	PickedItem->DeactivateItemMovement();
-	PickedItem->PlayGainEffect();
 
 	if (PickedItem->GetIsWeapon())
 	{
@@ -973,6 +1011,9 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
 	if (RW)
 	{
+		DefaultValue = 2.f;
+		RandRangeValue = 5;
+
 		AItemAmmo* Ammo = Cast<AItemAmmo>(RW->GetAmmoItem());
 		if (Ammo)
 		{
@@ -1011,6 +1052,9 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	}
 	else
 	{
+		DefaultValue = 5.f;
+		RandRangeValue = 15;
+
 		if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 		{
 			SocketName = FName("OneHandSocket");
@@ -1185,6 +1229,11 @@ void UCombatComponent::DmgDebuffEnd()
 	if (bDmgDebuffActivated)
 	{
 		bDmgDebuffActivated = false;
+		if (AttackDebuffSign)
+		{
+			AttackDebuffSign->Destruct();
+			AttackDebuffSign = nullptr;
+		}
 	}
 }
 
@@ -1193,6 +1242,11 @@ void UCombatComponent::HealBanEnd()
 	if (bHealBanActivated)
 	{
 		bHealBanActivated = false;
+		if (HealBanSign)
+		{
+			HealBanSign->Destruct();
+			HealBanSign = nullptr;
+		}
 	}
 }
 
@@ -1284,4 +1338,14 @@ void UCombatComponent::SetHealth(float PreHealth)
 void UCombatComponent::SetMana(float PreMana)
 {
 	Mana = PreMana;
+}
+
+float UCombatComponent::GetDefaultValue() const
+{
+	return DefaultValue;
+}
+
+int32 UCombatComponent::GetRandRangeValue() const
+{
+	return RandRangeValue;
 }

@@ -22,6 +22,8 @@ AGlaive::AGlaive()
 	WeaponType = EWeaponType::EWT_Glaive;
 	CapsuleRadius = 50.f;
 	CapsuleHalfHeight = 50.f;
+
+	Damage = 400.f;
 }
 
 void AGlaive::BeginPlay()
@@ -42,7 +44,10 @@ bool AGlaive::WeaponCapsuleTrace()
 
 	if (bHit)
 	{
-		HitStack++;
+		if (bSickleMode == false)
+		{
+			HitStack++;
+		}
 
 		if (HitStack == MaxHitStack)
 		{
@@ -85,6 +90,7 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 	else
 	{
 		bSickleMode = false;
+		HitStack = 0;
 		PlayEffect(FormChangeParticle, GlaiveModeSound);
 		DeactivateSickleModeParticle();
 		if (HitStack == MaxHitStack)

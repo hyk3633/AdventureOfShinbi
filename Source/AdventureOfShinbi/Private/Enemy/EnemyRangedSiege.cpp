@@ -16,6 +16,13 @@
 AEnemyRangedSiege::AEnemyRangedSiege()
 {
 	BoxTraceSize = FVector(40.f, 30.f, 40.f);
+
+	Damage = 500.f;
+	Health = 1200.f;
+	MaxHealth = 1200.f;
+	Defense = 45.f;
+	DefaultValue = 5.f;
+	RandRangeValue = 10;
 }
 
 void AEnemyRangedSiege::BeginPlay()
@@ -29,19 +36,17 @@ void AEnemyRangedSiege::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AEnemyRangedSiege::HandleStiffAndStun(FName& BoneName)
+void AEnemyRangedSiege::HandleStiffAndStun(bool IsHeadShot)
 {
 	if (EnemyState == EEnemyState::EES_Siege)
 		return;
 
-	Super::HandleStiffAndStun(BoneName);
+	Super::HandleStiffAndStun(IsHeadShot);
 }
 
 void AEnemyRangedSiege::ResetAIState()
 {
 	Super::ResetAIState();
-
-	bSiegeMode = false;
 }
 
 bool AEnemyRangedSiege::CheckRotateToTargetCondition()
@@ -88,7 +93,8 @@ void AEnemyRangedSiege::ConvertSiegeMode()
 	{
 		AIController->ActivateSiegeMode();
 	}
-	// 방어력 증가
+	Defense = 60.f;
+	Damage = 900.f;
 }
 
 void AEnemyRangedSiege::ReleaseSiegeMode()
@@ -98,7 +104,8 @@ void AEnemyRangedSiege::ReleaseSiegeMode()
 	{
 		AIController->DeactivateSiegeMode();
 	}
-	// 방어력 복구
+	Defense = 45.f;
+	Damage = 500.f;
 }
 
 void AEnemyRangedSiege::PlaySiegeModeFireMontage()
@@ -144,4 +151,9 @@ void AEnemyRangedSiege::OnSiegeModeHitReactionMontageEnded()
 	{
 		AIController->UpdateAiInfo();
 	}
+}
+
+float AEnemyRangedSiege::GetEnemyDamage() const
+{
+	return 0.0f;
 }

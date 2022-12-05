@@ -221,7 +221,7 @@ void AAOSGameModeBase::LoadItemInfo()
 				CharacterController->SetEquippedQuickItem(ItemInfo.QuickSlotIndex, SpawnedItem);
 			}
 		}
-		else
+		else if((ItemInfo.ItemType == EItemType::EIT_Ammo))
 		{
 			EAmmoType AT = static_cast<EAmmoType>(ItemInfo.ItemDetailType);
 			if (AT == EAmmoType::EAT_AR)

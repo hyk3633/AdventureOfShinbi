@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -57,6 +56,5 @@ public:
 	EWeaponType GetWeaponType() const;
 	virtual void SetWeaponState(const EWeaponState State);
 	EWeaponState GetWeaponState() const;
-	float GetWeaponDamage();
 	void DropWeapon();
 };

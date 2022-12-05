@@ -80,10 +80,10 @@ void UItemComponent::UseActivatedQuickSlotItem()
 void UItemComponent::AddRecoveryItem(AItem* Item)
 {
 	AItemRecovery* Recovery = Cast<AItemRecovery>(Item);
+	Recovery->HandleItemAfterGain();
 
 	if (GameMode->GetRecoveryItemCount(Recovery->GetRecoveryType()) == 0)
 	{
-		Recovery->HandleItemAfterGain();
 		GameMode->AddItemToArr(Item);
 
 		CharacterController->AddItemToSlot(Item);
@@ -103,7 +103,8 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 void UItemComponent::AddAmmoItem(AItem* Item)
 {
 	AItemAmmo* Ammo = Cast<AItemAmmo>(Item);
-	
+	Ammo->HandleItemAfterGain();
+
 	if (GameMode->IsAmmoTypeExist(Ammo->GetAmmoType()))
 	{
 		GameMode->AddAmmoQuantity(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
@@ -111,8 +112,6 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	}
 	else
 	{
-		Ammo->HandleItemAfterGain();
-
 		GameMode->AddItemToArr(Item);
 		GameMode->AddAmmoToAmmoMap(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
 		GameMode->SetAmmoIndex(Ammo->GetAmmoType(), GameMode->GetItemCount() - 1);

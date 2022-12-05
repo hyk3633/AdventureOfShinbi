@@ -163,4 +163,10 @@ void AItem::DeactivateItemMovement()
 
 void AItem::PlayGainEffect()
 {
+
+}
+
+void AItem::HandleItemAfterGain()
+{
+	DeactivateItemMovement();
 }

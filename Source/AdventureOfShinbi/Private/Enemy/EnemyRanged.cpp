@@ -18,6 +18,13 @@ AEnemyRanged::AEnemyRanged()
 {
 	WeaponTraceStartSocketName = FName("RangedTraceStart");
 	WeaponTraceEndSocketName = FName("RangedTraceEnd");
+
+	Damage = 250.f;
+	Health = 600.f;
+	MaxHealth = 600.f;
+	Defense = 20.f;
+	DefaultValue = 10.f;
+	RandRangeValue = 10;
 }
 
 void AEnemyRanged::BeginPlay()

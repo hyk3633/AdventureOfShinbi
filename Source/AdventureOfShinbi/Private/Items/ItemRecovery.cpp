@@ -51,6 +51,8 @@ void AItemRecovery::PlayUsingEffect(FVector Location)
 
 void AItemRecovery::HandleItemAfterGain()
 {
+	Super::HandleItemAfterGain();
+	bAutoActivateEffect = false;
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	MeshComponent->SetVisibility(false);
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -70,7 +72,10 @@ void AItemRecovery::BeginPlay()
 			NAME_None, 
 			GetActorLocation(), 
 			FRotator::ZeroRotator, 
-			EAttachLocation::KeepWorldPosition
+			EAttachLocation::KeepWorldPosition,
+			true,
+			EPSCPoolMethod::None,
+			bAutoActivateEffect
 		);
 	}
 }

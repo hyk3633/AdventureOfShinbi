@@ -26,7 +26,7 @@ public:
 
 	void PlayUsingEffect(FVector Location);
 
-	void HandleItemAfterGain();
+	virtual void HandleItemAfterGain() override;
 
 protected:
 
@@ -61,6 +61,8 @@ private:
 	float RecoveryQuatity = 50.f;
 
 	int8 QuickSlotIndex = -1;
+
+	bool bAutoActivateEffect = true;
 
 public:
 

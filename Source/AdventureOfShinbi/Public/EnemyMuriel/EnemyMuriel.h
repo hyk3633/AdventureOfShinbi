@@ -36,7 +36,7 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void HandleStiffAndStun(FName& BoneName) override;
+	virtual void HandleStiffAndStun(bool IsHeadShot) override;
 
 	virtual void ResetAIState() override;
 

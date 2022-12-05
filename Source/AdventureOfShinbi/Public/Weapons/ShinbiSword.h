@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -18,6 +17,16 @@ class USoundCue;
 class UAudioComponent;
 class AAOSCharacter;
 
+UENUM()
+enum class EShinbiSkill : uint8
+{
+	ESS_WolfAttack,
+	ESS_CirclingWolves,
+	ESS_UltimateWolfAttack,
+
+	ESS_MAX
+};
+
 UCLASS()
 class ADVENTUREOFSHINBI_API AShinbiSword : public AMeleeWeapon
 {
@@ -26,6 +35,8 @@ class ADVENTUREOFSHINBI_API AShinbiSword : public AMeleeWeapon
 public:
 
 	AShinbiSword();
+
+	float GetSkillMana(EShinbiSkill ShinbiSkill);
 
 protected:
 
@@ -81,6 +92,8 @@ private:
 
 	AProjectileShinbiWolf* WolfProj;
 
+	float WolfAttackMana = 20.f;
+
 	/** 써클링 울브즈 */
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Circling Wolves")
@@ -112,6 +125,8 @@ private:
 
 	FTimerHandle CirclingWolvesDurationTimer;
 	float CirclingWolvesDurationTime = 10.f;
+
+	float CirclingWolvesMana = 100.f;
 
 	/** 얼티메이트 울프 */
 
@@ -147,4 +162,6 @@ private:
 	float UltimateWolfAttackTime = 0.3f;
 
 	TArray<AActor*> Enemies;
+
+	float UltimateWolfAttackMana = 200.f;
 };

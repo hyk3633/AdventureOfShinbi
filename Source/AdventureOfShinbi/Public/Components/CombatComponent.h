@@ -180,22 +180,31 @@ private:
 	UItemComponent* ItemComp;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float Health = 100.f;
+	float Health = 2500.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float MaxHealth = 100.f;
+	float MaxHealth = 2500.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float Mana = 100.f;
+	float Mana = 1000.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float MaxMana = 100.f;
+	float MaxMana = 1000.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float Stamina = 100.f;
+	float Stamina = 200.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
-	float MaxStamina = 100.f;
+	float MaxStamina = 200.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	float Defense = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	float DefaultValue = 5.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	int32 RandRangeValue = 15;
 
 	float StaminaDecreaseRate = 20.f;
 
@@ -335,6 +344,16 @@ private:
 
 	bool bEnableCheck = true;
 
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Sign")
+	TSubclassOf<UUserWidget> HealBanSignClass;
+
+	UUserWidget* HealBanSign;
+
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Sign")
+	TSubclassOf<UUserWidget> AttackDebuffSignClass;
+
+	UUserWidget* AttackDebuffSign;
+
 public:
 
 	void SetController(AAOSController* Controller);
@@ -352,5 +371,7 @@ public:
 	float GetMana() const;
 	void SetHealth(float PreHealth);
 	void SetMana(float PreMana);
+	float GetDefaultValue() const;
+	int32 GetRandRangeValue() const;
 
 };

@@ -22,6 +22,13 @@ AEnemyMuriel::AEnemyMuriel()
     NormalRotateRate = 100.f;
 
     SightStimulusExpireTime = 0.f;
+
+    Damage = 250.f;
+    Health = 3000.f;
+    MaxHealth = 3000.f;
+    Defense = 50.f;
+    DefaultValue = 3.f;
+    RandRangeValue = 20;
 }
 
 void AEnemyMuriel::BeginPlay()
@@ -45,12 +52,12 @@ void AEnemyMuriel::Tick(float DeltaTime)
 
 }
 
-void AEnemyMuriel::HandleStiffAndStun(FName& BoneName)
+void AEnemyMuriel::HandleStiffAndStun(bool IsHeadShot)
 {
     if (bIsAttacking) 
         return;
 
-    Super::HandleStiffAndStun(BoneName);
+    Super::HandleStiffAndStun(IsHeadShot);
 }
 
 void AEnemyMuriel::ResetAIState()
@@ -338,6 +345,7 @@ void AEnemyMuriel::FireSkillShot()
 {
     bSkillShotCoolTimeEnd = false;
     bIsAttacking = true;
+    Damage = 400.f;
     if (AIController)
     {
         AIController->UpdateAiInfo();
@@ -366,6 +374,7 @@ void AEnemyMuriel::OnSkillShotFireMontageEnded()
     {
         AIController->UpdateAiInfo();
     }
+    Damage = 250.f;
     OnAttackEnd.Broadcast();
 }
 

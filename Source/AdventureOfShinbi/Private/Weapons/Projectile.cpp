@@ -2,7 +2,9 @@
 
 #include "Weapons/Projectile.h"
 #include "Weapons/RangedWeapon.h"
+#include "Player/AOSCharacter.h"
 #include "Enemy/EnemyCharacter.h"
+#include "Components/CombatComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,24 +37,21 @@ AProjectile::AProjectile()
 	RadialForce->bAutoActivate = true;
 }
 
+void AProjectile::SetDamage(float Value)
+{
+	Damage = Value;
+	HeadShotDamage = Value * 1.5f;
+}
+
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ARangedWeapon* RW = Cast<ARangedWeapon>(GetOwner());
-	if (RW)
+	AEnemyCharacter* EC = Cast<AEnemyCharacter>(GetInstigator());
+	if (EC)
 	{
-		Damage = RW->GetWeaponDamage();
-		HeadShotDamage = RW->GetHeadShotDamage();
-	}
-	else
-	{
-		AEnemyCharacter* EC = Cast<AEnemyCharacter>(GetInstigator());
-		if (EC)
-		{
-			Damage = EC->GetEnemyDamage();
-			HeadShotDamage = EC->GetEnemyDamage();
-		}
+		Damage = EC->GetEnemyDamage();
+		HeadShotDamage = EC->GetEnemyDamage();
 	}
 	
 	BoxCollision->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
@@ -61,6 +60,11 @@ void AProjectile::BeginPlay()
 	{
 		BoxCollision->SetCollisionObjectType(ECC_PlayerProjectile);
 		BoxCollision->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Ignore);
+		AAOSCharacter* AC = Cast<AAOSCharacter>(GetInstigator());
+		if (AC)
+		{
+			Damage = AC->GetCombatComp()->GetDmgDebuffActivated() ? Damage * 0.7 : Damage;
+		}
 	}
 	else
 	{
@@ -102,7 +106,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 			GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShake);
 		}
 
-		const float Dmg = Hit.BoneName == FName("head") ? HeadShotDamage : Damage;
+		const float Dmg = Hit.BoneName == FName("head") ? Damage * 1.5f : Damage;
 		AActor* DmgCauser = bIsPlayersProjectile ? GetOwner() : this;
 		UGameplayStatics::ApplyPointDamage
 		(
