@@ -448,6 +448,7 @@ void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived
 		const bool bIsCritical = RandInt / Cha->GetCombatComp()->GetRandRangeValue() > 0.7f;
 		const bool bIsHeadShot = BoneName == FName("head") ? true : false;
 		Dmg = bIsHeadShot ? Dmg * 1.5f : Dmg;
+		Dmg = FMath::RoundToFloat(Dmg);
 
 		HandleStiffAndStun(bIsHeadShot);
 		HandleHealthChange(Dmg);

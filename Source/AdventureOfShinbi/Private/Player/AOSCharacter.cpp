@@ -22,6 +22,7 @@
 #include "Components/CapsuleComponent.h"
 #include "HUD/AOSHUD.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
@@ -128,6 +129,7 @@ void AAOSCharacter::Tick(float DeltaTime)
 
 	SetOverlappingItem();
 	CameraSaturaion(DeltaTime);
+	UpdateControlRotation();
 }
 
 void AAOSCharacter::TakeAnyDamage(AActor* DamagedActor, float DamageReceived, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
@@ -203,9 +205,8 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 	PlayHitEffect(HitLocation, ShotFromDirection.Rotation());
 }
 
-FName AAOSCharacter::DistinguishHitDirection(FVector DamageCauserLocation)
+FName AAOSCharacter::DistinguishHitDirection(FVector TargetLocation)
 {
-	const FVector TargetLocation = DamageCauserLocation;
 	FVector ToTarget = TargetLocation - GetActorLocation();
 	ToTarget.Normalize();
 	const float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
@@ -646,6 +647,127 @@ void AAOSCharacter::Skill3ButtonPressed()
 	}
 }
 
+void AAOSCharacter::MouseWheelButtonPressed()
+{
+	if (CombatComp->EquippedWeapon == nullptr)
+		return;
+	
+	bCameraLockOn = bCameraLockOn ? false : true;
+
+	if (bCameraLockOn)
+	{
+		SetLockOnTarget();
+	}
+	else
+	{
+		LockOnTarget = nullptr;
+		if (LockOnParticleComp)
+		{
+			LockOnParticleComp->DestroyComponent();
+		}
+	}
+}
+
+void AAOSCharacter::SetLockOnTarget()
+{
+	LockOnTarget = Cast<AEnemyCharacter>(FindTarget());
+	if (LockOnTarget)
+	{
+		const float CharacterHeight = LockOnTarget->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2 + 50.f;
+		LockOnParticleComp = UGameplayStatics::SpawnEmitterAttached
+		(
+			LockOnParticle,
+			LockOnTarget->GetMesh(),
+			NAME_None,
+			FVector(0.f, 0.f, CharacterHeight),
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			false,
+			EPSCPoolMethod::None,
+			true
+		);
+	}
+	else
+	{
+		bCameraLockOn = false;
+	}
+}
+
+void AAOSCharacter::UpdateControlRotation()
+{
+	if (CharacterController == nullptr || CombatComp->EquippedWeapon == nullptr)
+	{
+		bCameraLockOn = false;
+		LockOnTarget = nullptr;
+		if (LockOnParticleComp)
+		{
+			LockOnParticleComp->DestroyComponent();
+		}
+		return;
+	}
+
+	if (bCameraLockOn)
+	{
+		if (LockOnTarget->GetIsDead())
+		{
+			LockOnTarget = nullptr;
+			if (LockOnParticleComp)
+			{
+				LockOnParticleComp->DestroyComponent();
+			}
+			SetLockOnTarget();
+		}
+		else
+		{
+			const FRotator LookRotation = CalculateRotation(LockOnTarget);
+			CharacterController->SetControlRotation(LookRotation);
+		}
+	}
+}
+
+AActor* AAOSCharacter::FindTarget()
+{
+	TArray<AActor*> Targets;
+	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Targets);
+	
+	if(Targets.Num() == 0)
+		return nullptr;
+
+	float MinDistance = 2000.f;
+	AActor* NearestTarget = nullptr;
+	for (AActor* Target : Targets)
+	{
+		if (DistinguishHitDirection(Target->GetActorLocation()) != FName("F"))
+			continue;
+
+		const float Distance = GetDistanceTo(Target);
+		if (Distance <= MinDistance)
+		{
+			MinDistance = Distance;
+			NearestTarget = Target;
+		}
+	}
+
+	return NearestTarget;
+}
+
+FRotator AAOSCharacter::CalculateRotation(AActor* Target)
+{
+	if (IsValid(Target))
+	{
+		const FRotator ControllerRotator = CharacterController->GetControlRotation();
+		const FVector PlayerLocation = GetActorLocation();
+		const FVector TargetLocation = Target->GetActorLocation();
+
+		const FRotator LookAtTarget = UKismetMathLibrary::FindLookAtRotation(PlayerLocation, TargetLocation);
+		const FRotator InterpRotator = FMath::RInterpTo(ControllerRotator, LookAtTarget, GetWorld()->GetDeltaSeconds(), 30.f);
+
+		return InterpRotator;
+	}
+
+	return FRotator::ZeroRotator;
+}
+
 void AAOSCharacter::TransitionAnimationStart()
 {
 	CharacterState = ECharacterState::ECS_AnimationPlaying;
@@ -810,6 +932,7 @@ void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("UseItem", IE_Pressed, this, &AAOSCharacter::UseItemKeyPressed);
 	PlayerInputComponent->BindAction("ItemChange", IE_Pressed, this, &AAOSCharacter::ItemChangeKeyPressed);
 	PlayerInputComponent->BindAction("Skill3", IE_Pressed, this, &AAOSCharacter::Skill3ButtonPressed);
+	PlayerInputComponent->BindAction("LockOn", IE_Pressed, this, &AAOSCharacter::MouseWheelButtonPressed);
 }
 
 void AAOSCharacter::SetOverlappingItem()
@@ -885,12 +1008,12 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 			this,
 			TraceStart,
 			TraceEnd,
-			50.f,
-			30.f,
+			35.f,
+			20.f,
 			TraceType,
 			false,
 			TArray<AActor*>(),
-			EDrawDebugTrace::ForOneFrame,
+			EDrawDebugTrace::None,
 			HitItem,
 			true
 		);

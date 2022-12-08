@@ -85,6 +85,9 @@ void AAOSGameModeBase::BindBossDefeatEvent()
 {
 	TArray<AActor*> Actors;
 	UGameplayStatics::GetAllActorsOfClass(this, AEnemyBoss::StaticClass(), Actors);
+	if (Actors.Num() == 0)
+		return;
+
 	if (Actors[0])
 	{
 		AEnemyBoss* Boss = Cast<AEnemyBoss>(Actors[0]);

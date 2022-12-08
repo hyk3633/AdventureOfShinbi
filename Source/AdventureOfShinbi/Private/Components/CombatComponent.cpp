@@ -663,6 +663,7 @@ void UCombatComponent::CameraMoveEnd()
 {
 	bMovingCamera = false;
 	Character->GetCamera()->AttachToComponent(Character->GetSpringArm(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	Character->GetCamera()->SetRelativeRotation(FRotator(-10.f, 0.f, 0.f));
 }
 
 bool UCombatComponent::CheckAbleGlaiveUltiSkill()

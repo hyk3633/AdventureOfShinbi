@@ -18,6 +18,7 @@ class UItemComponent;
 class UAnimMontage;
 class UParticleSystem;
 class USoundCue;
+class AEnemyCharacter;
 
 DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
 DECLARE_DELEGATE(OnLevelTransitionDelegate);
@@ -88,7 +89,7 @@ protected:
 		AActor* DamageCauser
 	);
 
-	FName DistinguishHitDirection(FVector DamageCauserLocation);
+	FName DistinguishHitDirection(FVector TargetLocation);
 
 	void PlayerKnockBack(AActor* DamageCauser, float Power);
 
@@ -136,6 +137,14 @@ private:
 	void UseItemKeyPressed();
 	void ItemChangeKeyPressed();
 	void Skill3ButtonPressed();
+	void MouseWheelButtonPressed();
+
+	void SetLockOnTarget();
+
+	void UpdateControlRotation();
+
+	AActor* FindTarget();
+	FRotator CalculateRotation(AActor* Target);
 
 	UFUNCTION(BlueprintCallable)
 	void TransitionAnimationStart();
@@ -292,6 +301,15 @@ private:
 	TSubclassOf<UUserWidget> SlowSignClass;
 
 	UUserWidget* SlowSign;
+
+	bool bCameraLockOn = false;
+
+	AEnemyCharacter* LockOnTarget;
+
+	UPROPERTY(EditAnywhere, Category = "Character | LockOn")
+	UParticleSystem* LockOnParticle;
+
+	UParticleSystemComponent* LockOnParticleComp;
 	
 public:
 

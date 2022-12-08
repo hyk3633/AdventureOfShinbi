@@ -139,6 +139,7 @@ void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, ACo
 		const bool bIsCritical = RandInt / Cha->GetCombatComp()->GetRandRangeValue() > 0.7f;
 		const bool bIsHeadShot = BoneName == FName("head") ? true : false;
 		Dmg = bIsHeadShot ? Dmg * 1.5f : Dmg;
+		Dmg = FMath::RoundToFloat(Dmg);
 
 		HandleHealthChange(DamageReceived);
 		PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, bIsHeadShot, bIsCritical);
