@@ -40,8 +40,6 @@ protected:
 
 	virtual void HandleStiffAndStun(bool IsHeadShot) override;
 
-	virtual void ResetAIState() override;
-
 	void SiegeModeProjectileFire();
 
 	void PlaySiegeModeFireMontage();

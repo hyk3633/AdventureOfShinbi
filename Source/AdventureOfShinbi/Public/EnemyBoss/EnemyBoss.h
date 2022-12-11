@@ -17,6 +17,7 @@ class UBoxComponent;
 class UAnimMontage;
 class UParticleSystem;
 class USoundCue;
+class UAudioComponent;
 
 DECLARE_DELEGATE(BossDefeatDelegate);
 
@@ -235,6 +236,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void IceWallAttackMontageEnd(bool IsSuccess);
 
+	virtual void PlayerDead() override;
+
 private:
 
 	AAOSCharacter* Target;
@@ -405,6 +408,14 @@ private:
 
 	FTimerHandle IceWallAttackAppearTimer;
 	float IceWallAttackAppearTime = 0.45f;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Music")
+	USoundCue* BattleMusic;
+
+	UAudioComponent* MusicComp;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Music")
+	float Volume = 1.f;
 
 public:
 

@@ -13,7 +13,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/SphereComponent.h"
 #include "Sound/SoundCue.h"
-
+#include "DrawDebugHelpers.h"
 AEnemyRanged::AEnemyRanged()
 {
 	WeaponTraceStartSocketName = FName("RangedTraceStart");
@@ -62,11 +62,14 @@ void AEnemyRanged::ProjectileFire(TSubclassOf<AProjectile> Projectile)
 	CrosshairLineTrace(HitPoint);
 
 	const USkeletalMeshSocket* MuzzleSocket = GetMesh()->GetSocketByName("MuzzleSocket");
-	if (MuzzleSocket == nullptr) return;
+	if (MuzzleSocket == nullptr) 
+		return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetMesh());
 
 	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 	FRotator TargetRotation = ToTarget.Rotation();
+
+	//DrawDebugLine(GetWorld(), SocketTransform.GetLocation(), )
 
 	if (Projectile)
 	{
@@ -88,8 +91,15 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 	FRotator EyeRotation;
 	GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
-	FVector ShotDirection = EyeRotation.Vector();
-
+	FVector ShotDirection;
+	if (AiInfo.TargetPlayer)
+	{
+		ShotDirection = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), AiInfo.TargetPlayer->GetActorLocation()).Vector();
+	}
+	else
+	{
+		ShotDirection = EyeRotation.Vector();
+	}
 	// Bullet Spread
 	float HalfRad = FMath::DegreesToRadians(BulletSpread);
 	ShotDirection = FMath::VRandCone(ShotDirection, HalfRad, HalfRad);
@@ -104,7 +114,7 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 	FHitResult HitResult;
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams);
-	
+
 	// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
 	if (!HitResult.bBlockingHit)
 	{

@@ -10,6 +10,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/CombatComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
@@ -65,10 +66,6 @@ void AEnemyBoss::BeginPlay()
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyBoss::BlizzardMontageEnd);
 
 	DashAndWallBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBoss::OnDashBoxOverlap);
-
-	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, 15.f);
-	GetWorldTimerManager().SetTimer(RangedAttackCoolTimer, this, &AEnemyBoss::RangedAttackCoolTimeEnd, 15.f);
-	GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, 15.f);
 }
 
 void AEnemyBoss::SetTarget()
@@ -82,6 +79,11 @@ void AEnemyBoss::SetTarget()
 	if (BossController)
 	{
 		BossController->SetTarget(Target);
+	}
+
+	if (BattleMusic)
+	{
+		MusicComp = UGameplayStatics::SpawnSound2D(this, BattleMusic, Volume);
 	}
 
 	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, 15.f);
@@ -147,6 +149,11 @@ void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, ACo
 
 	if (GetHealthPercentage() == 0.f)
 	{
+		if (MusicComp)
+		{
+			MusicComp->Stop();
+			MusicComp->DestroyComponent();
+		}
 		if (BossController)
 		{
 			BossController->UpdateAiInfo();
@@ -227,7 +234,7 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		UGameplayStatics::PlaySoundAtLocation(this, DashHitSound, Cha->GetActorLocation());
 	}
 
-	UGameplayStatics::ApplyPointDamage(Cha, 500.f, LaunchDirection, SweepResult, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyPointDamage(Cha, Dist * 0.4f, LaunchDirection, SweepResult, GetController(), this, UDamageType::StaticClass());
 
 	SetBoxState(EBoxState::EBS_Disabled);
 }
@@ -657,7 +664,7 @@ void AEnemyBoss::BlizzardDotDamage(float DeltaTime)
 {
 	if (bBlizzardDebuffOn == false)
 		return;
-	UGameplayStatics::ApplyDamage(Target, DeltaTime * 100.f, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(Target, DeltaTime * 80.f, GetController(), this, UDamageType::StaticClass());
 }
 
 void AEnemyBoss::BlizzardDebuffEnd()
@@ -854,7 +861,7 @@ void AEnemyBoss::RisingIcicle()
 		{
 			if (Target == SphereHit.GetActor())
 			{
-				UGameplayStatics::ApplyPointDamage(Target, 600.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
+				UGameplayStatics::ApplyPointDamage(Target, 400.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
 				Target->LaunchCharacter(Target->GetActorUpVector() * 500.f, true, false);
 			}
 		}
@@ -881,7 +888,7 @@ void AEnemyBoss::BurstShockWave()
 			this,
 			BurstDamage,
 			WeaponHitResult.ImpactPoint,
-			800.f,
+			700.f,
 			UDamageType::StaticClass(),
 			Ignore,
 			this,
@@ -1010,6 +1017,17 @@ void AEnemyBoss::IceWallAttackMontageEnd(bool IsSuccess)
 		EvadeSkillCoolTimeEnd();
 	}
 	OnAttackEnd.Broadcast();
+}
+
+void AEnemyBoss::PlayerDead()
+{
+	Super::PlayerDead();
+
+	if (MusicComp)
+	{
+		MusicComp->Stop();
+		MusicComp->DestroyComponent();
+	}
 }
 
 void AEnemyBoss::BackAttack()

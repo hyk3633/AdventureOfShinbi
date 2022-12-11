@@ -89,8 +89,6 @@ private:
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AItem> AmmoClass;
 
-	FVector2D ViewPortSize;
-
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Crosshairs")
 	FCrosshairs Crosshairs;
 

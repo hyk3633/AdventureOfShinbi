@@ -28,11 +28,6 @@ void ARangedWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GEngine && GEngine->GameViewport)
-	{
-		GEngine->GameViewport->GetViewportSize(ViewPortSize);
-	}
-
 	if (AmmoClass)
 	{
 		UWorld* World = GetWorld();
@@ -50,6 +45,12 @@ void ARangedWeapon::BeginPlay()
 
 void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
 {
+	FVector2D ViewPortSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewPortSize);
+	}
+
 	FVector2D CrosshairLocation(ViewPortSize.X / 2.f, ViewPortSize.Y / 2.f);
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;

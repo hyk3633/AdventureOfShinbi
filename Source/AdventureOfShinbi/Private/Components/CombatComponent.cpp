@@ -27,6 +27,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Types/WeaponState.h"
 #include "Sound/SoundCue.h"
+#include "..\..\Public\Components\CombatComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -1349,4 +1350,18 @@ float UCombatComponent::GetDefaultValue() const
 int32 UCombatComponent::GetRandRangeValue() const
 {
 	return RandRangeValue;
+}
+
+void UCombatComponent::RemoveSign()
+{
+	if (HealBanSign)
+	{
+		HealBanSign->Destruct();
+		HealBanSign = nullptr;
+	}
+	if (AttackDebuffSign)
+	{
+		AttackDebuffSign->Destruct();
+		AttackDebuffSign = nullptr;
+	}
 }

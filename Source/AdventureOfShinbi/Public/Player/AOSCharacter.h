@@ -22,6 +22,7 @@ class AEnemyCharacter;
 
 DECLARE_DELEGATE(OnAttackButtonPressedDelegate);
 DECLARE_DELEGATE(OnLevelTransitionDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FSecretInteractionDelegate);
 DECLARE_DELEGATE_OneParam(OnAimButtonPressedDelegate, bool bPress);
 
 UENUM(BlueprintType)
@@ -63,6 +64,9 @@ public:
 	OnLevelTransitionDelegate DLevelTransition;
 
 	OnAimButtonPressedDelegate DAimButtonPressed;
+
+	UPROPERTY(BlueprintAssignable)
+	FSecretInteractionDelegate DSecretInteraction;
 
 	void RestartPlayerCharacter();
 

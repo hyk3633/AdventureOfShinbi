@@ -59,6 +59,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> CharacterOverlayClass;
 
+	UPROPERTY(BlueprintReadOnly)
 	UAOSCharacterOverlay* CharacterOverlay;
 
 	UTexture2D* CrosshairCenter;

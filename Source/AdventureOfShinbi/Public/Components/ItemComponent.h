@@ -76,10 +76,10 @@ private:
 	float HealthRecoveryAmount = 50.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
-	float HealthRecoveryRate = 50.f;
+	float HealthRecoveryRate = 1000.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
-	float ManaRecoveryAmount = 50.f;
+	float ManaRecoveryAmount = 1000.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
 	float ManaRecoveryRate = 10.f;

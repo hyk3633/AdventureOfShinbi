@@ -36,7 +36,7 @@ void UNotifyFootStepSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenc
 		UEngineTypes::ConvertToTraceType(ECC_WorldStatic),
 		true,
 		Ignores,
-		EDrawDebugTrace::ForDuration,
+		EDrawDebugTrace::None,
 		HitResult,
 		true
 	);

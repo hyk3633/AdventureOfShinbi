@@ -44,11 +44,6 @@ void AEnemyRangedSiege::HandleStiffAndStun(bool IsHeadShot)
 	Super::HandleStiffAndStun(IsHeadShot);
 }
 
-void AEnemyRangedSiege::ResetAIState()
-{
-	Super::ResetAIState();
-}
-
 bool AEnemyRangedSiege::CheckRotateToTargetCondition()
 {
 	return bDeath == false &&

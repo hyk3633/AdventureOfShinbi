@@ -119,8 +119,7 @@ void AAOSCharacter::BeginPlay()
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 
-	CombatComp->PlayerDeathDelegate.AddUObject(this, &AAOSCharacter::HandlePlayerDeath);
-
+	CombatComp->PlayerDeathDelegate.AddDynamic(this, &AAOSCharacter::HandlePlayerDeath);
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
@@ -329,6 +328,17 @@ void AAOSCharacter::TakeRadialDamage(AActor* DamagedActor, float DamageReceived,
 
 void AAOSCharacter::HandlePlayerDeath()
 {
+	if (FreezingSign)
+	{
+		FreezingSign->Destruct();
+		FreezingSign = nullptr;
+	}
+	if (SlowSign)
+	{
+		SlowSign->Destruct();
+		SlowSign = nullptr;
+	}
+
 	bCameraSaturationOn = true;
 	SetCharacterState(ECharacterState::ECS_Dead);
 	GetMovementComponent()->StopMovementImmediately();
@@ -391,7 +401,7 @@ void AAOSCharacter::Jump()
 
 	if (VoiceJump)
 	{
-		UGameplayStatics::PlaySound2D(this, VoiceJump);
+		UGameplayStatics::PlaySoundAtLocation(this, VoiceJump, GetActorLocation());
 	}
 
 	ACharacter::Jump();
@@ -456,6 +466,8 @@ void AAOSCharacter::Equip_Skill1ButtonPressed()
 {
 	if (CharacterState != ECharacterState::ECS_Nothing || bIsInventoryOn || bInventoryAnimationPlaying)
 		return;
+
+	DSecretInteraction.Broadcast();
 
 	if (bOverlappedLTV)
 	{

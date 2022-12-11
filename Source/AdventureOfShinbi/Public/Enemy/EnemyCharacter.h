@@ -198,7 +198,7 @@ protected:
 	USphereComponent* GetAttackRange() const;
 
 	UFUNCTION()
-	void PlayerDead();
+	virtual void PlayerDead();
 
 protected:
 

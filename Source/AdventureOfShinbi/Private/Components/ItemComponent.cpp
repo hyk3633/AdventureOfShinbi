@@ -88,6 +88,19 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 
 		CharacterController->AddItemToSlot(Item);
 		CharacterController->BindToItemSlot(GameMode->GetItemCount() - 1);
+
+		if (Recovery->GetRecoveryType() == ERecoveryType::ERT_Health)
+		{
+			HealthRecoveryAmount = Recovery->GetRecoveryQuantity();
+		}
+		else if (Recovery->GetRecoveryType() == ERecoveryType::ERT_Mana)
+		{
+			ManaRecoveryAmount = Recovery->GetRecoveryQuantity();
+		}
+		else
+		{
+			StaminaRecoveryBoostAmount = Recovery->GetRecoveryQuantity();
+		}
 	}
 	else
 	{

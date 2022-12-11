@@ -21,6 +21,8 @@ AAOSGameModeBase::AAOSGameModeBase()
 {
 	InitializeTMap();
 	InitializeQuickSlotItemArray();
+
+	bUseSeamlessTravel = true;
 }
 
 void AAOSGameModeBase::RespawnPlayer()
@@ -47,7 +49,7 @@ void AAOSGameModeBase::RespawnPlayer()
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 	if (Cha)
 	{
-		Cha->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AAOSGameModeBase::ShowDeathSignWidget);
+		Cha->GetCombatComp()->PlayerDeathDelegate.AddDynamic(this, &AAOSGameModeBase::ShowDeathSignWidget);
 	}
 }
 
@@ -105,7 +107,7 @@ void AAOSGameModeBase::BeginPlay()
 	Character = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 	if (Character)
 	{
-		Character->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AAOSGameModeBase::ShowDeathSignWidget);
+		Character->GetCombatComp()->PlayerDeathDelegate.AddDynamic(this, &AAOSGameModeBase::ShowDeathSignWidget);
 	}
 }
 

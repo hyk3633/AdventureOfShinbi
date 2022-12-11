@@ -644,3 +644,19 @@ void AAOSController::EnrollToItemQuickSlot(int8 Index)
 		}
 	}
 }
+
+void AAOSController::HideHUD()
+{
+	if (AOSHUD && AOSHUD->CharacterOverlay)
+	{
+		AOSHUD->CharacterOverlay->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void AAOSController::ShowHUD()
+{
+	if (AOSHUD && AOSHUD->CharacterOverlay)
+	{
+		AOSHUD->CharacterOverlay->SetVisibility(ESlateVisibility::Visible);
+	}
+}

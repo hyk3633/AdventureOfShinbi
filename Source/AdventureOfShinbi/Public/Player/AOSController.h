@@ -123,6 +123,10 @@ public:
 
 	void EnrollToItemQuickSlot(int8 Index);
 
+	void HideHUD();
+
+	void ShowHUD();
+
 protected:
 
 	virtual void PostInitializeComponents() override;

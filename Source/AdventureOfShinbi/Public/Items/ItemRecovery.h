@@ -57,8 +57,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item | Effect")
 	USoundCue* UsingSound;
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 500.0))
-	float RecoveryQuatity = 50.f;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0))
+	float RecoveryQuantity = 50.f;
 
 	int8 QuickSlotIndex = -1;
 
@@ -70,4 +70,5 @@ public:
 	ERecoveryType GetRecoveryType() const;
 	void SetQuickSlotIndex(int8 Index);
 	int8 GetQuickSlotIndex() const;
+	float GetRecoveryQuantity() const;
 };

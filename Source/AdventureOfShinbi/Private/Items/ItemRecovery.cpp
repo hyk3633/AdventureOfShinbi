@@ -99,3 +99,8 @@ int8 AItemRecovery::GetQuickSlotIndex() const
 {
 	return QuickSlotIndex;
 }
+
+float AItemRecovery::GetRecoveryQuantity() const
+{
+	return RecoveryQuantity;
+}

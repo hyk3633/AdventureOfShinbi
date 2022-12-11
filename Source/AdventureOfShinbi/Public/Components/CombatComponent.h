@@ -17,7 +17,7 @@ class AWeapon;
 class UCurveFloat;
 class USoundCue;
 
-DECLARE_MULTICAST_DELEGATE(OnPlayerDeathDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDeathDelegate);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ADVENTUREOFSHINBI_API UCombatComponent : public UActorComponent
@@ -50,7 +50,8 @@ public:
 
 	void WeaponSkill3();
 
-	OnPlayerDeathDelegate PlayerDeathDelegate;
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerDeathDelegate PlayerDeathDelegate;
 
 	void HealBan(float HealBanDurationTime);
 
@@ -373,5 +374,5 @@ public:
 	void SetMana(float PreMana);
 	float GetDefaultValue() const;
 	int32 GetRandRangeValue() const;
-
+	void RemoveSign();
 };

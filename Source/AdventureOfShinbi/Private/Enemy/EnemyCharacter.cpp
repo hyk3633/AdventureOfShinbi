@@ -293,7 +293,7 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 
 	if (IsPlayerDeathDelegateBined == false)
 	{
-		Cha->GetCombatComp()->PlayerDeathDelegate.AddUObject(this, &AEnemyCharacter::PlayerDead);
+		Cha->GetCombatComp()->PlayerDeathDelegate.AddDynamic(this, &AEnemyCharacter::PlayerDead);
 		IsPlayerDeathDelegateBined = true;
 	}
 
@@ -611,6 +611,10 @@ void AEnemyCharacter::ResetAIState()
 	AiInfo.bIsPlayerDead = false;
 	bIsAttacking = false;
 	Health = MaxHealth;
+
+	Health = MaxHealth;
+	SetHealthBar();
+	HealthWidget->SetVisibility(false);
 
 	if (AIController)
 	{

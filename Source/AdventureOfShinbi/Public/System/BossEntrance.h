@@ -8,6 +8,9 @@
 class UBoxComponent;
 class AEnemyBoss;
 class AAOSCharacter;
+class ULevelSequencePlayer;
+class ULevelSequence;
+class UParticleSystemComponent;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API ABossEntrance : public AActor
@@ -30,14 +33,41 @@ protected:
 
 	void StartBossStage();
 
+	UFUNCTION()
+	void OnLevelSequencePlayed();
+
+	UFUNCTION()
+	void OnLevelSequenceFinished();
+
 private:
 
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxComp;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* BlockingVolume;
 
 	AEnemyBoss* Boss;
 
 	AAOSCharacter* Player;
 
 	bool bBind = false;
+
+	UPROPERTY()
+	ULevelSequencePlayer* SequencePlayer;
+
+	UPROPERTY(EditAnywhere, Category = "Level Sequence")
+	ULevelSequence* SequenceAsset;
+
+	UPROPERTY(EditInstanceOnly, Category = "Level Sequence")
+	AActor* BossActor;
+
+	UPROPERTY(EditInstanceOnly, Category = "Level Sequence")
+	AActor* SequenceParticle;
+
+	UPROPERTY(EditInstanceOnly, Category = "Level Sequence")
+	AActor* SequenceSkeletalMesh;
+
+	bool bSequencePlayed = false;
+
 };

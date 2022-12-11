@@ -3,6 +3,7 @@
 #include "System/AOSGameInstance.h"
 #include "System/AOSGameModeBase.h"
 #include "Components/BoxComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Player/AOSCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
@@ -12,18 +13,16 @@ ALevelTransitionVolume::ALevelTransitionVolume()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
-	SetRootComponent(StaticMesh);
-	StaticMesh->SetCollisionObjectType(ECC_WorldStatic);
-	StaticMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-
 	BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("Box Component"));
-	BoxComp->SetupAttachment(RootComponent);
+	SetRootComponent(BoxComp);
 	BoxComp->SetGenerateOverlapEvents(true);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BoxComp->SetCollisionObjectType(ECC_ItemRange);
 	BoxComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	BoxComp->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
+
+	MarkParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("Mark Particle"));
+	MarkParticle->SetupAttachment(RootComponent);
 
 }
 
@@ -79,7 +78,12 @@ void ALevelTransitionVolume::LevelTransition()
 {
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->SavePlayerData();
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->AcitavateShouldLoadData();
-	UGameplayStatics::OpenLevel(this, FName(LevelName));
+	if (LoadingScreen)
+	{
+		UUserWidget* LoadingScreenWidget = CreateWidget<UUserWidget>(GetWorld(), LoadingScreen);
+		LoadingScreenWidget->AddToViewport();
+		GetWorldTimerManager().SetTimer(TransitionTimer, this, &ALevelTransitionVolume::OpenNextLevel, 0.3f);
+	}
 }
 
 void ALevelTransitionVolume::ShowLevelTrasitionSign()
@@ -92,5 +96,10 @@ void ALevelTransitionVolume::ShowLevelTrasitionSign()
 			LevelTrasnsitionSign->AddToViewport();
 		}
 	}
+}
+
+void ALevelTransitionVolume::OpenNextLevel()
+{
+	UGameplayStatics::OpenLevel(this, FName(LevelName));
 }
 

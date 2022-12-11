@@ -6,7 +6,7 @@
 #include "LevelTransitionVolume.generated.h"
 
 class UBoxComponent;
-
+class UParticleSystemComponent;
 UCLASS()
 class ADVENTUREOFSHINBI_API ALevelTransitionVolume : public AActor
 {
@@ -34,10 +34,12 @@ protected:
 
 	void ShowLevelTrasitionSign();
 
+	void OpenNextLevel();
+
 private:
 
 	UPROPERTY(EditAnywhere)
-	UStaticMeshComponent* StaticMesh;
+	UParticleSystemComponent* MarkParticle;
 	
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* BoxComp;
@@ -50,4 +52,8 @@ private:
 
 	UUserWidget* LevelTrasnsitionSign;
 
+	UPROPERTY(EditAnywhere, Category = "Level Transition")
+	TSubclassOf<UUserWidget> LoadingScreen;
+
+	FTimerHandle TransitionTimer;
 };
