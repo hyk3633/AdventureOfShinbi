@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "EnemyRangedSiege.generated.h"
 
 /**
- * 
+ * 훨씬 먼거리에서 공격이 가능한 시즈 미니언 클래스
  */
 
 class AProjectile;
@@ -24,11 +23,14 @@ public:
 
 	virtual bool CheckRotateToTargetCondition() override;
 
+	/** BT_Task에서 호출하는 시즈 모드 공격 */
 	void SiegeModeAttack();
 
+	/** 모션을 시즈 모드로 전환 */
 	UFUNCTION(BlueprintCallable)
 	void ConvertSiegeMode();
 
+	/** 모션을 평상시로 전환 */
 	UFUNCTION(BlueprintCallable)
 	void ReleaseSiegeMode();
 
@@ -40,6 +42,7 @@ protected:
 
 	virtual void HandleStiffAndStun(bool IsHeadShot) override;
 
+	/** 시즈 모드 투사체 발사 */
 	void SiegeModeProjectileFire();
 
 	void PlaySiegeModeFireMontage();
@@ -66,7 +69,4 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Siege Mode")
 	UAnimMontage* SiegeModeHitReactionMontage;
 
-public:
-
-	virtual float GetEnemyDamage() const override;
 };

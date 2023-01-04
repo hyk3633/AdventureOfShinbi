@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "EnemyDualMelee.generated.h"
 
 /**
- * 
+ * 양손으로 공격하는 적 
  */
 UCLASS()
 class ADVENTUREOFSHINBI_API AEnemyDualMelee : public AEnemyCharacter

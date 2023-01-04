@@ -1,6 +1,7 @@
 
 
 #include "Items/ItemRecovery.h"
+#include "Player/AOSCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,7 +17,6 @@ AItemRecovery::AItemRecovery()
 	MeshComponent->SetCollisionObjectType(ECC_Item);
 	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	MeshComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	MeshComponent->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 
 	InfoItemType = EItemType::EIT_Recovery;
 }
@@ -77,6 +77,26 @@ void AItemRecovery::BeginPlay()
 			EPSCPoolMethod::None,
 			bAutoActivateEffect
 		);
+	}
+}
+
+void AItemRecovery::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
+	if (Player)
+	{
+		Player->SetOverlappingItemCount(1);
+		MeshComponent->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
+	}
+}
+
+void AItemRecovery::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
+	if (Player)
+	{
+		Player->SetOverlappingItemCount(-1);
+		MeshComponent->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
 	}
 }
 

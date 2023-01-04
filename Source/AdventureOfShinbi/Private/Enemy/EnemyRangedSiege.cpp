@@ -17,7 +17,7 @@ AEnemyRangedSiege::AEnemyRangedSiege()
 {
 	BoxTraceSize = FVector(40.f, 30.f, 40.f);
 
-	Damage = 500.f;
+	Damage = 400.f;
 	Health = 1200.f;
 	MaxHealth = 1200.f;
 	Defense = 45.f;
@@ -70,7 +70,7 @@ void AEnemyRangedSiege::SiegeModeProjectileFire()
 	if (SiegeModeProjectileClass)
 	{
 		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
+		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
 
 		UWorld* World = GetWorld();
@@ -89,7 +89,7 @@ void AEnemyRangedSiege::ConvertSiegeMode()
 		AIController->ActivateSiegeMode();
 	}
 	Defense = 60.f;
-	Damage = 900.f;
+	Damage = 700.f;
 }
 
 void AEnemyRangedSiege::ReleaseSiegeMode()
@@ -100,7 +100,7 @@ void AEnemyRangedSiege::ReleaseSiegeMode()
 		AIController->DeactivateSiegeMode();
 	}
 	Defense = 45.f;
-	Damage = 500.f;
+	Damage = 400.f;
 }
 
 void AEnemyRangedSiege::PlaySiegeModeFireMontage()
@@ -146,9 +146,4 @@ void AEnemyRangedSiege::OnSiegeModeHitReactionMontageEnded()
 	{
 		AIController->UpdateAiInfo();
 	}
-}
-
-float AEnemyRangedSiege::GetEnemyDamage() const
-{
-	return 0.0f;
 }

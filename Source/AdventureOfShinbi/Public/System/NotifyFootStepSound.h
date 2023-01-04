@@ -6,7 +6,7 @@
 #include "NotifyFootStepSound.generated.h"
 
 /**
- * 
+ * 발자국 소리를 출력하기 위한 애님 노티파이 클래스
  */
 
 class USoundCue;
@@ -21,6 +21,8 @@ public:
 	UNotifyFootStepSound();
 
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+
+public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AnimNotify")
 	FName SocketName;

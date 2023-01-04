@@ -8,6 +8,7 @@
 #include "System/AOSGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
@@ -37,7 +38,6 @@ void AEnemyMuriel::BeginPlay()
 
     if (bWhite)
     {
-        BuffDurationTime = 12.f;
         FriendlyTag = FName("White");
     }
     else
@@ -74,9 +74,20 @@ void AEnemyMuriel::ResetAIState()
     bTeleportMinionCoolTimeEnd = true;
 }
 
+void AEnemyMuriel::HandleHealthChange(float DamageReceived)
+{
+    if (Health == 0)
+    {
+        EnemyAnim->Montage_Stop(0.f, FireMontage);
+        DMurielDeath.Broadcast();
+    }
+
+    Super::HandleHealthChange(DamageReceived);
+}
+
 void AEnemyMuriel::RangedAttack()
 {
-    if (bSkillShotCoolTimeEnd && FMath::RandRange(0.f, 1.f) <= 0.3)
+    if (bSkillShotCoolTimeEnd && FMath::RandRange(0.f, 1.f) <= 0.3f)
     {
         FireSkillShot();
     }
@@ -103,14 +114,18 @@ void AEnemyMuriel::SummonMinion()
 void AEnemyMuriel::Summon()
 {
     int8 SummonSuccess = 0;
+
+    // 총 2마리 미니언 소환
     for (int8 i = 0; i < 2; i++)
     {
+        // 소환 할 위치에 다른 액터가 있으면 패스
         FVector SummonPosition;
         const bool bSummonIsSafe = CheckSpawnPosition(SummonPosition, this, 150.f);
         if (bSummonIsSafe == false)
             continue;
 
-        int8 RandIdx = FMath::RandRange(0.f, 1.f) <= 0.8f ? FMath::RandRange(0, 1) : FMath::RandRange(2, 3);
+        // 80% 확률로 기본 미니언, 레인저 미니언 중 하나를 소환
+        const int8 RandIdx = FMath::RandRange(0.f, 1.f) <= 0.8f ? FMath::RandRange(0, 1) : FMath::RandRange(2, 3);
 
         if (EnemyClassArr[RandIdx])
         {
@@ -128,6 +143,7 @@ void AEnemyMuriel::Summon()
         }
     }
 
+    // 하나라도 소환에 성공하면 쿨타임 카운트
     if (SummonSuccess > 0)
     {
         GetWorldTimerManager().SetTimer(SummonCoolTimer, this, &AEnemyMuriel::SummonCoolTimeEnd, SummonCoolTime);
@@ -149,14 +165,14 @@ bool AEnemyMuriel::CheckSpawnPosition(FVector& SafePosition, AActor* CenterActor
     UCollisionProfile* Profile = UCollisionProfile::Get();
     ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECollisionChannel::ECC_Visibility);
     
-    bool bSecondLoop = false;
+    // CenterActor의 위치를 중심으로 8 방향에서 소환 가능한 위치를 SafePosition에 저장
+    float Angle = 0.f;
+    const FVector Dim(PositionOffset, 0.f, 0.f);
     for (int8 i = 0; i < 8; i++)
     {
         FHitResult BoxHit;
 
-        const FVector BoxTraceStart = CenterActor->GetActorLocation() +
-                                      (CenterActor->GetActorForwardVector() * BoxTraceDir[i][0] * PositionOffset) +
-                                      (CenterActor->GetActorRightVector() * BoxTraceDir[i][1] * PositionOffset);
+        const FVector BoxTraceStart = CenterActor->GetActorLocation() + Dim.RotateAngleAxis(Angle, FVector(0, 0, 1));
         const FVector BoxTraceEnd = BoxTraceStart + FVector(0.f, 0.f, 150.f);
 
         UKismetSystemLibrary::BoxTraceSingle
@@ -178,14 +194,11 @@ bool AEnemyMuriel::CheckSpawnPosition(FVector& SafePosition, AActor* CenterActor
         {
             SafePosition = BoxTraceStart;
             RotationIdx = i;
+
             return true;
         }
 
-        if (bSecondLoop == false)
-        {
-            PositionOffset *= 2;
-            i = 0;
-        }
+        Angle += 45.f;
     }
 
     return false;
@@ -235,7 +248,10 @@ void AEnemyMuriel::ProvideBuff()
 
 void AEnemyMuriel::Buff()
 {
+    TArray<AActor*> TargetsToBuff;
+    // 태그가 지정된 적 클래스 검색
     UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), FriendlyTag, TargetsToBuff);
+    // 검색 결과가 없으면 태스크 종료
     if (TargetsToBuff.Num() == 0)
     {
         bBuffCoolTimeEnd = true;
@@ -250,25 +266,27 @@ void AEnemyMuriel::Buff()
 
     for (AActor* const& TaggedActor : TargetsToBuff)
     {
+        if (IsValid(TaggedActor) == false)
+            continue;
+
         AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
         if (Friendly)
         {
+            // 거리가 1000 이내인 미니언에게만 버프 가동 
             if (GetDistanceTo(Friendly) <= 1000.f)
             {
-                PlayBuffParticle(Friendly);
                 if (bWhite)
                 {
                     Friendly->ActivateHealing(Friendly->GetMaxHealth() * 0.5);
                 }
                 else
                 {
-                    Friendly->SetDamage(1.25f);
+                    Friendly->ActivateDamageUp(1.25f);
                 }
             }
         }
     }
 
-    GetWorldTimerManager().SetTimer(BuffDurationTimer, this, &AEnemyMuriel::BuffDurationEnd, BuffDurationTime);
     GetWorldTimerManager().SetTimer(BuffCoolTimer, this, &AEnemyMuriel::BuffCoolTimeEnd, BuffCoolTime);
 }
 
@@ -293,52 +311,6 @@ void AEnemyMuriel::OnBuffMontageEnded()
 void AEnemyMuriel::BuffCoolTimeEnd()
 {
 	bBuffCoolTimeEnd = true;
-}
-
-void AEnemyMuriel::BuffDurationEnd()
-{
-    if (BuffParticleComponents.Num() > 0)
-    {
-        for (int8 i = 0; i < BuffParticleComponents.Num(); i++)
-        {
-            BuffParticleComponents[i]->Deactivate();
-        }
-        BuffParticleComponents.Empty();
-    }
-    
-    if (bWhite == false)
-    {
-        for (AActor* Target : TargetsToBuff)
-        {
-            AEnemyCharacter* BuffedTarget = Cast<AEnemyCharacter>(Target);
-            if (Target)
-            {
-                BuffedTarget->SetDamage();
-            }
-        }
-    }
-
-    TargetsToBuff.Empty();
-}
-
-void AEnemyMuriel::PlayBuffParticle(const ACharacter* BuffTarget)
-{
-    if (BuffStartParticle)
-    {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BuffStartParticle, BuffTarget->GetActorLocation(), BuffTarget->GetActorRotation(), true);
-    }
-    if (BuffParticle)
-    {
-        BuffParticleComponents.Add(UGameplayStatics::SpawnEmitterAttached
-        (
-            BuffParticle,
-            BuffTarget->GetMesh(),
-            FName(),
-            FVector::UpVector * 50.f,
-            FRotator::ZeroRotator,
-            EAttachLocation::KeepRelativeOffset
-        ));
-    }
 }
 
 void AEnemyMuriel::FireSkillShot()
@@ -385,35 +357,34 @@ void AEnemyMuriel::SkillShotCoolTimeEnd()
 
 void AEnemyMuriel::FindTeleportPosition()
 {
+    if (
+        IsValid(AiInfo.TargetPlayer) == false ||                                    // 타겟이 유효하지 않거나
+        CheckSpawnPosition(TeleportPosition, AiInfo.TargetPlayer, 200.f) == false   // 스폰 위치에 장애물이 있을 경우 실패
+        )
+    {
+        SkillFailed();
+        return;
+    }
+
     AAOSCharacter* AC = Cast<AAOSCharacter>(AiInfo.TargetPlayer);
     if (AC)
     {
-        bool bTeleportIsSafe = CheckSpawnPosition(TeleportPosition, AC, 200.f);
-        if (bTeleportIsSafe == false)
-        {
-            bIsAttacking = false;
-            if (AIController)
-            {
-                AIController->UpdateAiInfo();
-            }
-            return;
-        }
-
         TArray<AActor*> Allies;
         UGameplayStatics::GetAllActorsWithTag(this, FriendlyTag, Allies);
         if (Allies.Num() == 0)
         {
-            bIsAttacking = false;
-            if (AIController)
-            {
-                AIController->UpdateAiInfo();
-            }
+            SkillFailed();
             return;
         }
 
+        // 타겟 플레이어에서 가장 멀리 떨어진 미니언을 탐색
         float FarestDistance = 0.f;
+        FarestMinion = nullptr;
         for (AActor* const& TaggedActor : Allies)
         {
+            if (IsValid(TaggedActor) == false)
+                continue;
+
             if (FarestDistance < TaggedActor->GetDistanceTo(AC))
             {
                 FarestDistance = TaggedActor->GetDistanceTo(AC);
@@ -421,7 +392,14 @@ void AEnemyMuriel::FindTeleportPosition()
             }
         }
 
-        TeleportRotation = (AC->GetActorForwardVector() * -1.f).Rotation();
+        if (FarestMinion == nullptr)
+        {
+            SkillFailed();
+            return;
+        }
+
+        // 이동할 미니언이 타겟 플레이어를 마주 보도록 Rotation 설정
+        TeleportRotation = UKismetMathLibrary::FindLookAtRotation(TeleportPosition, AC->GetActorLocation());
 
         bTeleportMinionCoolTimeEnd = false;
         bIsAttacking = true;
@@ -495,6 +473,16 @@ void AEnemyMuriel::TeleportMinionDelayEnd()
 void AEnemyMuriel::TeleportMinionCoolTimeEnd()
 {
     bTeleportMinionCoolTimeEnd = true;
+}
+
+void AEnemyMuriel::SkillFailed()
+{
+    bIsAttacking = false;
+    if (AIController)
+    {
+        AIController->UpdateAiInfo();
+    }
+    OnAttackEnd.Broadcast();
 }
 
 bool AEnemyMuriel::GetMurielType() const

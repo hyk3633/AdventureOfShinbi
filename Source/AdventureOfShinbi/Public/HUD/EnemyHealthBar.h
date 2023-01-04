@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "EnemyHealthBar.generated.h"
 
 /**
- * 
+ * 적 체력 바
  */
 
 class UProgressBar;

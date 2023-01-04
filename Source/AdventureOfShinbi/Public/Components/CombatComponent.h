@@ -32,12 +32,16 @@ public:
 
 	UCombatComponent();
 
+	/** 플레이어 리스폰 후 컴포넌트를 이전 상태로 초기화 */
 	void RestartCombatComp();
 
+	/** 레벨 트랜지션 후 컴포넌트를 이전 상태로 초기화 */
 	void SettingAfterLevelTransition();
 
+	/** 아이템 획득 처리 */
 	void PickingUpItem(AItem* PickedItem);
 
+	/** 공격 함수 */
 	void MeleeAttack();
 
 	void GunFire();
@@ -48,18 +52,18 @@ public:
 
 	void WeaponSkill2();
 
-	void WeaponSkill3();
-
-	UPROPERTY(BlueprintAssignable)
-	FOnPlayerDeathDelegate PlayerDeathDelegate;
-
+	/** 회복 차단 */
 	void HealBan(float HealBanDurationTime);
 
+	/** 데미지 감소 */
 	void DecreaseDamage(float DmgDecreaDurationTime);
 
 	void CirclingWolvesEnd();
 
 	void UltimateWolfRushEnd();
+
+	UPROPERTY(BlueprintAssignable)
+	FOnPlayerDeathDelegate PlayerDeathDelegate;
 
 protected:
 
@@ -67,7 +71,7 @@ protected:
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	/** 신비의 검 몽타주 */
+	/** ShinbiSword 관련 함수 */
 
 	void PlayMontageOneHandAttack();
 
@@ -86,7 +90,7 @@ protected:
 
 	void UltimateWolfRushCoolTimeEnd();
 
-	/** 총기류 */
+	/** 원거리 무기 관련 함수 */
 
 	void PlayReloadMontage();
 
@@ -101,7 +105,7 @@ protected:
 
 	void Reload();
 
-	/** 글레이브 몽타주 */
+	/** Glaive 관련 함수 */
 
 	void GlaiveAttack();
 
@@ -115,13 +119,8 @@ protected:
 
 	bool CheckAbleGlaiveUltiSkill();
 
-	UFUNCTION()
-	void GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted);
-
+	/** 히트 리액션 몽타주 재생 */
 	void PlayHitReactMontage(FName SectionName);
-
-	UFUNCTION()
-	void OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted);
 
 	void PlayMontageDeath();
 
@@ -138,7 +137,7 @@ protected:
 
 	void DeactivateFireFactor();
 
-	// 플레이어 스탯 처리
+	/** 플레이어 스탯 갱신 */
 
 	void UpdateHealth(float Damage);
 
@@ -146,12 +145,15 @@ protected:
 
 	void UpdateStamina(float DeltaTime);
 
+	/** 크로스헤어 설정 */
 	void SetCrosshair();
 
 	void SpreadCrosshair(float DeltaTime);
 
+	/** 무기 스왑 */
 	void WeaponQuickSwap();
 
+	/** 무기 상태에 따른 처리 함수 */
 	void OnChangedWeaponState(AWeapon* Weapon);
 
 	void EquipWeapon(AWeapon* Weapon);
@@ -180,31 +182,31 @@ private:
 
 	UItemComponent* ItemComp;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float Health = 2500.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float MaxHealth = 2500.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float Mana = 1000.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float MaxMana = 1000.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float Stamina = 200.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float MaxStamina = 200.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float Defense = 20.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	float DefaultValue = 5.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0", ClampMax = "10000.0"))
+	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
 	int32 RandRangeValue = 15;
 
 	float StaminaDecreaseRate = 20.f;
@@ -239,7 +241,7 @@ private:
 	bool bVoiceLowHealthPlayed = false;
 	bool bVoiceLackManaPlayed = false;
 
-	/** 신비의 검 변수들 */
+	/** ShinbiSword 관련 변수 */
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Shinbi Sword")
 	UAnimMontage* MeleeOneHandAttackMontage;
@@ -271,12 +273,7 @@ private:
 	FTimerHandle UltimateWolfRushCoolTimer;
 	float UltimateWolfRushCoolTime = 20.f;
 
-	/**  */
-
-	UPROPERTY(EditAnywhere)
-	UAnimMontage* MeleeTwoHandAttackMontage;
-
-	/** 총기류 */
+	/** 원거리 무기 애니메이션 몽타주 */
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Guns")
 	UAnimMontage* GunReloadMontage;
@@ -287,7 +284,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Guns")
 	UAnimMontage* GunHitReactMontage;
 
-	/** 글레이브 */
+	/** Glaive 관련 변수 */
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Weapons | Glaive")
 	UAnimMontage* SickleAttackMontage;
@@ -308,8 +305,7 @@ private:
 
 	bool bMovingCamera = false;
 
-	/**  */
-
+	/** 죽음 애니메이션 몽타주 */
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* DeathMontage;
 
@@ -321,13 +317,13 @@ private:
 
 	float CurrentFOV = 0.f;
 
-	// 값을 저장해서 쓸건지?
 	UPROPERTY(EditAnywhere)
 	float ZoomedFOV = 50.f;
 
 	UPROPERTY(EditAnywhere)
 	float ZoomSpeed = 30.f;
 
+	/** 크로스헤어 퍼짐 지연 타이머 */
 	FTimerHandle FireFactorTimer;
 	float FireFactorTime = 0.05f;
 	bool bFireFactor = false;
@@ -340,10 +336,11 @@ private:
 	FTimerHandle DamageDebuffTimer;
 	FTimerHandle HealBanTimer;
 
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bDmgDebuffActivated = false;
-	bool bHealBanActivated = false;
 
-	bool bEnableCheck = true;
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bHealBanActivated = false;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Sign")
 	TSubclassOf<UUserWidget> HealBanSignClass;
@@ -366,8 +363,6 @@ public:
 	bool SpendMana(float ManaToSpend);
 	bool GetDmgDebuffActivated() const;
 	bool GetHealBanActivated() const;
-	bool GetEnableCheck() const;
-	void SetEnableCheck(bool bCheck);
 	float GetHealth() const;
 	float GetMana() const;
 	void SetHealth(float PreHealth);

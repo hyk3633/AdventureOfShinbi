@@ -60,7 +60,7 @@ void AProjectileBullet::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
 	}
 	else if (HittedPlayer)
 	{
-		// TODO 플레이어 전용 히트 이펙트
+		
 	}
 	else
 	{

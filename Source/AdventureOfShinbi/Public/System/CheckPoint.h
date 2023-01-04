@@ -5,6 +5,10 @@
 #include "GameFramework/PlayerStart.h"
 #include "CheckPoint.generated.h"
 
+/**
+* 체크 포인트 클래스
+*/
+
 class UBoxComponent;
 class USoundCue;
 

@@ -8,7 +8,7 @@
 #include "Inventory.generated.h"
 
 /**
- * 
+ * 인벤토리 클래스
  */
 
 class UVerticalBox;
@@ -28,10 +28,13 @@ class ADVENTUREOFSHINBI_API UInventory : public UUserWidget
 
 public:
 
+	/** 버튼 이벤트 바인딩 */
 	void BindButtonEvent();
 
+	/** 모든 아이템 퀵슬롯 버튼 활성화 */
 	void AllQuickSlotButtonEnabled();
 
+	/** 모든 아이템 퀵슬롯 버튼 비활성화 */
 	void AllQuickSlotButtonDisabled();
 
 	UFUNCTION()
@@ -45,12 +48,18 @@ public:
 	UFUNCTION()
 	void QuickSlot5Clicked();
 
-	// 인벤토리 변경 버튼
+protected:
+
+	/** bIsInventoryOn에 따라 무기/아이템 인벤토리 활성화 및 비활성화 처리 함수 */
+	UFUNCTION()
+	void InventoryChange();
+
+public:
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* InventoryChangeButton;
 
-	// 무기 인벤토리
+	/** 무기 인벤토리 */
 
 	UPROPERTY(meta = (BindWidget))
 	UVerticalBox* InventoryBox;
@@ -69,7 +78,7 @@ public:
 
 	TArray<UInventorySlot*> SlotArray;
 
-	// 아이템 인벤토리
+	/** 아이템 인벤토리 */
 
 	UPROPERTY(meta = (BindWidget))
 	UVerticalBox* ItemInventoryBox;
@@ -124,7 +133,7 @@ public:
 
 	TArray<UItemInventorySlot*> ItemSlotArray;
 
-	// 위젯 애니메이션
+	/** 위젯 애니메이션 */
 
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	UWidgetAnimation* Highlighting;
@@ -133,9 +142,6 @@ public:
 
 private:
 
-	UFUNCTION()
-	void InventoryChange();
-
-	// 인벤토리 상태 : true , 아이템 인벤토리 상태 : false
+	/** true 이면 무기 인벤토리, false 이면 아이템 인벤토리 활성화 */
 	bool bIsInventoryOn = true;
 };

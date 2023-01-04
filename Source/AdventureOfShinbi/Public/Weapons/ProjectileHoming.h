@@ -7,7 +7,7 @@
 #include "ProjectileHoming.generated.h"
 
 /**
- * 
+ * 유도 기능이 있는 투사체
  */
 
 class UParticleSystem;
@@ -36,6 +36,7 @@ protected:
 
 	void DestroyProjectile();
 
+	/** 근처의 적 액터를 탐색 */
 	void CheckNearbyEnemy();
 
 private:
@@ -49,15 +50,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	UNiagaraComponent* BodyNiagaraComp;
 
-	// 타겟 적중 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* TargetHitParticle;
 
-	// 타겟이 아닌 물체 적중 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* WorldHitParticle;
 
-	// 무엇도 적중하지 않을 경우의 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effect")
 	UParticleSystem* NoHitParticle;
 
@@ -73,7 +71,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Projectile | Setting")
 	float DestroyTime = 1.f;
 
+	/** 적 액터 검사 타이머 */
 	FTimerHandle CheckEnemyTimer;
+
+	/** 적 액터 검사 주기 */
 	float CheckEnemyTime = 0.1f;
 	
 };

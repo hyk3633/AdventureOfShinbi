@@ -39,14 +39,9 @@ void ABossEntrance::BeginPlay()
 
 	GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->DPlayerRespawn.AddUObject(this, &ABossEntrance::ResetEntrance);
 
-	TArray<AActor*> Actors;
-	UGameplayStatics::GetAllActorsOfClass(this, AEnemyBoss::StaticClass(), Actors);
-	if (Actors.Num() > 0)
+	if (BossActor)
 	{
-		if (Actors[0])
-		{
-			Boss = Cast<AEnemyBoss>(Actors[0]);
-		}
+		Boss = Cast<AEnemyBoss>(BossActor);
 	}
 	
 	BoxComp->OnComponentBeginOverlap.AddDynamic(this, &ABossEntrance::OnBoxOverlap);
@@ -85,6 +80,7 @@ void ABossEntrance::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 	if (bBind == false)
 	{
+		// 보스 패배 델리게이트 바인딩
 		GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->BindBossDefeatEvent();
 		bBind = true;
 	}

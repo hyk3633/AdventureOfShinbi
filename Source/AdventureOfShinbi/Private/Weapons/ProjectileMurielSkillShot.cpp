@@ -22,12 +22,15 @@ void AProjectileMurielSkillShot::OnHit(UPrimitiveComponent* HitComp, AActor* Oth
 		AAOSCharacter* HittedPlayer = Cast<AAOSCharacter>(OtherActor);
 		if (HittedPlayer)
 		{
+			// 뮤리엘의 타입에 따라 
 			if (EM->GetMurielType())
 			{
+				// 플레이어의 체력 회복 차단
 				HittedPlayer->GetCombatComp()->HealBan(EM->GetSkillShotDurationTime());
 			}
 			else
 			{
+				// 플레이어의 공격력 감소
 				HittedPlayer->GetCombatComp()->DecreaseDamage(EM->GetSkillShotDurationTime());
 			}
 		}

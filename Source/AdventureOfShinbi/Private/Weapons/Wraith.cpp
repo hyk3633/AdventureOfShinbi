@@ -116,6 +116,7 @@ void AWraith::SetWeaponState(const EWeaponState State)
 
 void AWraith::FormChange(bool bSniperMode)
 {
+	// 모드에 따른 설정 및 파티클 활성화
 	if (bSniperMode)
 	{
 		bAimed = true;

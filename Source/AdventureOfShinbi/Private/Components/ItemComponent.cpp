@@ -52,6 +52,33 @@ void UItemComponent::RestartItemComp()
 		}
 		CharacterController->SetQuickSlotItemAuto();
 	}
+
+	{
+		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Health);
+		if (Idx != -1)
+		{
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			HealthRecoveryAmount = Recovery->GetRecoveryQuantity();
+		}
+	}
+
+	{
+		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Mana);
+		if (Idx != -1)
+		{
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			ManaRecoveryAmount = Recovery->GetRecoveryQuantity();
+		}
+	}
+
+	{
+		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Stamina);
+		if (Idx != -1)
+		{
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			StaminaRecoveryBoostAmount = Recovery->GetRecoveryQuantity();
+		}
+	}
 }
 
 void UItemComponent::AddItem(AItem* Item)
@@ -86,6 +113,8 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 	{
 		GameMode->AddItemToArr(Item);
 
+		GameMode->SetRecoveryIndex(Recovery->GetRecoveryType(), GameMode->GetItemCount() - 1);
+
 		CharacterController->AddItemToSlot(Item);
 		CharacterController->BindToItemSlot(GameMode->GetItemCount() - 1);
 
@@ -110,7 +139,8 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 	GameMode->AddRecoveryItem(Recovery->GetRecoveryType(), 1);
 
 	const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(Recovery->GetRecoveryType());
-	CharacterController->SetItemSlotCountText(GameMode->GetItemCount() - 1, RecoveryItemCount);
+	CharacterController->SetItemSlotCountText(GameMode->GetRecoveryIndex(Recovery->GetRecoveryType()), RecoveryItemCount);
+	CharacterController->UpdateQuickSlotItemText(GameMode->GetRecoveryIndex(Recovery->GetRecoveryType()), RecoveryItemCount);
 }
 
 void UItemComponent::AddAmmoItem(AItem* Item)
@@ -118,12 +148,13 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	AItemAmmo* Ammo = Cast<AItemAmmo>(Item);
 	Ammo->HandleItemAfterGain();
 
+	// 탄약이 배열에 존재하면 탄약량만 추가
 	if (GameMode->IsAmmoTypeExist(Ammo->GetAmmoType()))
 	{
 		GameMode->AddAmmoQuantity(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
 		Item->Destroy();
 	}
-	else
+	else // 탄약이 배열에 존재하지 않으면 탄약 아이템 슬롯에 추가
 	{
 		GameMode->AddItemToArr(Item);
 		GameMode->AddAmmoToAmmoMap(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
@@ -137,7 +168,7 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	const int32 AmmoIndex = GameMode->GetAmmoIndex(Ammo->GetAmmoType());
 	CharacterController->SetItemSlotCountText(AmmoIndex, AmmoQuantity);
 	
-	// 현재 장착된 무기가 총이고 총의 탄약 타입과 획득한 탄약의 타입이 같으면 탄약 정보 ui 갱신
+	// 현재 장착된 무기가 원거리 무기고 무기의 탄약 타입과 획득한 탄약의 타입이 같으면 탄약 정보 HUD 갱신
 	if (CombatComp->GetEquippedWeapon())
 	{
 		ARangedWeapon* RW = Cast<ARangedWeapon>(CombatComp->GetEquippedWeapon());
@@ -182,24 +213,28 @@ void UItemComponent::UseItem(AItem* Item)
 	}
 }
 
+// 아이템을 슬롯에서 제거
 void UItemComponent::DismountItem(AItem* Item)
 {
 	const int32 ItemIndex = GameMode->GetItemIndex(Item);
 
 	CharacterController->SetHUDItemSlotDismount(ItemIndex);
+
+	AItemRecovery* IR = Cast<AItemRecovery>(Item);
+	if (IR == nullptr)
+		return;
 	
-	for (int8 i = 0; i < 5; i++)
+	// 퀵슬롯에 등록된 아이템이면 해당 퀵슬롯 초기화
+	const int8 QuickIdx = IR->GetQuickSlotIndex();
+	if (QuickIdx != -1)
 	{
-		if (GameMode->GetQuickSlotItem(i) == Item)
+		GameMode->ClearQuickSlot(QuickIdx);
+
+		CharacterController->DeactivateItemInventorySlotClick(ItemIndex);
+
+		if (GameMode->GetActivatedQuickSlotNumber() == QuickIdx)
 		{
-			GameMode->ClearQuickSlot(i);
-
-			CharacterController->DeactivateItemInventorySlotClick(ItemIndex);
-
-			if (GameMode->GetActivatedQuickSlotNumber() == i)
-			{
-				CharacterController->ClearEquippedItemSlotHUD();
-			}
+			CharacterController->ClearEquippedItemSlotHUD();
 		}
 	}
 }
@@ -228,17 +263,16 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 
 			CharacterController->SetItemSlotCountText(ItemIndex, RecoveryItemCount);
 
-			for (int8 i = 0; i < 5; i++)
+			// 퀵슬롯에 등록된 아이템이면 해당 퀵슬롯의 아이템 개수 텍스트 갱신
+			const int8 QuickIdx = IR->GetQuickSlotIndex();
+			if (QuickIdx != -1)
 			{
-				if (GameMode->GetQuickSlotItem(i) == Item)
-				{
-					const FText RecoveryItemCountText = FText::FromString(FString::FromInt(RecoveryItemCount));
-					GameMode->SetQuickSlotCountText(i, RecoveryItemCountText);
+				const FText RecoveryItemCountText = FText::FromString(FString::FromInt(RecoveryItemCount));
+				GameMode->SetQuickSlotCountText(QuickIdx, RecoveryItemCountText);
 
-					if (GameMode->GetActivatedQuickSlotNumber() == i)
-					{
-						CharacterController->SetEquippedItemSlotCountText(RecoveryItemCountText);
-					}
+				if (GameMode->GetActivatedQuickSlotNumber() == QuickIdx)
+				{
+					CharacterController->SetEquippedItemSlotCountText(RecoveryItemCountText);
 				}
 			}
 
@@ -257,6 +291,7 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 			}
 		}
 
+		// 아이템을 모두 소모했다면 슬롯에서 아이템 제거
 		if (GameMode->GetRecoveryItemCount(IR->GetRecoveryType()) == 0)
 		{
 			// 만일 퀵슬롯에 아이템이 장착되어 있으면 퀵슬롯 비우기
@@ -272,24 +307,31 @@ void UItemComponent::Recovery(float DeltaTime)
 {
 	if (bDoRecoveryHealth)
 	{
+		// 체력 회복 불가일 경우
 		if (CombatComp->GetHealBanActivated())
 		{
 			CombatComp->Health = FMath::FloorToFloat(CombatComp->Health);
 			bDoRecoveryHealth = false;
 			RecoveredHealthAmount = 0.f;
+
+			return;
 		}
 
 		float Increase = HealthRecoveryRate * DeltaTime;
 		RecoveredHealthAmount += Increase;
+
+		// 회복된 체력량이 회복할 양보다 적으면 계속 회복
 		if (RecoveredHealthAmount <= HealthRecoveryAmount)
 		{
 			CombatComp->Health = FMath::Clamp(CombatComp->Health + Increase, 0.f, CombatComp->MaxHealth);
 			CharacterController->SetHUDHealthBar(CombatComp->Health, CombatComp->MaxHealth);
 		}
-		else
+		else // 회복량만큼을 회복했으면 회복 중단
 		{
 			bDoRecoveryHealth = false;
 			RecoveredHealthAmount = 0.f;
+
+			// 낮은 체력 목소리가 재생된 경우 회복 후 목소리 재생
 			if (VoiceRecoveryHealth && CombatComp->bVoiceLowHealthPlayed)
 			{
 				UGameplayStatics::PlaySound2D(this, VoiceRecoveryHealth);
@@ -310,6 +352,8 @@ void UItemComponent::Recovery(float DeltaTime)
 		{
 			bDoRecoveryMana = false;
 			RecoveredManaAmount = 0.f;
+
+			// 마나가 없는데 사용하려 했을 경우 마나 부족 목소리 출력
 			if (CombatComp->bVoiceLackManaPlayed)
 			{
 				CombatComp->bVoiceLackManaPlayed = false;

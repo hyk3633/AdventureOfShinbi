@@ -39,6 +39,7 @@ void UBTT_Strafing::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemor
 
     if (!bStrafing)
     {
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
     }
 }

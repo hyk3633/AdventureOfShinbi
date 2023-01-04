@@ -27,4 +27,5 @@ protected:
 private:
 
 	float KeepingTime = 0.f;
+
 };

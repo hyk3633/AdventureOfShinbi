@@ -43,11 +43,13 @@ bool AGlaive::WeaponCapsuleTrace()
 
 	if (bHit)
 	{
+		// 낫 모드가 아니면 타격 횟수 카운트
 		if (bSickleMode == false)
 		{
 			HitStack++;
 		}
 
+		// 최대 타격 횟수에 도달하면 파티클 활성화
 		if (HitStack == MaxHitStack)
 		{
 			ActivateUltimateParticle();
@@ -57,6 +59,7 @@ bool AGlaive::WeaponCapsuleTrace()
 	return bHit;
 }
 
+// 모드에 따라 메쉬의 본 Rotation 값 보간
 void AGlaive::InterpWeaponPartsRotator(float DeltaTime, bool SickleMode)
 {
 	if (SickleMode)
@@ -76,6 +79,7 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 	if (bRightButtonClicked == false || WeaponOwner->GetIsAnimationPlaying())
 		return;
 
+	// 낫 모드 활성화
 	if (bSickleMode == false)
 	{
 		bSickleMode = true;
@@ -86,7 +90,7 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 			UltimateActivateParticleComp->Deactivate();
 		}
 	}
-	else
+	else // 낫 모드 비활성화
 	{
 		bSickleMode = false;
 		HitStack = 0;
@@ -331,6 +335,7 @@ void AGlaive::HandleTraceHitResult(TArray<FHitResult>& Results)
 	HitStack = 0;
 	UltimateActivateParticleComp->Deactivate();
 
+	// 트레이스가 적중한 적 액터에게만 데미지 적용, 이펙트 재생, LaunchCharacter 수행 (보스 액터는 제외)
 	TArray<AActor*> Actors;
 	for (FHitResult Hit : Results)
 	{

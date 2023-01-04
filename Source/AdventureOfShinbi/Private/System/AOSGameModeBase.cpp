@@ -29,8 +29,6 @@ void AAOSGameModeBase::RespawnPlayer()
 {
 	PlayerDeathCount++;
 
-	DPlayerRespawn.Broadcast();
-
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (PlayerPawn)
 	{
@@ -51,6 +49,8 @@ void AAOSGameModeBase::RespawnPlayer()
 	{
 		Cha->GetCombatComp()->PlayerDeathDelegate.AddDynamic(this, &AAOSGameModeBase::ShowDeathSignWidget);
 	}
+
+	DPlayerRespawn.Broadcast();
 }
 
 bool AAOSGameModeBase::IsPlayerRespawn()
@@ -395,6 +395,19 @@ int32 AAOSGameModeBase::GetRecoveryItemCount(ERecoveryType Type) const
 void AAOSGameModeBase::AddRecoveryItem(ERecoveryType Type, int32 Quantity)
 {
 	RecoveryItemMap[Type] += Quantity;
+}
+
+int8 AAOSGameModeBase::GetRecoveryIndex(ERecoveryType Type) const
+{
+	if (RecoveryIndexMap.Contains(Type))
+		return RecoveryIndexMap[Type];
+	else
+		return -1;
+}
+
+void AAOSGameModeBase::SetRecoveryIndex(ERecoveryType Type, int8 Index)
+{
+	RecoveryIndexMap.Add(Type, Index);
 }
 
 void AAOSGameModeBase::AddAmmoToAmmoMap(EAmmoType Type, int32 AmmoQuantity)

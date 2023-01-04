@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +7,7 @@
 #include "ItemInventorySlot.generated.h"
 
 /**
- * 
+ * 아이템 인벤토리 슬롯 클래스
  */
 
 class AItem;
@@ -27,14 +26,34 @@ class ADVENTUREOFSHINBI_API UItemInventorySlot : public UUserWidget
 
 public:
 
+	/** 버튼 델리게이트에 함수 바인딩 */
 	void BindSlotClickEvent();
 
+	/** 아이템 슬롯 텍스트 설정 */
 	void SetItemSlotCountText(int32 Count);
 
+	/** 아이콘 초기화 */
 	void InitializeIcon();
 
+	/** 퀵슬롯에 등록 버튼 클릭 시 호출 */
 	UFUNCTION()
 	void QuickSlotButtonClicked();
+
+protected:
+
+	/** 아이템 슬롯 버튼 클릭시 호출 */
+	UFUNCTION()
+	void ActivateItemInventorySlotClick();
+
+	/** 사용 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void UseButtonClicked();
+
+	/** 취소 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void CancelButtonClicked();
+
+public:
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* ItemInventorySlotIcon;
@@ -45,7 +64,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* ItemSlotCountText;
 
-	// 슬롯 메뉴
+	/** 슬롯 메뉴 버튼 및 텍스트 */
 
 	UPROPERTY(meta = (BindWidget))
 	UVerticalBox* ItemInventorySlotClick;
@@ -64,21 +83,12 @@ public:
 
 	Delegate_ItemMenuSelect OnItemMenuSelect;
 
-protected:
-
-	UFUNCTION()
-	void ActivateItemInventorySlotClick();
-
-	UFUNCTION()
-	void UseButtonClicked();
-
-	UFUNCTION()
-	void CancelButtonClicked();
-
 private:
 
+	/** 슬롯에 저장된 아이템 */
 	AItem* SlottedItem;
 
+	/** 아이템이 퀵슬롯에 장착되어 있으면 true */
 	bool bItemEquippedQuickSlot = false;
 
 public:
@@ -86,4 +96,5 @@ public:
 	void DeactivateItemInventorySlotClick();
 	void SetSlottedItem(AItem* Item);
 	void SetItemEquippedQuickSlot(const bool IsEquipped);
+
 };

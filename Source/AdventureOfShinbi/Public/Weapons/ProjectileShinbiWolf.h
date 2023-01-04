@@ -94,9 +94,10 @@ private:
 
 	UParticleSystemComponent* WolfAttackTrailComp;
 
-
 	UPROPERTY(EditAnywhere, Category = "Shinbi Wolf | Wolf Attack")
 	USoundCue* NormalImpactSound;
+
+	bool bHitted = false;
 
 	/** Circling Wolves */
 

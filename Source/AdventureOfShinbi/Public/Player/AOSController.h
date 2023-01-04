@@ -29,21 +29,19 @@ class ADVENTUREOFSHINBI_API AAOSController : public APlayerController
 	
 public:
 
-	// 스탯 ui 세팅
+	/** 스탯 ui 세팅 */
 
 	void SetHUDHealthBar(float HealthAmount, float MaxHealthAmount);
 	void SetHUDManaBar(float ManaAmount, float MaxManaAmount);
 	void SetHUDStaminaBar(float StaminaAmount, float MaxStaminaAmount);
 
-	// 보스 
+	/** 보스 ui 세팅 */
 
 	void BossHealthBarOn();
-
 	void BossHealthBarOff();
-
 	void SetHUDBossHealthBar(float HealthPercentage);
 
-	// 메인 ui 세팅
+	/** 메인 ui 세팅 */
 
 	void SetHUDEquippedItemIcon(UTexture2D* Icon);
 	void SetHUDEquippedWeaponIcon(UTexture2D* Icon);
@@ -52,30 +50,28 @@ public:
 
 	void HUDInventoryOn(bool IsInventoryOn);
 
-	// 탄약 ui 세팅
+	/** 탄약 ui 세팅 */
 
 	void SetHUDLoadedAmmoText(int32 Ammo);
 	void SetHUDTotalAmmoText(int32 Ammo);
 	void HUDAmmoInfoOn();
 	void HUDAmmoInfoOff();
 
-	// 인벤토리 ui 세팅
+	/** 인벤토리 ui 세팅 */
 
 	void SetHUDInventoryEquippedWeaponSlotIcon(UTexture2D* Icon);
 	void SetHUDInventoryQuickSlot1Icon(UTexture2D* Icon);
 	void SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon);
 
-	// 아이템 인벤토리 ui 세팅
-
-	void SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon);
-
-	//
+	/** 크로스헤어 세팅 */
 
 	void SetHUDCrosshairs(FCrosshairs Ch);
 
 	void EraseHUDCrosshairs();
 
 	void SetCrosshairSpread(float Spread);
+
+	/** 인벤토리 */
 
 	int32 GetHUDInventorySlotCount();
 
@@ -85,7 +81,7 @@ public:
 
 	void UpdateInventory(UInventorySlot* Slot);
 
-	//
+	/** 아이템 인벤토리 */
 
 	void UpdateItemInventory(int32 Index);
 
@@ -123,6 +119,10 @@ public:
 
 	void EnrollToItemQuickSlot(int8 Index);
 
+	void UpdateQuickSlotItemText(int8 Index, int32 ItemCount);
+
+	/** HUD 숨김 및 표시 */
+
 	void HideHUD();
 
 	void ShowHUD();
@@ -137,11 +137,22 @@ protected:
 
 	void HUDInventoryOff();
 
+	/** 
+	* 아이템 퀵슬롯에 아이템을 등록하는 함수
+	* @param SlotIndex 퀵슬롯의 인덱스
+	* @param QuickSlotIcon 퀵슬롯의 아이콘 이미지
+	* @param QuickSlotCountText 퀵슬롯의 텍스트블록
+	*/
 	UFUNCTION()
 	void EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UTextBlock* QuickSlotCountText);
 
+	/** 
+	* 아이템 개수 반환
+	* @param Item 개수를 반환할 아이템
+	*/
 	int32 GetItemCount(AItem* Item);
 
+	/** 퀵슬롯에 등록된 아이템이 없으면 true 를 반환 */
 	bool CheckQuickSlotArrayIsEmpty();
 
 private:
@@ -150,6 +161,7 @@ private:
 
 	AAOSHUD* AOSHUD;
 
+	/** 퀵슬롯에 장착할 아이템 */
 	AItem* SelectedItem;
 
 	FTimerHandle InventoryOffDelayTimer;
@@ -164,6 +176,7 @@ private:
 
 public:
 
+	/** 퀵슬롯에 장착할 아이템 설정 */
 	void SetSelectedItem(AItem* Item);
 
 };

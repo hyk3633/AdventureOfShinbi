@@ -1,5 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,7 +6,7 @@
 #include "ProjectileMurielSkillShot.generated.h"
 
 /**
- * 
+ * 중간 보스 뮤리엘 스킬 투사체 
  */
 UCLASS()
 class ADVENTUREOFSHINBI_API AProjectileMurielSkillShot : public AProjectileHoming

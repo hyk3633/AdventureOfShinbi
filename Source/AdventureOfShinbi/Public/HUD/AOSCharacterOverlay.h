@@ -7,7 +7,7 @@
 #include "AOSCharacterOverlay.generated.h"
 
 /**
- * 
+ * 메인 UI 위젯을 모두 표시하는 오버레이 클래스
  */
 
 class UProgressBar;
@@ -24,7 +24,7 @@ class ADVENTUREOFSHINBI_API UAOSCharacterOverlay : public UUserWidget
 
 public:
 
-	// 상단 플레이어 스탯
+	/** 상단 플레이어 스탯 UI */
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
@@ -35,12 +35,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* StaminaBar;
 
-	// 보스 체력바
+	/** 보스 체력바 UI */
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* BossHealthBar;
 
-	// 탄약 정보
+	/** 탄약 정보 UI */
 
 	UPROPERTY(meta = (BindWidget))
 	UOverlay* AmmoInfoBoxOverlay;
@@ -51,7 +51,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* TotalAmmoText;
 
-	// 하단 아이템 정보
+	/** 하단 아이템 정보 UI */
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* EquippedItemIcon;
@@ -68,12 +68,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UImage* WeaponQuickSlot2Icon;
 
-	// 인벤토리 위젯
+	/** 인벤토리 위젯 UI */
 
 	UPROPERTY(meta = (BindWidget))
 	UInventory* InventoryWidget;
 	
-	// 위젯 애니메이션
+	/** 위젯 애니메이션 UI */
 
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	UWidgetAnimation* AnimInventoryFadeInOut;
@@ -83,7 +83,5 @@ public:
 
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	UWidgetAnimation* AnimAmmoInfoFadeOut;
-
-
 
 };

@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "AOSHUD.generated.h"
 
 /**
- * 
+ * HUD 클래스
  */
 
 class UUserWidget;
@@ -24,24 +23,36 @@ public:
 
 	virtual void DrawHUD() override;
 
-	// 인벤토리 
+	/////////////////////////
+	// 인벤토리
+	//
 
+	/** 인벤토리 슬롯 확장 */
 	void CreateInventorySlot();
 
+	/** 인벤토리 슬롯 개수 반환 */
 	int32 GetInventorySlotCount();
 
+	/** 인벤토리 슬롯 갱신 */
 	void UpdateInventory();
 
+	/** 슬롯에 무기 아이템 추가 */
 	void AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon);
 
+	/////////////////////////
 	// 아이템 인벤토리
+	//
 
+	/** 아이템 인벤토리 슬롯 확장 */
 	void CreateItemInventorySlot();
 
+	/** 아이템 인벤토리 슬롯 갱신 */
 	void UpdateItemInventory();
 
+	/** 아이템 슬롯에 아이템 추가 */
 	void AddItemToSlot(int32 SlotNum, AItem* Item);
 
+	/** 아이템 인벤토리 슬롯 개수 반환 */
 	int32 GetItemInventorySlotCount();
 
 protected:
@@ -50,8 +61,10 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	/** 오버레이 위젯을 뷰포트에 추가 */
 	void AddOverlay();
 
+	/** 크로스헤어 표시 */
 	void DrawCrosshair(UTexture2D* Texture, FVector2D ViewportCenter, FVector2D Spread);
 
 public:
@@ -61,6 +74,8 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	UAOSCharacterOverlay* CharacterOverlay;
+
+	/** 크로스헤어 텍스쳐 */
 
 	UTexture2D* CrosshairCenter;
 
@@ -78,11 +93,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> ItemInventorySlotClass;
 
+	/** 크로스헤어 퍼짐 계수 */
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpread;
 
 private:
 
+	/** 크로스헤어 퍼짐 기본값 */
 	UPROPERTY(EditAnywhere)
 	float CrosshairSpreadMax = 16.f;
 

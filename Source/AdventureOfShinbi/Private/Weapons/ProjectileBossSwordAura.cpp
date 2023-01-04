@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/ProjectileBossSwordAura.h"
@@ -15,7 +14,7 @@ void AProjectileBossSwordAura::OnHit(UPrimitiveComponent* HitComp, AActor* Other
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
-	Target = Cast< AAOSCharacter>(OtherActor);
+	Target = Cast<AAOSCharacter>(OtherActor);
 	if (Target)
 	{
 		Target->SetWalkingSpeed(EWalkingState::EWS_Slowed);
@@ -25,6 +24,5 @@ void AProjectileBossSwordAura::OnHit(UPrimitiveComponent* HitComp, AActor* Other
 
 void AProjectileBossSwordAura::SlowTimeEnd()
 {
-	Target->GetCombatComp()->GetEquippedWeapon() ? 
-		Target->SetWalkingSpeed(EWalkingState::EWS_Armed) : Target->SetWalkingSpeed(EWalkingState::EWS_UnArmed);
+	Target->SetWalkingSpeed(EWalkingState::EWS_Armed);
 }

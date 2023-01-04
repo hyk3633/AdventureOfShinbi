@@ -40,6 +40,7 @@ void AProjectileHoming::BeginPlay()
 	}
 	else
 	{
+		// 적 액터의 투사체일 경우 플레이어를 유도 대상으로 지정
 		AEnemyRanged* ER = Cast<AEnemyRanged>(GetInstigator());
 		if (ER)
 		{
@@ -83,7 +84,7 @@ void AProjectileHoming::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
 	}
 	else if (HittedPlayer)
 	{
-		// TODO 플레이어 전용 히트 이펙트
+		
 	}
 	else
 	{
@@ -118,6 +119,7 @@ void AProjectileHoming::DestroyProjectile()
 
 void AProjectileHoming::CheckNearbyEnemy()
 {
+	// 반경 3000.f 이내의 적 액터를 탐색
 	TArray<AActor*> Enemies;
 	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
 	if (Enemies.Num() > 0)
@@ -136,6 +138,7 @@ void AProjectileHoming::CheckNearbyEnemy()
 
 		if (Target)
 		{
+			// 적이 유효하면 유도 대상으로 지정
 			GetWorldTimerManager().ClearTimer(CheckEnemyTimer);
 			AEnemyCharacter* EC = Cast<AEnemyCharacter>(Target);
 			ProjectileMovementComponent->HomingTargetComponent = EC->GetCapsuleComponent();

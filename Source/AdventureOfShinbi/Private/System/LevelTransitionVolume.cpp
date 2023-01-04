@@ -76,6 +76,7 @@ void ALevelTransitionVolume::ReBindFunction()
 
 void ALevelTransitionVolume::LevelTransition()
 {
+	// 데이터 저장
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->SavePlayerData();
 	GetWorld()->GetGameInstance<UAOSGameInstance>()->AcitavateShouldLoadData();
 	if (LoadingScreen)

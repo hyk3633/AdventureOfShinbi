@@ -9,9 +9,7 @@
 
 UNotifyFootStepSound::UNotifyFootStepSound()
 {
-#if WITH_EDITORONLY_DATA
-	NotifyColor = FColor::Emerald;
-#endif 
+
 }
 
 void UNotifyFootStepSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
@@ -46,6 +44,7 @@ void UNotifyFootStepSound::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenc
 		if (HitResult.GetActor() == nullptr)
 			return;
 
+		// 피직스 머티리얼의 SurfaceType에 해당하는 인덱스의 사운드 출력
 		const int8 Index = static_cast<int8>(HitResult.PhysMaterial->SurfaceType) - 1;
 		if (Index > -1 && FootStepSound.Num() > Index)
 		{

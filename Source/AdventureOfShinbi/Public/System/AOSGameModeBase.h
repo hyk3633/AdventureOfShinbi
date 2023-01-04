@@ -8,7 +8,11 @@
 #include "AOSGameModeBase.generated.h"
 
 /**
- * 
+ * 게임 모드 베이스 클래스
+ * 플레이어 사망 처리
+ * 보스 패배 관련 처리
+ * 플레이어 리스폰 후 데이터 불러오기
+ * 게임인스턴스에 데이터 저장 및 불러오기
  */
 
 class UAOSGameInstance;
@@ -32,6 +36,7 @@ class USoundCue;
 
 DECLARE_MULTICAST_DELEGATE(PlayerRespawnDelegate);
 
+/** 퀵슬롯 아이템 정보 구조체 */
 USTRUCT()
 struct FQuickSlotItem
 {
@@ -67,7 +72,7 @@ public:
 
 	void BindBossDefeatEvent();
 
-	// 무기 
+	/** 무기 데이터 처리 함수 */
 
 	void AddWeaponToArr(AWeapon* Weapon);
 
@@ -87,7 +92,7 @@ public:
 	AWeapon* GetQuickSlot1Weapon();
 	AWeapon* GetQuickSlot2Weapon();
 
-	// 아이템 
+	/** 아이템 데이터 처리 함수 */
 
 	void InitializeTMap();
 
@@ -106,6 +111,10 @@ public:
 	int32 GetRecoveryItemCount(ERecoveryType Type) const;
 
 	void AddRecoveryItem(ERecoveryType Type, int32 Quantity);
+
+	int8 GetRecoveryIndex(ERecoveryType Type) const;
+
+	void SetRecoveryIndex(ERecoveryType Type, int8 Index);
 
 	void AddAmmoToAmmoMap(EAmmoType Type, int32 AmmoQuantity);
 
@@ -167,7 +176,10 @@ private:
 
 	AAOSController* CharacterController;
 
+	/** 플레이어가 리스폰 될 플레이어 스타트 */
 	APlayerStart* PlayerStart;
+
+	/** 플레이어 데이터를 저장한 변수들 */
 
 	AWeapon* EquippedWeapon = nullptr;
 
@@ -180,6 +192,8 @@ private:
 
 	TMap<ERecoveryType, int32> RecoveryItemMap;
 
+	TMap<ERecoveryType, int8> RecoveryIndexMap;
+
 	TMap<EAmmoType, int32> AmmoQuantityMap;
 
 	TMap<EAmmoType, int8> AmmoIndexMap;
@@ -189,6 +203,8 @@ private:
 	int8 ActivatedQuickSlotNumber = 0;
 
 	int32 PlayerDeathCount = 0;
+
+	/** 아이템 템플릿 클래스들 */
 
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AWeapon> ShinbiSwordClass;
@@ -223,6 +239,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Item Class")
 	TSubclassOf<AItem> SniperAmmoClass;
 
+	/** 플레이어 사망 위젯, 사운드 변수 */
+
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Player Death")
 	TSubclassOf<UUserWidget> DeathSignWidgetClass;
 
@@ -232,6 +250,8 @@ private:
 	USoundCue* DeathSound;
 
 	FTimerHandle DeathSignTimer;
+
+	/** 보스 패배 위젯, 사운드 변수 */
 
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Boss Defeated")
 	TSubclassOf<UUserWidget> BossDefeatedSignWidgetClass;

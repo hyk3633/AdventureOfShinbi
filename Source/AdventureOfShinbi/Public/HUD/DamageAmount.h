@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "DamageAmount.generated.h"
 
 /**
- * 
+ * 데미지 수치 위젯
  */
 
 class UTextBlock;

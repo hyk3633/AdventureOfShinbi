@@ -7,7 +7,7 @@
 #include "ItemRecovery.generated.h"
 
 /**
- * 
+ * 회복 아이템 클래스
  */
 
 class UParticleSystem;
@@ -32,11 +32,16 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
+
+	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
+
 private:
 
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* MeshComponent;
 
+	/** 회복 유형 */
 	UPROPERTY(EditAnywhere)
 	ERecoveryType RecoveryType;
 
@@ -57,9 +62,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item | Effect")
 	USoundCue* UsingSound;
 
+	/** 회복량 */
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0))
 	float RecoveryQuantity = 50.f;
 
+	/** 퀵슬롯 인덱스, 등록이 안되어 있으면 -1 */
 	int8 QuickSlotIndex = -1;
 
 	bool bAutoActivateEffect = true;

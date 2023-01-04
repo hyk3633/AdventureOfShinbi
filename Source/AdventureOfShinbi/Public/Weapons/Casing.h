@@ -5,6 +5,10 @@
 #include "GameFramework/Actor.h"
 #include "Casing.generated.h"
 
+/**
+* 무기 메쉬에서 스폰되는 탄피 클래스
+*/
+
 class USoundCue;
 
 UCLASS()
@@ -30,6 +34,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* CasingMesh;
 
+	/** 탄피가 튀어나가는 강도 */
 	UPROPERTY(EditAnywhere, Category = "Casing")
 	float EjectImpulse = 20.f;
 

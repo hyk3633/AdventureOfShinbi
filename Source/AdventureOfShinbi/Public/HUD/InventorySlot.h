@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +7,7 @@
 #include "InventorySlot.generated.h"
 
 /**
- * 
+ * 인벤토리 슬롯 클래스
  */
 
 class UImage;
@@ -24,9 +23,42 @@ class ADVENTUREOFSHINBI_API UInventorySlot : public UUserWidget
 
 public:
 
+	/** 버튼 델리게이트에 함수 바인딩 */
 	void BindSlotClickEvent();
 
+	/** 선택한 메뉴 버튼에 따라 버튼 메뉴 텍스트 변경 */
 	void InitializeOthers(EWeaponState State);
+
+	/** 장착 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void EquipButtonClicked();
+
+	/** 퀵슬롯1 장착 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void QuickSlot1ButtonClicked();
+
+	/** 퀵슬롯2 장착 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void QuickSlot2ButtonClicked();
+
+	/** 버리기 버튼 클릭 시 호출 */
+	UFUNCTION()
+	void DiscardButtonClicked();
+
+protected:
+
+	UFUNCTION()
+	void ActivateInventorySlotClick();
+
+	void DeactivateInventorySlotClick();
+
+	void ToggleEquippedSlot();
+
+	void ToggleQuickSlot1();
+
+	void ToggleQuickSlot2();
+
+public:
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* InventorySlotIcon;
@@ -36,6 +68,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UVerticalBox* InventorySlotClick;
+
+	/** 슬롯 메뉴 버튼 및 텍스트 */
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* ButtonEquip;
@@ -58,35 +92,12 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UButton* ButtonDiscardWeapon;
 
-	UFUNCTION()
-	void EquipButtonClicked();
-
-	UFUNCTION()
-	void QuickSlot1ButtonClicked();
-
-	UFUNCTION()
-	void QuickSlot2ButtonClicked();
-
-	UFUNCTION()
-	void DiscardButtonClicked();
-
-protected:
-
-	UFUNCTION()
-	void ActivateInventorySlotClick();
-
-	void DeactivateInventorySlotClick();
-
-	void ToggleEquippedSlot();
-
-	void ToggleQuickSlot1();
-
-	void ToggleQuickSlot2();
-
 private:
 
+	/** 슬롯에 저장된 무기 아이템 */
 	AWeapon* SlottedWeapon;
 
+	/** 무기의 퀵슬롯 저장 여부 */
 	bool bIsEquipped = false;
 	bool bIsQuickSlot1 = false;
 	bool bIsQuickSlot2 = false;

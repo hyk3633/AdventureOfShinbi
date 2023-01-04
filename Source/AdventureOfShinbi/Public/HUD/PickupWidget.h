@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,7 +6,7 @@
 #include "PickupWidget.generated.h"
 
 /**
- * 
+ * 아이템 정보 위젯 클래스
  */
 
 class UTextBlock;

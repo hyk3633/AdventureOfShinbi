@@ -26,14 +26,19 @@ public:
 
 	UItemComponent();
 
+	/** 플레이어 리스폰 후 컴포넌트를 이전 상태로 초기화 */
 	void RestartItemComp();
 
+	/** 아이템 추가 */
 	void AddItem(AItem* Item);
 
+	/** 퀵슬롯 활성화 아이템 사용 */
 	void UseActivatedQuickSlotItem();
 
+	/** 탄약 아이템 추가 */
 	void AddAmmoItem(AItem* Item);
 
+	/** 아이템 상태에 따라 처리 */
 	UFUNCTION()
 	void ItemUseOrEquip(AItem* Item, EItemSlotMenuState State);
 
@@ -72,6 +77,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item Compnent | Voice")
 	USoundCue* VoiceRecoveryHealth;
 
+	/** 스탯 회복량 및 회복율 */
+
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
 	float HealthRecoveryAmount = 50.f;
 
@@ -82,19 +89,22 @@ private:
 	float ManaRecoveryAmount = 1000.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
-	float ManaRecoveryRate = 10.f;
+	float ManaRecoveryRate = 500.f;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 1.0, ClampMax = 1000.0))
 	float StaminaRecoveryBoostAmount = 2.f;
 
+	/** 회복 진행 여부 */
 	bool bDoRecoveryHealth = false;
 	bool bDoRecoveryMana = false;
 
+	/** 회복된 양 */
 	float RecoveredHealthAmount = 0.f;
 	float RecoveredManaAmount = 0.f;
 
 	FTimerHandle StaminaRecoveryBoostTimer;
 
+	/** 지구력 회복 속도 증가 시간 */
 	float StaminaRecoveryBoostTime = 60.f;
 
 	float DefaultStaminaIncreaseRate = 0.f;

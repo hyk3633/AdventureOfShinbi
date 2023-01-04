@@ -11,7 +11,6 @@
 
 AWeapon::AWeapon()
 {
-	bIsWeapon = true;
 	bOnSpin = false;
 	MovementSpeed = 10.f;
 }

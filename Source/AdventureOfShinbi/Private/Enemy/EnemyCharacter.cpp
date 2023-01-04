@@ -108,8 +108,6 @@ void AEnemyCharacter::BeginPlay()
 
 	OriginDamage = Damage;
 
-	AcceptableRadius = AttackRange->GetScaledSphereRadius() - 80.f;
-
 	PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyCharacter::OnDetected);
 
 	EnemyAnim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance());
@@ -220,6 +218,7 @@ void AEnemyCharacter::GetBoxTraceHitResult(FHitResult& HitResult, FName StartSoc
 
 void AEnemyCharacter::CheckIsKnockUp()
 {
+	// 공중에 띄워졌으면 모든 애니메이션 및 공격 중단
 	if (GetCharacterMovement()->IsFalling() && bDeath == false)
 	{
 		EnemyAnim->StopAllMontages(0.2f);
@@ -253,6 +252,8 @@ void AEnemyCharacter::AbortAttack()
 	if (bIsAttacking)
 	{
 		bIsAttacking = false;
+
+		// 타겟이 근접 공격 콜리전에 계속 오버랩되있으면 true
 		if (GetAttackRange()->IsOverlappingActor(AiInfo.TargetPlayer) == false)
 			AiInfo.bTargetInAttackRange = false;
 		else
@@ -282,6 +283,7 @@ void AEnemyCharacter::Healing(float DeltaTime)
 		HealedAmount = 0.f;
 		bHealing = false;
 		HealthWidget->SetVisibility(false);
+		BuffEnd();
 	}
 }
 
@@ -293,12 +295,15 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 
 	if (IsPlayerDeathDelegateBined == false)
 	{
+		// 감지된 타겟 플레이어의 사망 델리게이트에 함수 바인딩
 		Cha->GetCombatComp()->PlayerDeathDelegate.AddDynamic(this, &AEnemyCharacter::PlayerDead);
 		IsPlayerDeathDelegateBined = true;
 	}
 
+	// 시각 자극 갱신
 	if (Stimulus.Type.Name == FName("Default__AISense_Sight"))
 	{
+		// 시각 자극이 감지되었을 경우
 		if (Stimulus.WasSuccessfullySensed())
 		{
 			AiInfo.bTargetIsVisible = true;
@@ -315,9 +320,10 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 			GetWorldTimerManager().SetTimer(SightStimulusExpireTimer, this, &AEnemyCharacter::SightStimulusExpire, SightStimulusExpireTime);
 		}
 	}
-	else if (Stimulus.Type.Name == FName("Default__AISense_Hearing"))
+	else if (Stimulus.Type.Name == FName("Default__AISense_Hearing")) // 청각 자극 갱신
 	{
-		if (!Stimulus.IsExpired())
+		// 청각 자극이 감지되었을 경우
+		if (Stimulus.IsExpired() == false)
 		{
 			AiInfo.bTargetIsHeard = true;
 			AiInfo.DetectedLocation = Cha->GetActorLocation();
@@ -333,6 +339,7 @@ void AEnemyCharacter::OnDetected(AActor* Actor, FAIStimulus Stimulus)
 		}
 	}
 
+	// AI 상태 정보 갱신
 	if (AIController)
 	{
 		AIController->UpdateAiInfo();
@@ -361,6 +368,7 @@ void AEnemyCharacter::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedCompon
 
 void AEnemyCharacter::OnAttackRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	// 플레이어가 공격 범위 밖으로 나가도 공격 도중이면 해당 bool 값을 false로 설정하지 않음 (공격 태스크가 중단되므로)
 	if (bIsAttacking)
 		return;
 
@@ -389,6 +397,7 @@ void AEnemyCharacter::PlayMeleeAttackEffect(FVector HitLocation, FRotator HitRot
 
 void AEnemyCharacter::ActivateHealing(float RecoveryAmount)
 {
+	PlayBuffParticle();
 	HealAmount = RecoveryAmount;
 	bHealing = true;
 	HealthWidget->SetVisibility(true);
@@ -397,20 +406,20 @@ void AEnemyCharacter::ActivateHealing(float RecoveryAmount)
 void AEnemyCharacter::ActivateDamageUp(float DamageUpRate)
 {
 	PlayBuffParticle();
-
 	Damage *= DamageUpRate;
 	GetWorldTimerManager().SetTimer(DamageUpTimer, this, &AEnemyCharacter::DamageUpTimeEnd, DamageUpTime);
 }
 
 void AEnemyCharacter::CheckNothingStimulus()
 {
-	if (AiInfo.bTargetIsVisible == false &&
-		AiInfo.bSightStimulusExpired &&
-		AiInfo.bTargetIsHeard == false &&
-		AiInfo.bTargetHitsMe == false)
+	if (AiInfo.bTargetIsVisible == false && // 타겟 플레이어가 보이지 않고
+		AiInfo.bSightStimulusExpired &&		// 타겟 플레이어에 대한 시각 기억이 만료되었고
+		AiInfo.bTargetIsHeard == false &&	// 타겟 플레이어의 노이즈가 감지 되지 않고
+		AiInfo.bTargetHitsMe == false)		// 타겟 플레이어에게 피격 당하지 않았거나 피격 자극이 만료되었을 경우
 	{
 		if (EnemyState == EEnemyState::EES_Chase || EnemyState == EEnemyState::EES_Detected)
 		{
+			// 움직임 상태를 복귀로 설정
 			SetEnemyState(EEnemyState::EES_Comeback);
 		}
 	}
@@ -434,13 +443,17 @@ void AEnemyCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived
 		AIController->SetDetectedLocation(AiInfo.DetectedLocation);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("%f"), DamageReceived);
+	if (AiInfo.bTargetIsVisible == false)
+	{
+		if (EnemyState == EEnemyState::EES_Patrol)
+		{
+			SetEnemyState(EEnemyState::EES_Detected);
+		}
+	}
 
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(DamageCauser);
 	if (Cha)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cha"));
-
 		const int32 RandInt = FMath::RandRange(1, Cha->GetCombatComp()->GetRandRangeValue());
 		const float RandValue = Cha->GetCombatComp()->GetDefaultValue() * RandInt;
 		float Dmg = (DamageReceived - (Defense / 2)) + RandValue;
@@ -535,6 +548,7 @@ void AEnemyCharacter::HandleHealthChange(float DamageReceived)
 			AIController->UpdateAiInfo();
 		}
 		PlayDeathMontage();
+		BuffEnd();
 	}
 }
 
@@ -556,6 +570,7 @@ void AEnemyCharacter::PopupDamageAmountWidget(AController* InstigatorController,
 
 		if (DamageAmount)
 		{
+			// 헤드샷, 크리티컬 여부에 따라 크기와 색을 다르게 출력
 			DamageAmount->DamageText->SetText(FText::AsNumber(DamageNumber));
 			if (IsHeadShot)
 			{
@@ -693,6 +708,7 @@ void AEnemyCharacter::PlayDeathMontage()
 	if (EnemyAnim == nullptr || DeathMontage == nullptr) 
 		return;
 
+	EnemyAnim->StopAllMontages(0.f);
 	EnemyAnim->Montage_Play(DeathMontage);
 
 	if (DissolveMatInst.Num() == 0)
@@ -703,6 +719,7 @@ void AEnemyCharacter::PlayDeathMontage()
 		DynamicDissolveMatInst.Add(nullptr);
 		if (DissolveMatInst[i])
 		{
+			// 캐릭터 메쉬의 머티리얼을 소멸 효과가 적용된 머티리얼로 설정
 			DynamicDissolveMatInst[i] = UMaterialInstanceDynamic::Create(DissolveMatInst[i], this);
 			GetMesh()->SetMaterial(i, DynamicDissolveMatInst[i]);
 			DynamicDissolveMatInst[i]->SetScalarParameterValue(TEXT("Dissolve"), -0.55f);
@@ -714,9 +731,11 @@ void AEnemyCharacter::PlayDeathMontage()
 
 void AEnemyCharacter::Dissolution()
 {
+	// 타임라인 플로트에 값을 매개변수로 받는 함수 바인딩
 	DissolveTrack.BindDynamic(this, &AEnemyCharacter::UpdateDissolveMat);
 	if (DissolveCurve && DissolveTimeline)
 	{
+		// 타임라인에 커브를 할당하고 시작
 		DissolveTimeline->AddInterpFloat(DissolveCurve, DissolveTrack);
 		DissolveTimeline->Play();
 	}
@@ -728,6 +747,7 @@ void AEnemyCharacter::UpdateDissolveMat(float Value)
 	{
 		if (DynamicDissolveMatInst[i])
 		{
+			// 커브 값에 따라 머티리얼의 파라미터 값 갱신
 			DynamicDissolveMatInst[i]->SetScalarParameterValue(TEXT("Dissolve"), Value);
 		}
 	}
@@ -737,14 +757,7 @@ void AEnemyCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrup
 {
 	if (Montage == AttackMontage)
 	{
-		bIsAttacking = false;
-		if(AttackRange->IsOverlappingActor(AiInfo.TargetPlayer) == false)
-			AiInfo.bTargetInAttackRange = false;
-		if (AIController)
-		{
-			AIController->UpdateAiInfo();
-		}
-		OnAttackEnd.Broadcast();
+		GetWorldTimerManager().SetTimer(AttackDelayTimer, this, &AEnemyCharacter::AttackDelay, 2.f);
 	}
 }
 
@@ -776,8 +789,6 @@ void AEnemyCharacter::OnStunMontageEnded(UAnimMontage* Montage, bool bInterrupte
 		{
 			AIController->UpdateAiInfo();
 		}
-
-
 	}
 }
 
@@ -821,6 +832,7 @@ void AEnemyCharacter::RotateToTarget(float DeltaTime)
 		FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation());
 		LookAtRotation = FRotator(0.f, LookAtRotation.Yaw, 0.f);
 
+		// 공격 중 이면 회전 속도 느리게
 		float RotateRate = bIsAttacking ? AttackingRotateRate : NormalRotateRate;
 
 		Rotation = FMath::RInterpTo(GetActorRotation(), LookAtRotation, DeltaTime, RotateRate);
@@ -830,12 +842,12 @@ void AEnemyCharacter::RotateToTarget(float DeltaTime)
 
 bool AEnemyCharacter::CheckRotateToTargetCondition()
 {
-	return bDeath == false &&
-		AiInfo.bStiffed == false &&
-		AiInfo.bStunned == false &&
-		AiInfo.TargetPlayer != nullptr &&
-		AiInfo.bIsPlayerDead == false &&
-		EnemyState == EEnemyState::EES_Chase;
+	return bDeath == false &&					// 캐릭터가 살아있고
+		AiInfo.bStiffed == false &&				// 경직 중 이지 않고
+		AiInfo.bStunned == false &&				// 스턴 중 이지 않고
+		AiInfo.TargetPlayer != nullptr &&		// 타겟 플레이어가 설정 되어 있고
+		AiInfo.bIsPlayerDead == false &&		// 타겟 플레이어가 살아있고
+		EnemyState == EEnemyState::EES_Chase;	// 상태가 추격 중 이면 true (타겟 플레이어를 향해 회전) 
 }
 
 void AEnemyCharacter::SetHealthBar()
@@ -876,12 +888,36 @@ void AEnemyCharacter::StopAttackMontage()
 
 void AEnemyCharacter::DamageUpTimeEnd()
 {
+	BuffEnd();
 	Damage = OriginDamage;
 }
 
 void AEnemyCharacter::PlayBuffParticle()
 {
-	
+	if (BuffStartParticle)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BuffStartParticle, GetActorLocation(), GetActorRotation(), true);
+	}
+	if (BuffParticle)
+	{
+		BuffParticleComponent = UGameplayStatics::SpawnEmitterAttached
+		(
+			BuffParticle,
+			GetMesh(),
+			FName(),
+			FVector::UpVector * 50.f,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset
+		);
+	}
+}
+
+void AEnemyCharacter::BuffEnd()
+{
+	if (BuffParticleComponent)
+	{
+		BuffParticleComponent->Deactivate();
+	}
 }
 
 void AEnemyCharacter::SightStimulusExpire()
@@ -986,9 +1022,17 @@ void AEnemyCharacter::PlayerDead()
 	}
 }
 
-float AEnemyCharacter::GetAcceptableRaius() const
+void AEnemyCharacter::AttackDelay()
 {
-	return AcceptableRadius;
+	bIsAttacking = false;
+	if (AttackRange->IsOverlappingActor(AiInfo.TargetPlayer) == false)
+		AiInfo.bTargetInAttackRange = false;
+	if (AIController)
+	{
+		AIController->UpdateAiInfo();
+	}
+
+	OnAttackEnd.Broadcast();
 }
 
 EEnemyState AEnemyCharacter::GetEnemyState() const

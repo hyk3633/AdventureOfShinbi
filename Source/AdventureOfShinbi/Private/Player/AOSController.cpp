@@ -48,12 +48,14 @@ void AAOSController::OnPossess(APawn* aPawn)
 	GameMode = GetWorld()->GetAuthGameMode<AAOSGameModeBase>();
 	if (GameMode)
 	{
+		// 레벨 트랜지션 후 데이터 로드
 		if (GetWorld()->GetGameInstance<UAOSGameInstance>()->GetShouldLoadData())
 		{
 			GetWorld()->GetGameInstance<UAOSGameInstance>()->DeacitavateShouldLoadData();
 			GetWorld()->GetAuthGameMode<AAOSGameModeBase>()->LoadPlayerData();
 		}
 
+		// 플레이어가 리스폰 했다면
 		if (GameMode->IsPlayerRespawn())
 		{
 			AAOSCharacter* Cha = Cast<AAOSCharacter>(aPawn);
@@ -236,8 +238,7 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 				SelectedItem = nullptr;
 				return;
 			}
-			// 퀵슬롯이 이미 차 있을 경우
-			else if (QuickSlotItem != nullptr)
+			else if (QuickSlotItem != nullptr) // 퀵슬롯이 이미 차 있을 경우
 			{
 				AItemRecovery* Recovery = Cast<AItemRecovery>(QuickSlotItem);
 				Recovery->SetQuickSlotIndex(-1);
@@ -251,6 +252,7 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 				Recovery->SetQuickSlotIndex(SlotIndex);
 			}
 
+			// 퀵슬롯이 비어있었다면 활성화 퀵슬롯 아이템으로 설정 (키를 눌러 바로 사용할 수 있는 아이템)
 			if (CheckQuickSlotArrayIsEmpty())
 			{
 				SetEquippedQuickItem(SlotIndex, SelectedItem);
@@ -262,17 +264,34 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 			Brush.DrawAs = ESlateBrushDrawType::Image;
 			Brush.SetImageSize(FVector2D(110.f));
 
+			// 퀵슬롯의 아이콘 및 텍스트 설정
 			QuickSlotIcon->SetBrush(Brush);
 			QuickSlotIcon->SetBrushFromTexture(SelectedItem->GetItemIcon());
 			QuickSlotCountText->SetText(FText::FromString(FString::FromInt(GetItemCount(SelectedItem))));
 			QuickSlotCountText->SetVisibility(ESlateVisibility::Visible);
 
+			// 아이템 인벤토리의 슬롯 설정
 			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonEquipToQuickSlot->SetIsEnabled(true);
 			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
 			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->DeactivateItemInventorySlotClick();
 			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->SetItemEquippedQuickSlot(true);
 			AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ItemQuickSlotButtonText->SetText(FText::FromString(TEXT("퀵슬롯 장착 해제")));
 			SelectedItem = nullptr;
+		}
+	}
+}
+
+void AAOSController::UpdateQuickSlotItemText(int8 Index, int32 ItemCount)
+{
+	for (int8 i = 0; i < 5; i++)
+	{
+		if (GameMode->GetQuickSlotItemArr(i).QuickSlotItem == GameMode->GetItem(Index))
+		{
+			GameMode->GetQuickSlotItemArr(i).QuickSlotItemCountText->SetText(FText::FromString(FString::FromInt(ItemCount)));
+			if (GameMode->GetActivatedQuickSlotNumber() == i)
+			{
+				AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(FText::FromString(FString::FromInt(ItemCount)));
+			}
 		}
 	}
 }
@@ -287,6 +306,7 @@ void AAOSController::SetEquippedQuickItem(int8 SlotIndex, AItem* Item)
 	Brush.DrawAs = ESlateBrushDrawType::Image;
 	Brush.SetImageSize(FVector2D(110.f));
 
+	// 활성화 퀵슬롯 아이콘 및 텍스트 설정
 	AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrush(Brush);
 	AOSHUD->CharacterOverlay->EquippedItemIcon->SetBrushFromTexture(Item->GetItemIcon());
 	AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(FText::FromString(FString::FromInt(GetItemCount(Item))));
@@ -429,11 +449,6 @@ void AAOSController::SetHUDInventoryQuickSlot2Icon(UTexture2D* Icon)
 	}
 }
 
-void AAOSController::SetHUDItemInventoryQuickSlotIcon(UTexture2D* Icon)
-{
-
-}
-
 void AAOSController::SetHUDCrosshairs(FCrosshairs Ch)
 {
 	AOSHUD->CrosshairCenter = Ch.CrosshairCenter;
@@ -498,8 +513,10 @@ void AAOSController::CreateHUDItemInventorySlot()
 	}
 }
 
+// 활성화 퀵슬롯에 퀵슬롯 아이템 중 하나로 교환 
 void AAOSController::ItemChange()
 {
+	// 인덱스 순환
 	GameMode->SetActivatedQuickSlotNumber((GameMode->GetActivatedQuickSlotNumber() + 1) % 5);
 
 	for (int8 i = 0; i < 4; i++)

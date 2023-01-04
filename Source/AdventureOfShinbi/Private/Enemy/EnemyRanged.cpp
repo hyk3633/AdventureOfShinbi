@@ -69,12 +69,10 @@ void AEnemyRanged::ProjectileFire(TSubclassOf<AProjectile> Projectile)
 	FVector ToTarget = HitPoint - SocketTransform.GetLocation();
 	FRotator TargetRotation = ToTarget.Rotation();
 
-	//DrawDebugLine(GetWorld(), SocketTransform.GetLocation(), )
-
 	if (Projectile)
 	{
 		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = GetOwner();
+		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
 
 		UWorld* World = GetWorld();
@@ -87,10 +85,12 @@ void AEnemyRanged::ProjectileFire(TSubclassOf<AProjectile> Projectile)
 
 void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 {
+	// AI의 시각 위치 값을 받아옴
 	FVector EyeLocation;
 	FRotator EyeRotation;
 	GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
+	// 타겟 플레이어가 설정되어 있으면 타겟 방향으로 설정
 	FVector ShotDirection;
 	if (AiInfo.TargetPlayer)
 	{
@@ -100,7 +100,8 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 	{
 		ShotDirection = EyeRotation.Vector();
 	}
-	// Bullet Spread
+
+	// 탄 퍼짐
 	float HalfRad = FMath::DegreesToRadians(BulletSpread);
 	ShotDirection = FMath::VRandCone(ShotDirection, HalfRad, HalfRad);
 
@@ -115,8 +116,8 @@ void AEnemyRanged::CrosshairLineTrace(FVector& OutHitPoint)
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, EyeLocation, TraceEnd, ECollisionChannel::ECC_Visibility, QueryParams);
 
-	// 적중하지 않았을 경우 타격 지점을 TraceEnd 로 지정
-	if (!HitResult.bBlockingHit)
+	// 트레이스가 적중하지 않았을 경우 투사체가 향할 지점을 TraceEnd로 지정
+	if (HitResult.bBlockingHit == false)
 	{
 		OutHitPoint = TraceEnd;
 	}
@@ -143,9 +144,9 @@ void AEnemyRanged::OnFireMontageEnded()
 	CurrentFireCount++;
 
 	bool bCheckCondition =
-		GetCharacterMovement()->IsFalling() ||
-		GetAiInfo().bIsPlayerDead ||
-		GetAiInfo().bTargetIsVisible == false;
+		GetCharacterMovement()->IsFalling() ||	// 공중에 떠 있거나
+		GetAiInfo().bIsPlayerDead ||			// 플레이어가 사망했거나
+		GetAiInfo().bTargetIsVisible == false;	// 타겟이 보이지 않으면 원거리 공격 중단
 
 	if (CurrentFireCount == FireCount || bCheckCondition)
 	{

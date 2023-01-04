@@ -30,48 +30,39 @@ void UBTS_CheckDistanceForStrafing::TickNode(UBehaviorTreeComponent& OwnerComp, 
         return;
 
     UWorld* World = ControllingEnemy->GetWorld();
-    FVector Center = ControllingEnemy->GetActorLocation();
-    float DetectRadius = 1000.0f;
 
     if (World == nullptr) 
         return;
 
-    TArray<FOverlapResult> OverlapResults;
-    FCollisionQueryParams CollisionQueryParam(NAME_None, false, ControllingEnemy);
-    bool bResult = World->OverlapMultiByChannel(OverlapResults, Center, FQuat::Identity, ECollisionChannel::ECC_Visibility, FCollisionShape::MakeSphere(DetectRadius), CollisionQueryParam);
-
-    if (bResult)
+    AActor* TargetActor = ControllingEnemy->GetAiInfo().TargetPlayer;
+    if (TargetActor == nullptr)
+        return;
+    
+    AAOSCharacter* Cha = Cast<AAOSCharacter>(TargetActor);
+    if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
     {
-        for (FOverlapResult const& OverlapResult : OverlapResults)
+        const float Distance = ControllingEnemy->GetDistanceTo(Cha);
+
+        if (Distance <= 900.f && ControllingEnemy->GetIsAttacking() == false)
         {
-            AAOSCharacter* Cha = Cast<AAOSCharacter>(OverlapResult.GetActor());
-
-            if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
+            KeepingTime += DeltaSeconds;
+            if (KeepingTime >= 1.f)
             {
-                const float Distance = ControllingEnemy->GetDistanceTo(Cha);
-
-                if (Distance >= ControllingEnemy->GetAcceptableRaius() && Distance <= 900.f && ControllingEnemy->GetIsAttacking() == false)
-                {
-                    KeepingTime += DeltaSeconds;
-                    if (KeepingTime >= 2.f)
-                    {
-                        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
-                        KeepingTime = 0.f;
-                    }
-                }
-                else
-                {
-                    KeepingTime = 0.f;
-                    OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
-                    ControllingEnemy->OnStrafingEnd.Broadcast();
-                }
-            }
-            else
-            {
+                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
                 KeepingTime = 0.f;
-                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
-                ControllingEnemy->OnStrafingEnd.Broadcast();
             }
         }
+        else
+        {
+            KeepingTime = 0.f;
+            OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
+            ControllingEnemy->OnStrafingEnd.Broadcast();
+        }
+    }
+    else
+    {
+        KeepingTime = 0.f;
+        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
+        ControllingEnemy->OnStrafingEnd.Broadcast();
     }
 }

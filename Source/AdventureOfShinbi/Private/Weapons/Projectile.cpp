@@ -94,7 +94,7 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 			ExplosionRadius, 
 			UDamageType::StaticClass(), 
 			IgnoreActors, 
-			GetOwner(), 
+			GetOwner(),
 			GetOwner()->GetInstigatorController()
 		);
 		RadialForce->FireImpulse();

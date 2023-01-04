@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,12 +5,9 @@
 #include "Weapons/RangedProjectileWeapon.h"
 #include "Wraith.generated.h"
 
-/**
- * 
- */
-
 class AAOSCharacter;
 
+/** 무기 스켈레탈 메쉬의 본 Location, Rotation 구조체 */
 USTRUCT(BlueprintType)
 struct FWeaponPartsLocation
 {
@@ -40,6 +36,7 @@ public:
 
 	AWraith();
 
+	/** 발사 함수 */
 	virtual void Firing() override;
 
 	virtual void SetWeaponState(const EWeaponState State) override;
@@ -50,8 +47,10 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
+	/** 스켈레탈 메쉬의 본 Location, Rotation 값 보간 */
 	void InterpWeaponPartsLocation(float DeltaTime, bool bSniperMode);
 
+	/** 무기 형태 변환 */
 	UFUNCTION()
 	void FormChange(bool bSniperMode);
 
@@ -64,6 +63,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	TSubclassOf<UCameraShakeBase> CameraShakeAimingShot;
 
+	/** 스나이퍼 모드의 투사체 템플릿 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	TSubclassOf<AProjectile> AimingProjectileClass;
 
@@ -90,9 +90,11 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	USoundCue* DeactivateSound;
 
+	/** 조준 중일 경우 true */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bAimed = false;
 
+	/** 무기의 형태 변환 속도 */
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	float FormChangeSpeed = 5.f;
 
@@ -103,5 +105,6 @@ private:
 
 	FWeaponPartsLocation SniperMode;
 
+	/** 델리게이트 바인딩 여부 */
 	bool bDelBinded = false;
 };

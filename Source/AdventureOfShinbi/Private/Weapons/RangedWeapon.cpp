@@ -51,12 +51,13 @@ void ARangedWeapon::CrosshairLineTrace(FVector& OutHitPoint)
 		GEngine->GameViewport->GetViewportSize(ViewPortSize);
 	}
 
-	FVector2D CrosshairLocation(ViewPortSize.X / 2.f, ViewPortSize.Y / 2.f);
+	// 뷰포트의 정중앙 위치값을 스크린 위치에서 월드로 변환
+	FVector2D CrosshairScreenPosition(ViewPortSize.X / 2.f, ViewPortSize.Y / 2.f);
 	FVector CrosshairWorldPosition;
 	FVector CrosshairWorldDirection;
-	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+	const bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
 		UGameplayStatics::GetPlayerController(this, 0),
-		CrosshairLocation,
+		CrosshairScreenPosition,
 		CrosshairWorldPosition,
 		CrosshairWorldDirection);
 

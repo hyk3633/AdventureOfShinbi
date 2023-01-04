@@ -131,12 +131,13 @@ void AShinbiSword::CirclingWolvesOn(float DeltaTime)
 	if (bCirclingWolvesOn == false)
 		return;
 
+	// Wolf 투사체 Location, Rotation 업데이트
 	if (CirclingWolvesArr.Num() > 0)
 	{
-		FVector Loc = GetOwner()->GetActorLocation();
+		const FVector Loc = GetOwner()->GetActorLocation();
 		for (int8 i = 0; i < 5; i++)
 		{
-			FVector Dim = FVector(300.f, 0.f, 0.f);
+			FVector Dim(300.f, 0.f, 0.f);
 			AngleAxis[i] += DeltaTime * Multiplier;
 
 			if (AngleAxis[i] >= 360.0f)
@@ -144,7 +145,7 @@ void AShinbiSword::CirclingWolvesOn(float DeltaTime)
 				AngleAxis[i] = 0;
 			}
 
-			FVector RotateValue = Dim.RotateAngleAxis(AngleAxis[i] + AngleOffset[i], FVector(0,0,1));
+			const FVector RotateValue = Dim.RotateAngleAxis(AngleAxis[i] + AngleOffset[i], FVector(0,0,1));
 
 			FRotator Rotation = CirclingWolvesArr[i]->GetActorRotation();
 			Rotation += FRotator(0.f, RotateSpeed, 0.f) * DeltaTime;
@@ -169,8 +170,8 @@ void AShinbiSword::WolfAttack()
 	SpawnParams.Owner = WeaponOwner;
 	SpawnParams.Instigator = WeaponOwner;
 
-	FVector SpawnLocation = WeaponOwner->GetActorLocation();
-	SpawnLocation = SpawnLocation + (WeaponOwner->GetActorForwardVector() * 100.f) - FVector(0.f,0.f,40.f);
+	// 캐릭터 위치에서 투사체 스폰
+	const FVector SpawnLocation = WeaponOwner->GetActorLocation() + (WeaponOwner->GetActorForwardVector() * 100.f) - FVector(0.f,0.f,40.f);
 	const FRotator SpawnRotation = WeaponOwner->GetActorRotation();
 
 	AProjectile* SpawnedProj = GetWorld()->SpawnActor<AProjectile>(WolfProjClass, SpawnLocation, SpawnRotation, SpawnParams);
@@ -204,15 +205,17 @@ void AShinbiSword::CirclingWolves()
 	PlayCirclingWolvesEffect();
 	
 	FVector Center = WeaponOwner->GetActorLocation();
-	FRotator FirstRot = FRotator(0.f, -18.f, 0.f);
+	FRotator FirstRot(0.f, -18.f, 0.f);
 
+	// Wolf 투사체 스폰 위치 계산 후 스폰
 	for (int8 i = 0; i < 5; i++)
 	{
 		FVector RotateValue = FVector(300.f, 0.f, 0.f).RotateAngleAxis(-72.f * i, FVector(0,0,1));
 
 		FirstRot += FRotator(0.f, -72.f, 0.f);
 
-		AProjectile* SpawnedProj = GetWorld()->SpawnActor<AProjectile>(WolfProjClass, Center + RotateValue, FirstRot, SpawnParams);
+		AProjectile* SpawnedProj = GetWorld()->SpawnActor<AProjectile>
+			(WolfProjClass, Center + RotateValue, FirstRot, SpawnParams);
 		AProjectileShinbiWolf* WolfProjs = Cast<AProjectileShinbiWolf>(SpawnedProj);
 		WolfProjs->CirclingWolvesMode();
 
@@ -284,9 +287,11 @@ void AShinbiSword::CirclingWolvesDurationEnd()
 
 void AShinbiSword::UltimateWolfRush()
 {
+	// 모든 적 액터 가져오기
 	Enemies.Empty();
 	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);
 
+	// 조건을 만족하지 않는 적 액터 삭제
 	for (int8 i = 0; i < Enemies.Num(); i++)
 	{
 		FVector TowardsTarget = Enemies[i]->GetActorLocation() - WeaponOwner->GetActorLocation();
@@ -343,10 +348,13 @@ void AShinbiSword::SpawnWolf()
 	if (WolfProjClass == nullptr)
 		return;
 
+	// 공격 사이클 완료 후
 	if (CurrentTargetIdx == Enemies.Num())
 	{
 		CurrentTargetIdx = 0;
 		CurrentAttackCycle++;
+
+		// 마지막 공격 사이클인 경우 
 		if (CurrentAttackCycle == MaxAttackCycle)
 		{
 			CurrentAttackCycle = 0;
@@ -369,8 +377,10 @@ void AShinbiSword::SpawnWolf()
 		}
 	}
 
-	AEnemyCharacter* EC = Cast<AEnemyCharacter>(Enemies[CurrentTargetIdx]);
-	if (EC->GetIsDead())
+	if (
+		IsValid(Enemies[CurrentTargetIdx]) == false || 
+		Cast<AEnemyCharacter>(Enemies[CurrentTargetIdx])->GetIsDead()
+		)
 	{
 		Enemies.RemoveAt(CurrentTargetIdx);
 		SpawnWolf();
@@ -380,6 +390,7 @@ void AShinbiSword::SpawnWolf()
 	FVector RandLocation;
 	FRotator RandRotation;
 
+	// 투사체가 소환될 랜덤 Location, Rotation 계산
 	GetRandomSpawnPosition(RandLocation, RandRotation);
 
 	RandLocation += Enemies[CurrentTargetIdx]->GetActorLocation();

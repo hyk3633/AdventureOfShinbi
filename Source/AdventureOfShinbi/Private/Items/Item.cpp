@@ -21,7 +21,6 @@ AItem::AItem()
 	ItemMesh->SetCollisionObjectType(ECC_Item);
 	ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	ItemMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(ItemMesh);
@@ -77,6 +76,7 @@ void AItem::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Ot
 	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
 	if (Player)
 	{
+		// 플레이어의 오버랩된 아이템 카운트를 1 올리고 이 아이템을 트레이스에 블록으로 설정
 		Player->SetOverlappingItemCount(1);
 		ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Block);
 	}
@@ -87,6 +87,7 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	AAOSCharacter* Player = Cast<AAOSCharacter>(OtherActor);
 	if (Player)
 	{
+		// 플레이어의 오버랩된 아이템 카운트를 1 내리고 이 아이템을 트레이스에 무시되게 설정
 		Player->SetOverlappingItemCount(-1);
 		ItemMesh->SetCollisionResponseToChannel(ECC_FindItem, ECollisionResponse::ECR_Ignore);
 	}
@@ -108,11 +109,6 @@ void AItem::SetPickupWidgetInfo()
 		PickupWidget->ItemTypeText->SetText(FText::FromString(SetItemTypeToWidget(InfoItemType)));
 		PickupWidget->ItemRankText->SetText(FText::FromString(SetItemRankToWidget(InfoItemRank)));
 	}
-}
-
-bool AItem::GetIsWeapon() const
-{
-	return bIsWeapon;
 }
 
 USkeletalMeshComponent* AItem::GetItemMesh() const

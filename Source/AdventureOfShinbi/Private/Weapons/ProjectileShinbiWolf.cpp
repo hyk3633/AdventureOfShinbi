@@ -44,12 +44,15 @@ void AProjectileShinbiWolf::OnOverlap(UPrimitiveComponent* OverlappedComponent, 
 
 	HittedEnemy = OtherActor;
 
+	FHitResult HitResult;
+	HitResult.ImpactPoint = GetActorLocation();
+
 	UGameplayStatics::ApplyPointDamage
 	(
 		OtherActor,
 		Damage,
 		GetActorLocation(),
-		SweepResult,
+		HitResult,
 		GetOwner()->GetInstigatorController(),
 		GetOwner(),
 		UDamageType::StaticClass()
@@ -74,13 +77,15 @@ void AProjectileShinbiWolf::InitHittedEnemy()
 
 void AProjectileShinbiWolf::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	bHitted = true;
+
+	BoxCollision->SetSimulatePhysics(false);
+
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
 	GetWorldTimerManager().SetTimer(DestroyDelayTimer, this, &AProjectileShinbiWolf::DestoryProj, DestroyDelayTime);
 
 	WolfMesh->SetVisibility(false);
-	BoxCollision->SetSimulatePhysics(false);
-	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ProjectileMovementComponent->StopMovementImmediately();
 
 	if (NormalImpactSound)
@@ -189,6 +194,8 @@ void AProjectileShinbiWolf::UltimateWolfRushMode()
 
 void AProjectileShinbiWolf::WolfJump()
 {
+	if (bHitted)
+		return;
 	BoxCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BoxCollision->SetSimulatePhysics(true);
 	BoxCollision->AddForce(BoxCollision->GetUpVector() * 30000.f * BoxCollision->GetMass());

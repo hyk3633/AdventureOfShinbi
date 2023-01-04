@@ -7,7 +7,7 @@
 #include "ProjectileBullet.generated.h"
 
 /**
- * 
+ * 유도 기능이 없는 일반적인 투사체 클래스
  */
 
 class UParticleSystem;
@@ -31,6 +31,7 @@ protected:
 
 	void PlayHitEffect(const FHitResult& Hit, AActor* OtherActor);
 
+	/** 투사체의 수명이 끝난 후 이펙트 처리 */
 	void LifeOver();
 
 	void DestroyProjectile();
@@ -45,23 +46,18 @@ protected:
 
 private:
 
-	// 투사체 몸체 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	UParticleSystem* BulletParticle;
 
-	// 타겟 적중 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	UParticleSystem* TargetHitParticle;
 
-	// 타겟이 아닌 물체 적중 시 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	UParticleSystem* WorldHitParticle;
 
-	// 무엇도 적중하지 않을 경우의 파티클
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	UParticleSystem* NoHitParticle;
 
-	// 적중 사운드
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	USoundCue* HitSound;
 

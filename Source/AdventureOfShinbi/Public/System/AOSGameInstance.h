@@ -9,9 +9,10 @@
 #include "AOSGameInstance.generated.h"
 
 /**
- * 
+ * 레벨 이동 전 후, 데이터를 세이브하고 로드하는 게임 인스턴스 클래스
  */
 
+/** 슬롯 유형 enum */
 UENUM()
 enum class ESlotType : uint8
 {
@@ -23,6 +24,7 @@ enum class ESlotType : uint8
 	EST_MAX
 };
 
+/** 무기 아이템 정보 구조체 */
 USTRUCT()
 struct FWeaponInfo
 {
@@ -41,6 +43,7 @@ public:
 
 };
 
+/** 아이템 정보 구조체 */
 USTRUCT()
 struct FItemInfo
 {

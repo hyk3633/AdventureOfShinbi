@@ -6,12 +6,14 @@
 #include "EnemyMuriel.generated.h"
 
 /**
- * 
+ * 중간 보스 클래스
  */
 
 class AEnemyCharacter;
 class UParticleSystem;
 class USoundCue;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMurielDeathDelegate);
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AEnemyMuriel : public AEnemyStrafing
@@ -22,6 +24,8 @@ public:
 
 	AEnemyMuriel();
 
+	/** BT_Task에서 호출하는 함수 */
+
 	virtual void RangedAttack() override;
 
 	void SummonMinion();
@@ -29,6 +33,9 @@ public:
 	void ProvideBuff();
 
 	void FindTeleportPosition();
+
+	UPROPERTY(BlueprintAssignable)
+	FMurielDeathDelegate DMurielDeath;
 
 protected:
 
@@ -40,7 +47,9 @@ protected:
 
 	virtual void ResetAIState() override;
 
-	/** 소환 스킬 */
+	virtual void HandleHealthChange(float DamageReceived) override;
+
+	/** 미니언 소환 스킬 */
 
 	UFUNCTION(BlueprintCallable)
 	void Summon();
@@ -56,7 +65,7 @@ protected:
 
 	void SummonCoolTimeEnd();
 
-	/** 버프 스킬 */
+	/** 미니언 버프 스킬 */
 
 	UFUNCTION(BlueprintCallable)
 	void Buff();
@@ -68,11 +77,7 @@ protected:
 
 	void BuffCoolTimeEnd();
 
-	void BuffDurationEnd();
-
-	void PlayBuffParticle(const ACharacter* BuffTarget);
-
-	/** 스킬 샷 스킬 */
+	/** 플레이어에게 디버프를 거는 스킬 */
 
 	void FireSkillShot();
 
@@ -86,7 +91,7 @@ protected:
 
 	void SkillShotCoolTimeEnd();
 
-	/** 텔레포트 미니언 스킬 */
+	/** 미니언을 플레이어 근처로 이동 시키는 스킬 */
 
 	void TeleportMinionToPlayer();
 
@@ -101,11 +106,15 @@ protected:
 
 	void TeleportMinionCoolTimeEnd();
 
+	/** 스킬 실패 */
+	void SkillFailed();
+
 private:
 
+	/** 소환, 버프, 이동 스킬을 적용할 미니언을 구분하는 태그 */
 	FName FriendlyTag;
 
-	// true 이면 화이트, false 이면 블랙
+	/** true 이면 화이트, false 이면 블랙 */
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Main")
 	bool bWhite = true;
 
@@ -114,11 +123,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Buff")
 	UAnimMontage* BuffMontage;
 
-	TArray<AActor*> TargetsToBuff;
-
-	FTimerHandle BuffDurationTimer;
-	float BuffDurationTime = 20.f;
-
 	FTimerHandle BuffCoolTimer;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Buff")
@@ -126,15 +130,6 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly, Category = "Enemy | Muriel | CoolTime")
 	bool bBuffCoolTimeEnd = true;
-	
-	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Buff")
-	UParticleSystem* BuffStartParticle;
-
-	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Buff")
-	UParticleSystem* BuffParticle;
-
-	UParticleSystemComponent* BuffParticleComponent;
-	TArray<UParticleSystemComponent*> BuffParticleComponents;
 
 	/** 소환 옵션 */
 
@@ -149,9 +144,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Summon")
 	UParticleSystem* SummonParticle;
-
-	int8 BoxTraceDir[8][2] = { {1,0},{1,1},{1,-1},{0,1},{0,-1},{-1,1},{-1,-1},{-1,0} };
-	float RotationDir[8] = { 180.f,135.f,-135.f,-90.f,90.f,45.f,-45.f,0.f };
 
 	FTimerHandle SummonCoolTimer;
 
@@ -170,7 +162,7 @@ private:
 	UAnimMontage* SkillShotFireMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | SkillShot")
-	float SkillShotDurationTime = 30.f;
+	float SkillShotDurationTime = 10.f;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | SkillShot")
 	float DmgDecreaseRate = 0.3f;
@@ -197,10 +189,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Muriel | Teleport Minion")
 	USoundCue* TeleportSound;
 
+	/** 캐릭터로 부터 가장 멀리 있는 미니언 */
 	AActor* FarestMinion = nullptr;
-	FTransform TeleportTransform;
+
+	/** 텔레포트 시킬 위치와 로테이션 */
 	FVector TeleportPosition = FVector::ZeroVector;
 	FRotator TeleportRotation = FRotator::ZeroRotator;
+
 	int8 RotationIdx = 0;
 
 	FTimerHandle TeleportTimer;

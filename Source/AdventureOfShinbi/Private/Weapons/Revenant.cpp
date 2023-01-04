@@ -60,6 +60,7 @@ void ARevenant::Tick(float DeltaTime)
 
 void ARevenant::Charging(float DeltaTime)
 {
+	// 우클릭이 눌려있고 장전된 탄약이 있으면 메쉬의 본 위치 값 업데이트
 	if (bRightButtonClicking && GetLoadedAmmo() > 0)
 	{
 		if (CurrentPartsLoc.BarrelPitch >= 360.f)
@@ -96,6 +97,7 @@ void ARevenant::Charging(float DeltaTime)
 		if (CurrentPartsLoc.WTR >= 9.f || (DeltaLoc.WTR < 0 && CurrentPartsLoc.WTR <= 8.f))
 			DeltaLoc.WTR *= -1.f;
 
+		// 우클릭이 2초이상 유지되면 파티클 활성화
 		ChargingTime += DeltaTime;
 		if (ChargingTime >= 2.f && ChargingParticleComp->IsActive() == false)
 		{

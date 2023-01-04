@@ -34,6 +34,7 @@ void ARangedProjectileWeapon::ScatterFiring(TSubclassOf<AProjectile> Projectile)
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);
 
+	// 랜덤한 총알 발사 벡터를 탄알 수 만큼 저장
 	TArray<FRotator> ShotRotator;
 	for (int8 i = 0; i < NumberOfShots; i++)
 	{
@@ -84,6 +85,7 @@ void ARangedProjectileWeapon::SpawnProjectile(TSubclassOf<AProjectile> Projectil
 
 void ARangedProjectileWeapon::GetSpawnLocation(FVector& ProjLoc)
 {
+	// 총구 소켓 위치 반환
 	const USkeletalMeshSocket* MuzzleSocket = GetItemMesh()->GetSocketByName("MuzzleSocket");
 	if (MuzzleSocket == nullptr) return;
 	const FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetItemMesh());
@@ -93,6 +95,7 @@ void ARangedProjectileWeapon::GetSpawnLocation(FVector& ProjLoc)
 
 void ARangedProjectileWeapon::GetSpawnRotation(const FVector& ProjLoc, FRotator& ProjRot)
 {
+	// 총구 소켓 위치에서 크로스헤어 위치에서 수행한 트레이스의 적중 위치로 향하는 Rotation 반환 
 	FVector HitPoint;
 	CrosshairLineTrace(HitPoint);
 

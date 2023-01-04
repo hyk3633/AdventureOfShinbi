@@ -103,9 +103,7 @@ void UCombatComponent::BeginPlay()
 	if (AnimInstance)
 	{
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::WolfAttackMontageEnd);
-		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::GlaiveUltimateAttackMontageEnd);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::OnReloadMontageEnded);
-		AnimInstance->OnMontageEnded.AddDynamic(this, &UCombatComponent::OnHitReactMontageEnd);
 	}
 
 	CharacterController = Character->GetController<AAOSController>();
@@ -217,11 +215,6 @@ void UCombatComponent::WeaponSkill2()
 	}
 }
 
-void UCombatComponent::WeaponSkill3()
-{
-
-}
-
 void UCombatComponent::HealBan(float HealBanDurationTime)
 {
 	bHealBanActivated = true;
@@ -241,7 +234,6 @@ void UCombatComponent::HealBan(float HealBanDurationTime)
 void UCombatComponent::DecreaseDamage(float DmgDecreaDurationTime)
 {
 	bDmgDebuffActivated = true;
-
 	if (AttackDebuffSignClass)
 	{
 		AttackDebuffSign = CreateWidget<UUserWidget>(GetWorld(), AttackDebuffSignClass);
@@ -429,6 +421,7 @@ void UCombatComponent::OnReloadMontageEnded(UAnimMontage* Montage, bool bInterru
 
 	Reload();
 
+	// 공격 버튼이 눌려져 있으면 재장전 후 공격 다시 수행
 	if (Character->GetAttackButtonPressing())
 	{
 		Character->CallAttackFunction();
@@ -450,6 +443,7 @@ void UCombatComponent::RangedWeaponFire()
 	if (RangedWeapon == nullptr)
 		return;
 
+	// 장전된 탄약이 있으면
 	if (RangedWeapon->GetLoadedAmmo() > 0)
 	{
 		bFireFactor = true;
@@ -457,7 +451,7 @@ void UCombatComponent::RangedWeaponFire()
 		RangedWeapon->Firing();
 		Character->GetWorldTimerManager().SetTimer(FireFactorTimer, this, &UCombatComponent::DeactivateFireFactor, FireFactorTime);
 	}
-	else if (RangedWeapon->GetLoadedAmmo() == 0 && GameMode->GetAmmoQuantity(RangedWeapon->GetAmmoType()) > 0)
+	else if (RangedWeapon->GetLoadedAmmo() == 0 && GameMode->GetAmmoQuantity(RangedWeapon->GetAmmoType()) > 0) // 장전된 탄약이 없고 소지 탄약이 있으면
 	{
 		if (Character->GetAttackButtonPressing())
 		{
@@ -465,7 +459,7 @@ void UCombatComponent::RangedWeaponFire()
 		}
 		PlayReloadMontage();
 	}
-	else
+	else // 장전된 탄약도 소지한 탄약도 없으면 딸깍 소리 출력
 	{
 		RangedWeapon->PlayNoAmmoSound();
 	}
@@ -513,15 +507,16 @@ void UCombatComponent::Reload()
 		return;
 
 	int32 AmmoToReload = RangedWeapon->GetMagazine() - RangedWeapon->GetLoadedAmmo();
-	if (AmmoToReload < TotalAmmo)
+	// 재장전할 탄약이 소지한 탄약보다 적으면 재장전할 탄약 만큼만 재장전
+	if (AmmoToReload <= TotalAmmo)
 	{
 		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetMagazine());
 		GameMode->AddAmmoQuantity(AmmoType, -AmmoToReload);
 	}
-	else
+	else // 재장전할 탄약이 소지한 탄약보다 적으면 소지한 탄약 전부 장전
 	{
 		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetLoadedAmmo() + TotalAmmo);
-		GameMode->AddAmmoQuantity(AmmoType, 0);
+		GameMode->AddAmmoQuantity(AmmoType, -TotalAmmo);
 	}
 
 	if (CharacterController)
@@ -631,6 +626,7 @@ void UCombatComponent::PlayMontageGlaiveUltimateAttack(FName Version)
 	AnimInstance->Montage_Play(GlaiveUltimateMontage);
 	AnimInstance->Montage_JumpToSection(Version);
 
+	// 카메라를 캐릭터에게서 분리
 	Character->GetCamera()->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	Character->GetWorldTimerManager().SetTimer(MovingCameraTimer, this, &UCombatComponent::CameraMoveEnd, 0.8f);
 	bMovingCamera = true;
@@ -643,14 +639,12 @@ void UCombatComponent::MovingCamera(float DeltaTime)
 
 	float Sign = 1.f;
 
+	// 타이머 경과 시간
 	const float ElapsedTime = Character->GetWorldTimerManager().GetTimerElapsed(MovingCameraTimer);
 	
-	if (ElapsedTime > 0.3f && ElapsedTime < 0.6f)
-		return;
-	else if (ElapsedTime >= 0.6f)
-	{
+	// 경과 시간이 0.6 이상이면 
+	if (ElapsedTime >= 0.6f)
 		Sign *= -1.f;
-	}
 
 	const float CurveValue = CameraCurve->GetFloatValue(ElapsedTime);
 
@@ -689,11 +683,6 @@ void UCombatComponent::DeactivateFireFactor()
 	bFireFactor = false;
 }
 
-void UCombatComponent::GlaiveUltimateAttackMontageEnd(UAnimMontage* Montage, bool bInterrupted)
-{
-
-}
-
 void UCombatComponent::PlayHitReactMontage(FName SectionName)
 {
 	if (AnimInstance == nullptr || EquippedWeapon == nullptr)
@@ -723,16 +712,12 @@ void UCombatComponent::PlayHitReactMontage(FName SectionName)
 	AnimInstance->Montage_JumpToSection(SectionName);
 }
 
-void UCombatComponent::OnHitReactMontageEnd(UAnimMontage* Montage, bool bInterrupted)
-{
-
-}
-
 void UCombatComponent::PlayMontageDeath()
 {
 	if (AnimInstance == nullptr || DeathMontage == nullptr) 
 		return;
-
+	
+	AnimInstance->StopAllMontages(0.f);
 	AnimInstance->Montage_Play(DeathMontage);
 }
 
@@ -767,22 +752,23 @@ void UCombatComponent::UpdateHealth(float Damage)
 		CharacterController->SetHUDHealthBar(Health, MaxHealth);
 	}
 
-	if (GetHealthPercentage() < 0.3f && bVoiceLowHealthPlayed == false)
+	if (Health == 0.f)
+	{
+		PlayerDeathDelegate.Broadcast();
+		PlayMontageDeath();
+		RemoveSign();
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->DropWeapon();
+		}
+	}
+	else if (GetHealthPercentage() < 0.3f && bVoiceLowHealthPlayed == false) // 체력이 30% 이하면 목소리 출력
 	{
 		if (VoiceLowHealth)
 		{
 			UGameplayStatics::PlaySound2D(this, VoiceLowHealth);
 		}
 		bVoiceLowHealthPlayed = true;
-	}
-	else if (Health == 0.f)
-	{
-		PlayMontageDeath();
-		if (EquippedWeapon)
-		{
-			EquippedWeapon->DropWeapon();
-		}
-		PlayerDeathDelegate.Broadcast();
 	}
 }
 
@@ -797,8 +783,10 @@ void UCombatComponent::UpdateMana(float ManaToSpend)
 
 void UCombatComponent::UpdateStamina(float DeltaTime)
 {
+	// 지구력이 0 이상이고 달릴 수 있는 상태면
 	if (FMath::FloorToFloat(Stamina) > 0.f && bCanRunning)
 	{
+		// 달리고 있으면 지구력 감소 아니면 증가
 		if (Character->GetIsRunning())
 		{
 			float Decrease = DeltaTime * StaminaDecreaseRate;
@@ -812,21 +800,25 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 	}
 	else
 	{
+		// 지구력을 0 까지 소모했으면 달리기 불가 상태로 설정 
 		if (FMath::FloorToFloat(Stamina) == 0.f)
 		{
 			bCanRunning = false;
 			Character->SetCanRunning(false);
 			Character->StopRunning();
 		}
+
+		// 지구력이 60% 이하면 지구력 계속 증가
 		if (Stamina <= MaxStamina * 0.6f)
 		{
 			float Increase = DeltaTime * StaminaIncreaseRate;
 			Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
 		}
-		else
+		else // 지구력이 60% 초과되면 달리기 가능 상태로 설정
 		{
 			bCanRunning = true;
 			Character->SetCanRunning(true);
+			// 달리기 키가 눌려져 있으면 다시 달리기
 			if (Character->GetIsRunning())
 			{
 				Character->ResumeRunning();
@@ -834,6 +826,7 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 		}
 	}
 
+	// 지구력이 40% 이하면 목소리 출력
 	if (Stamina <= MaxStamina * 0.4f)
 	{
 		if (VoiceBreathingRunComp == nullptr)
@@ -882,6 +875,10 @@ void UCombatComponent::SetCrosshair()
 		{
 			CharacterController->SetHUDCrosshairs(RangedWeapon->GetCrosshairs());
 		}
+		else
+		{
+			CharacterController->EraseHUDCrosshairs();
+		}
 	}
 	else
 	{
@@ -901,6 +898,7 @@ void UCombatComponent::SpreadCrosshair(float DeltaTime)
 
 	CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
 
+	// 점프, 정조준, 발사에 따라 크로스헤어가 퍼지도록 설정
 	if (Character->GetCharacterMovement()->IsFalling())
 	{
 		CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
@@ -936,12 +934,14 @@ void UCombatComponent::PickingUpItem(AItem* PickedItem)
 	if (CharacterController == nullptr || PickedItem == nullptr)
 		return;
 
+	// 아이템의 움직임 비활성화
 	PickedItem->DeactivateItemMovement();
 
-	if (PickedItem->GetIsWeapon())
+	// 아이템이 무기라면
+	AWeapon* PickedWeapon = Cast<AWeapon>(PickedItem);
+	if (PickedWeapon)
 	{
-		AWeapon* PickedWeapon = Cast<AWeapon>(PickedItem);
-
+		// 인벤토리 슬롯이 꽉 찼다면 새로 생성
 		if (GameMode->GetWeaponCount() == CharacterController->GetHUDInventorySlotCount())
 		{
 			CharacterController->CreateHUDInventorySlot();
@@ -1002,10 +1002,12 @@ void UCombatComponent::OnChangedWeaponState(AWeapon* Weapon)
 
 void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 {
+	// 장착되어 있던 무기
 	AWeapon* WeaponToChange = EquippedWeapon;
 
+	// 게임 모드에 무기 저장
 	GameMode->KeepEquippedWeapon(Weapon);
-	EquippedWeapon = Weapon;
+	EquippedWeapon = Weapon; // 새로 장착한 무기
 
 	SetCrosshair();
 
@@ -1013,27 +1015,32 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	ARangedWeapon* RW = Cast<ARangedWeapon>(EquippedWeapon);
 	if (RW)
 	{
+		// 원거리 무기의 데미지 계산 설정
 		DefaultValue = 2.f;
 		RandRangeValue = 5;
 
 		AItemAmmo* Ammo = Cast<AItemAmmo>(RW->GetAmmoItem());
 		if (Ammo)
 		{
+			// 탄약이 없으면 기본 탄약 추가
 			if (GameMode->IsAmmoTypeExist(Ammo->GetAmmoType()) == false)
 			{
-				Character->GetItemComp()->AddAmmoItem(RW->GetAmmoItem());
+				Character->GetItemComp()->AddItem(RW->GetAmmoItem());
 			}
 		}
 
+		// 탄약 HUD 활성화
 		CharacterController->SetHUDLoadedAmmoText(RW->GetLoadedAmmo());
 		CharacterController->SetHUDTotalAmmoText(GameMode->GetAmmoQuantity(RW->GetAmmoType()));
 		CharacterController->HUDAmmoInfoOn();
 
+		// 장전
 		if (RW->GetLoadedAmmo() == 0 && GameMode->GetAmmoQuantity(RW->GetAmmoType()) > 0)
 		{
 			Reload();
 		}
 
+		// 무기에 따라 다른 소켓 위치에 장착
 		Character->SetGunRecoil(RW->GetGunRecoil());
 		if (RW->GetWeaponType() == EWeaponType::EWT_Revenent)
 		{
@@ -1054,19 +1061,20 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	}
 	else
 	{
+		// 근접 무기의 데미지 계산 설정
 		DefaultValue = 5.f;
 		RandRangeValue = 15;
 
 		if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_ShinbiSword)
 		{
 			SocketName = FName("OneHandSocket");
-			CharacterController->HUDAmmoInfoOff();
 		}
 		else if (EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Glaive)
 		{
 			SocketName = FName("GlaveSocket");
-			CharacterController->HUDAmmoInfoOff();
 		}
+
+		CharacterController->HUDAmmoInfoOff();
 	}
 
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(SocketName);
@@ -1075,20 +1083,23 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
 	}
 
+	// 장착 슬롯 아이콘 설정
 	CharacterController->SetHUDEquippedWeaponIcon(EquippedWeapon->GetItemIcon());
 	CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(EquippedWeapon->GetItemIcon());
 
 	EquippedWeapon->SetOwner(Character);
 	AnimInstance->SetWeaponType(EquippedWeapon->GetWeaponType());
 
+	// 장착되어 있던 무기가 nullptr 이 아니면
 	if (WeaponToChange != nullptr)
 	{
+		// 새로 장착한 무기가 퀵슬롯1에 장착했던 무기라면
 		if (Weapon == QuickSlot1Weapon)
 		{
 			QuickSlot1Weapon = nullptr;
 			WeaponToChange->GetInventorySlot()->QuickSlot1ButtonClicked();
 		}
-		else if (Weapon == QuickSlot2Weapon)
+		else if (Weapon == QuickSlot2Weapon) // 새로 장착한 무기가 퀵슬롯2에 장착했던 무기라면
 		{
 			QuickSlot2Weapon = nullptr;
 			WeaponToChange->GetInventorySlot()->QuickSlot2ButtonClicked();
@@ -1098,7 +1109,7 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 			WeaponToChange->GetInventorySlot()->EquipButtonClicked();
 		}
 	}
-	else
+	else // 장착되어 있던 무기가 nullptr 이라면 (장착되어 있던 무기가 없었을 경우)
 	{
 		if (Weapon == QuickSlot1Weapon)
 		{
@@ -1116,6 +1127,7 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 		}
 	}
 
+	// 이동 속도, 시야, 컨트롤 설정
 	Character->SetWalkingSpeed(EWalkingState::EWS_Armed);
 	Character->SetView(Weapon->GetWeaponType());
 	Character->ActivateWeaponControlMode();
@@ -1123,6 +1135,7 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 
 void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 {
+	// 장착한 무기를 장착해제 한 경우
 	if (Weapon == EquippedWeapon)
 	{
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
@@ -1158,6 +1171,7 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 	}
 }
 
+// 무기를 퀵슬롯1로 장착
 void UCombatComponent::WeaponToQuickSlot1(AWeapon* Weapon)
 {
 	AWeapon* WeaponToChange = QuickSlot1Weapon;
@@ -1167,14 +1181,16 @@ void UCombatComponent::WeaponToQuickSlot1(AWeapon* Weapon)
 	CharacterController->SetHUDWeaponQuickSlot1Icon(Weapon->GetItemIcon());
 	CharacterController->SetHUDInventoryQuickSlot1Icon(Weapon->GetItemIcon());
 
+	// 퀵슬롯1에 무기가 장착되어 있던 경우 
 	if (WeaponToChange != nullptr)
 	{
+		// 퀵슬롯1에 장착할 무기가 장착 슬롯에 장착 되어 있던 무기라면
 		if (Weapon == EquippedWeapon)
 		{
 			UnEquipWeapon(Weapon);
 			WeaponToChange->GetInventorySlot()->EquipButtonClicked();
 		}
-		else if (Weapon == QuickSlot2Weapon)
+		else if (Weapon == QuickSlot2Weapon) // 퀵슬롯1에 장착할 무기가 퀵슬롯2에 장착 되어 있던 무기라면
 		{
 			QuickSlot2Weapon = nullptr;
 			CharacterController->SetHUDWeaponQuickSlot2Icon(nullptr);
@@ -1184,6 +1200,7 @@ void UCombatComponent::WeaponToQuickSlot1(AWeapon* Weapon)
 	}
 }
 
+// 무기를 퀵슬롯2로 장착
 void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
 {
 	AWeapon* WeaponToChange = QuickSlot2Weapon;
@@ -1193,14 +1210,16 @@ void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
 	CharacterController->SetHUDWeaponQuickSlot2Icon(Weapon->GetItemIcon());
 	CharacterController->SetHUDInventoryQuickSlot2Icon(Weapon->GetItemIcon());
 
+	// 퀵슬롯2에 무기가 장착되어 있던 경우 
 	if (WeaponToChange != nullptr)
 	{
+		// 퀵슬롯2에 장착할 무기가 장착 슬롯에 장착 되어 있던 무기라면
 		if (Weapon == EquippedWeapon)
 		{
 			UnEquipWeapon(Weapon);
 			WeaponToChange->GetInventorySlot()->EquipButtonClicked();
 		}
-		else if (Weapon == QuickSlot1Weapon)
+		else if (Weapon == QuickSlot1Weapon) // 퀵슬롯2에 장착할 무기가 퀵슬롯1에 장착 되어 있던 무기라면
 		{
 			QuickSlot1Weapon = nullptr;
 			CharacterController->SetHUDWeaponQuickSlot1Icon(nullptr);
@@ -1210,12 +1229,14 @@ void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
 	}
 }
 
+// 무기 버림
 void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
 {
 	UnEquipWeapon(Weapon);
 
+	// 떨어트릴 위치
 	FVector DropLoc = Character->GetActorLocation() + FVector(50.f, 0.f, 100.f);
-	Weapon->SetActorLocation(DropLoc);
+	Weapon->SetActorLocation(DropLoc, false, nullptr, ETeleportType::TeleportPhysics);
 
 	GameMode->RemoveWeaponFromArr(Weapon);
 	Weapon->GetInventorySlot()->SetSlottedWeapon(nullptr);
@@ -1312,16 +1333,6 @@ bool UCombatComponent::GetHealBanActivated() const
 	return bHealBanActivated;
 }
 
-bool UCombatComponent::GetEnableCheck() const
-{
-	return bEnableCheck;
-}
-
-void UCombatComponent::SetEnableCheck(bool bCheck)
-{
-	bEnableCheck = bCheck;
-}
-
 float UCombatComponent::GetHealth() const
 {
 	return Health;
@@ -1354,6 +1365,9 @@ int32 UCombatComponent::GetRandRangeValue() const
 
 void UCombatComponent::RemoveSign()
 {
+	bDmgDebuffActivated = false;
+	bHealBanActivated = false;
+
 	if (HealBanSign)
 	{
 		HealBanSign->Destruct();

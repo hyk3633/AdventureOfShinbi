@@ -1,5 +1,6 @@
 
 
+
 #include "HUD/AOSHUD.h"
 #include "HUD/AOSCharacterOverlay.h"
 #include "HUD/Inventory.h"
@@ -57,7 +58,7 @@ void AAOSHUD::DrawHUD()
 		const FVector2D ViewportCenter(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
 
 		float SpreadScaled = CrosshairSpreadMax * CrosshairSpread;
-
+		
 		if (CrosshairCenter)
 		{
 			FVector2D Spread(0.f, 0.f);
@@ -118,8 +119,9 @@ void AAOSHUD::CreateInventorySlot()
 
 	if (PlayerController && InventorySlotClass)
 	{
-		int32 SlotCount = CharacterOverlay->InventoryWidget->SlotArray.Num() + 1;
-		int32 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
+		// 생성된 슬롯의 열 개수
+		const int32 SlotCount = CharacterOverlay->InventoryWidget->SlotArray.Num();
+		const int32 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
 
 		for (int32 i = 0; i < 5; i++)
 		{
@@ -129,7 +131,9 @@ void AAOSHUD::CreateInventorySlot()
 
 			if (CharacterOverlay->InventoryWidget->InventoryGridPanel)
 			{
-				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->InventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i+Row*5], Row, i);
+				// 그리드의 좌상단 부터 슬롯 추가
+				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->InventoryGridPanel->
+					AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i+Row*5], Row, i);
 				GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 				GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
 			}
@@ -150,7 +154,8 @@ void AAOSHUD::UpdateInventory()
 	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->SlotArray.Num(); i++)
 	{
 		UUniformGridSlot* GridSlot =
-			CharacterOverlay->InventoryWidget->InventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i], i / 5, i % 5);
+			CharacterOverlay->InventoryWidget->InventoryGridPanel->
+			AddChildToUniformGrid(CharacterOverlay->InventoryWidget->SlotArray[i], i / 5, i % 5);
 		GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 		GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
 	}
@@ -160,6 +165,7 @@ void AAOSHUD::AddWeaponToSlot(int32 SlotNum, AWeapon* Weapon)
 {
 	if (CharacterOverlay && CharacterOverlay->InventoryWidget)
 	{
+		// 슬롯에 아이템 저장
 		CharacterOverlay->InventoryWidget->SlotArray[SlotNum]->SetSlottedWeapon(Weapon);
 		Weapon->SetInventorySlot(CharacterOverlay->InventoryWidget->SlotArray[SlotNum]);
 
@@ -183,7 +189,7 @@ void AAOSHUD::CreateItemInventorySlot()
 
 	if (PlayerController && ItemInventorySlotClass)
 	{
-		int32 SlotCount = CharacterOverlay->InventoryWidget->ItemSlotArray.Num() + 1;
+		int32 SlotCount = CharacterOverlay->InventoryWidget->ItemSlotArray.Num();
 		int32 Row = SlotCount == 0 ? SlotCount : SlotCount / 5;
 
 		for (int32 i = 0; i < 5; i++)
@@ -194,7 +200,8 @@ void AAOSHUD::CreateItemInventorySlot()
 
 			if (CharacterOverlay->InventoryWidget->ItemInventoryGridPanel)
 			{
-				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i + Row * 5], Row, i);
+				UUniformGridSlot* GridSlot = CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->
+					AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i + Row * 5], Row, i);
 				GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 				GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
 			}
@@ -204,13 +211,18 @@ void AAOSHUD::CreateItemInventorySlot()
 
 void AAOSHUD::UpdateItemInventory()
 {
-	if (CharacterOverlay == nullptr || CharacterOverlay->InventoryWidget == nullptr || CharacterOverlay->InventoryWidget->ItemInventoryGridPanel == nullptr) 
+	if (
+		CharacterOverlay == nullptr || 
+		CharacterOverlay->InventoryWidget == nullptr || 
+		CharacterOverlay->InventoryWidget->ItemInventoryGridPanel == nullptr
+		) 
 		return;
 
 	for (int32 i = 0; i < CharacterOverlay->InventoryWidget->ItemSlotArray.Num(); i++)
 	{
 		UUniformGridSlot* GridSlot =
-			CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i], i / 5, i % 5);
+			CharacterOverlay->InventoryWidget->ItemInventoryGridPanel->
+			AddChildToUniformGrid(CharacterOverlay->InventoryWidget->ItemSlotArray[i], i / 5, i % 5);
 		GridSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 		GridSlot->SetVerticalAlignment(EVerticalAlignment::VAlign_Center);
 	}

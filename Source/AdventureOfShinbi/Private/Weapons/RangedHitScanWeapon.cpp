@@ -72,18 +72,21 @@ void ARangedHitScanWeapon::ScatterFiring()
 		FHitResult TraceHitResult;
 		GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd[i], ECollisionChannel::ECC_Visibility);
 
-		DrawTrailParticle(TraceStart);
+		DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint);
 		ProcessHitResult(TraceHitResult);
 	}
 }
 
 void ARangedHitScanWeapon::SingleFiring()
 {
+	// 메쉬의 총구 소켓 위치를 트레이스 시작 위치로 설정
 	FVector TraceStart;
 	GetTraceStart(TraceStart);
 
+	// 크로스헤어 위치에서 수행한 라인 트레이스의 적중 위치와 시작 위치를 합한 값을 트레이스 끝 위치로 설정 
 	FVector TraceEnd = GetTraceEnd(TraceStart);
 
+	// 총구에서 크로스헤어가 조준하는 방향으로 라인 트레이스 수행
 	FHitResult TraceHitResult;
 	GetWorld()->LineTraceSingleByChannel(TraceHitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility);
 
@@ -92,7 +95,7 @@ void ARangedHitScanWeapon::SingleFiring()
 		TraceHitResult.ImpactPoint = TraceEnd;
 	}
 
-	DrawTrailParticle(TraceStart);
+	DrawTrailParticle(TraceStart, TraceHitResult.ImpactPoint);
 	ProcessHitResult(TraceHitResult);
 }
 
@@ -109,10 +112,12 @@ FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 {
 	CrosshairLineTrace(HitPoint);
 
+	// BulletSpread 0 이상이면 타겟으로 향하는 벡터값을 랜덤하게 변환
 	if (BulletSpread > 0.f)
 	{
 		const FVector ToTarget = HitPoint - Start;
-		const FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
+		const FVector RandomUnitVector = 
+			UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
 		return Start + (RandomUnitVector * 5000.f);
 	}
 	else
@@ -121,14 +126,14 @@ FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 	}
 }
 
-void ARangedHitScanWeapon::DrawTrailParticle(const FVector StartPoint)
+void ARangedHitScanWeapon::DrawTrailParticle(const FVector StartPoint, const FVector EndPoint)
 {
 	if (TrailParticle)
 	{
 		UParticleSystemComponent* Trail = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TrailParticle, StartPoint, FRotator::ZeroRotator);
 		if (Trail)
 		{
-			Trail->SetVectorParameter(FName("Target"), HitPoint);
+			Trail->SetVectorParameter(FName("Target"), EndPoint);
 		}
 	}
 }

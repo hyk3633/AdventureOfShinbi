@@ -28,16 +28,17 @@ void UAOSAnimInstance::TurnInPlace()
 		CharacterYawLastframe = CharacterYaw;
 		CharacterYaw = CharacterRotation.Yaw;
 		const float YawDelta{ CharacterYaw - CharacterYawLastframe };
-
+		
 		// RootYawOffset 값을 업데이트하고 [-180,180] 으로 고정
 		RootYawOffset = UKismetMathLibrary::NormalizeAxis(RootYawOffset - YawDelta);
-
+		
 		// 회전 중이면 1.0
 		const float Turning{ GetCurveValue(TEXT("Turning")) };
 		if (Turning > 0)
 		{
 			RotationCurveLastframe = RotationCurve;
 			RotationCurve = GetCurveValue(TEXT("Rotation"));
+
 			const float DeltaRotation{ RotationCurve - RotationCurveLastframe };
 
 			// RootYawOffset > 0 : 왼쪽으로 회전, RootYawOffset < 0 : 오른쪽으로 회전
@@ -71,8 +72,6 @@ void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 	bIsCrouched = AOSCharacter->bIsCrouched;
 
 	bIsAnimationPlaying = AOSCharacter->GetIsAnimationPlaying();
-
-	bIsMoving = AOSCharacter->GetIsMoving();
 
 	bIsAiming = AOSCharacter->GetIsAiming();
 

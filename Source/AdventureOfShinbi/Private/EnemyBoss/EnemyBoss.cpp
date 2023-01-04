@@ -11,6 +11,7 @@
 #include "Components/CombatComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Weapons/Weapon.h"
 #include "Weapons/RangedWeapon.h"
@@ -38,10 +39,10 @@ AEnemyBoss::AEnemyBoss()
 
 	BoxTraceSize = FVector(30.f, 30.f, 30.f);
 
-	StrafingAnimRate = 0.6f;
+	StrafingAnimRate = 0.75f;
 	ChaseAnimRate = 1.f;
-	PatrolSpeed = 400.f;
-	ChaseSpeed = 700.f;
+	PatrolSpeed = 350.f;
+	ChaseSpeed = 650.f;
 
 	Damage = 400.f;
 	Health = 5000.f;
@@ -66,6 +67,10 @@ void AEnemyBoss::BeginPlay()
 	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyBoss::BlizzardMontageEnd);
 
 	DashAndWallBox->OnComponentBeginOverlap.AddDynamic(this, &AEnemyBoss::OnDashBoxOverlap);
+
+	CheckDirectionArr.Add(FName("L"));
+	CheckDirectionArr.Add(FName("R"));
+	CheckDirectionArr.Add(FName("B"));
 }
 
 void AEnemyBoss::SetTarget()
@@ -143,8 +148,8 @@ void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, ACo
 		Dmg = bIsHeadShot ? Dmg * 1.5f : Dmg;
 		Dmg = FMath::RoundToFloat(Dmg);
 
-		HandleHealthChange(DamageReceived);
-		PopupDamageAmountWidget(InstigatedBy, HitLocation, DamageReceived, bIsHeadShot, bIsCritical);
+		HandleHealthChange(Dmg);
+		PopupDamageAmountWidget(InstigatedBy, HitLocation, Dmg, bIsHeadShot, bIsCritical);
 	}
 
 	if (GetHealthPercentage() == 0.f)
@@ -164,11 +169,14 @@ void AEnemyBoss::TakePointDamage(AActor* DamagedActor, float DamageReceived, ACo
 		}
 		DBossDefeat.ExecuteIfBound();
 	}
-	else if (GetHealthPercentage() <= 0.6f)
+	else if (GetHealthPercentage() <= 0.6f && bPhase2 == false)
 	{
 		bPhase2 = true;
-		DashDelayTime = 0.5f;
-		MaxDashCount = 6;
+		if (Phase2Music)
+		{
+			MusicComp->DestroyComponent();
+			MusicComp = UGameplayStatics::SpawnSound2D(this, Phase2Music, Volume);
+		}
 	}
 }
 
@@ -177,6 +185,7 @@ void AEnemyBoss::SetHealthBar()
 	if (PlayerController)
 	{
 		PlayerController->SetHUDBossHealthBar(GetHealthPercentage());
+		PlayerController->BossHealthBarOn();
 	}
 }
 
@@ -202,16 +211,16 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	if (Cha == nullptr) 
 		return;
 
-	const FVector TargetLocation = Cha->GetActorLocation();
-	const float Dist = FVector::Dist(DashStartLocation, TargetLocation);
+	// 대쉬 도중 플레이어가 콜리전 박스와 오버랩되면 플레이어가 보는 방향과 왼쪽, 오른쪽을 판별하여 플레이어가 밀쳐질 방향을 계산
+	const float Dist = FVector::Dist(DashStartLocation, Cha->GetActorLocation());
 
-	FVector ToTarget = GetActorLocation() - TargetLocation;
+	FVector ToTarget = GetActorLocation() - Cha->GetActorLocation();
 	ToTarget.Normalize();
-	float Dot = FVector::DotProduct(Cha->GetActorForwardVector(), ToTarget);
+	const float Dot = FVector::DotProduct(Cha->GetActorForwardVector(), ToTarget);
 
 	FVector Cross = FVector::CrossProduct(ToTarget, Cha->GetActorForwardVector());
 	Cross.Normalize();
-	float CrossDot = FVector::DotProduct(Cross, Cha->GetActorUpVector());
+	const float CrossDot = FVector::DotProduct(Cross, Cha->GetActorUpVector());
 	
 	const float RandFloat = FMath::RandRange(30.f, 60.f);
 	float RotateValue = 0.f;
@@ -223,8 +232,7 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 	{
 		RotateValue = CrossDot < 0 ? RandFloat + 90.f : (RandFloat + 90.f) * -1.f;
 	}
-	FVector Forward = GetActorForwardVector();
-	const FVector LaunchDirection = Forward.RotateAngleAxis(RotateValue, FVector(0, 0, 1));
+	const FVector LaunchDirection = GetActorForwardVector().RotateAngleAxis(RotateValue, FVector(0, 0, 1));
 
 	Cha->LaunchCharacter(LaunchDirection * Dist * 5.f, false, true);
 	GetWorld()->GetFirstPlayerController()->ClientStartCameraShake(CameraShakeDash);
@@ -241,17 +249,26 @@ void AEnemyBoss::OnDashBoxOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 
 void AEnemyBoss::DetectAttack()
 {
-	if (bEvadeSkillCoolTimeEnd == false)
+	if (bEvadeSkillCoolTimeEnd == false || bIsAttacking)
 		return;
 
+	EvadeSkillNum = (EvadeSkillNum + 1) % 3;
+	
+	// 타겟 플레이어의 무기 유형과 거리에 따라 다른 스킬을 발동
 	ARangedWeapon* RW = Cast<ARangedWeapon>(Target->GetCombatComp()->GetEquippedWeapon());
-	if (bPhase2 && RW && GetDistanceTo(Target) > 700.f)
+	if (bPhase2 && RW && GetDistanceTo(Target) >= 500.f)
 	{
-		EvadeSkillNum = FMath::RandRange(1, 2);
+		if(EvadeSkillNum == 0)
+			EvadeSkillNum = FMath::RandRange(1, 2);
+	}
+	else if(GetDistanceTo(Target) < 500.f)
+	{
+		if (EvadeSkillNum == 2)
+			EvadeSkillNum = FMath::RandRange(0, 1);
 	}
 	else
 	{
-		EvadeSkillNum = FMath::RandRange(0, 1);
+		return;
 	}
 
 	bAbleEvadeSkill = true;
@@ -332,10 +349,13 @@ void AEnemyBoss::DoStrafing()
 
 bool AEnemyBoss::CheckStrafingCondition()
 {
-	return bDeath == false &&
-		bStrafing &&
-		bIsAttacking == false &&
-		AiInfo.bStunned == false;
+	if (bDeath == false && bStrafing && bIsAttacking == false && AiInfo.bStunned == false)
+		return true;
+	else
+	{
+		EndStrafing();
+		return false;
+	}
 }
 
 void AEnemyBoss::ChangeStrafingDirection()
@@ -402,8 +422,9 @@ void AEnemyBoss::Attack()
 	{
 		BossController->UpdateAiInfo();
 	}
-
-	if (bFreezingCoolTimeEnd && bBlizzardDebuffOn == false && FMath::RandRange(0.f,1.f) < 0.3f)
+	
+	// 확률에 따라 빙결 스킬 발동
+	if (bFreezingCoolTimeEnd && bBlizzardDebuffOn == false && FMath::RandRange(0.f,1.f) < 0.5f)
 	{
 		Freezing();
 	}
@@ -424,22 +445,21 @@ void AEnemyBoss::RangedAttack()
 		BossController->UpdateAiInfo();
 	}
 
-	int8 RandNum = 0;
-	const float DistToTarget = GetDistanceTo(AiInfo.TargetPlayer);
+	// 타겟 플레이어와의 거리에 따라 다른 스킬 발동
+	RangedAttackNum = (RangedAttackNum + 1) % (bPhase2 ? 4 : 3);
+	const float DistToTarget = GetDistanceTo(Target);
 	if (DistToTarget > 800.f)
 	{
-		RandNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
+		if(RangedAttackNum == 0)
+			RangedAttackNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
 	}
-	else if (DistToTarget > 400.f && DistToTarget <= 800.f)
+	else if(DistToTarget <= 400.f)
 	{
-		RandNum = FMath::RandRange(0, bPhase2 ? 3 : 2);
-	}
-	else
-	{
-		RandNum = 0;
+		if(RangedAttackNum != 0)
+			RangedAttackNum = 0;
 	}
 
-	switch (RandNum)
+	switch (RangedAttackNum)
 	{
 	case 0:
 		Blizzard();
@@ -486,13 +506,13 @@ void AEnemyBoss::PlayAttackMontage()
 	if (EnemyAnim == nullptr) 
 		return;
 
-	const int8 RandNum = FMath::RandRange(0, bPhase2 ? 2 : 1);
-	
-	if (RandNum == 0)
+	AttackNum = (AttackNum + 1) % (bPhase2 ? 3 : 2);
+
+	if (AttackNum == 0)
 	{
 		PlayAttack1Montage();
 	}
-	else if (RandNum == 1)
+	else if (AttackNum == 1)
 	{
 		PlayAttack2Montage();
 	}
@@ -524,6 +544,19 @@ void AEnemyBoss::PlayAttack3Montage()
 	EnemyAnim->Montage_Play(Attack3Montage);
 }
 
+void AEnemyBoss::DisableCollision()
+{
+	GetCharacterMovement()->DefaultLandMovementMode = EMovementMode::MOVE_Walking;
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Ignore);
+}
+
+void AEnemyBoss::EnableCollision()
+{
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
+}
+
 void AEnemyBoss::MoveWhileAttack()
 {
 	LaunchCharacter(GetActorForwardVector() * 1000.f, false, true);
@@ -534,13 +567,11 @@ void AEnemyBoss::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	if (Montage == AttackMontage || Montage == Attack2Montage || Montage == Attack3Montage)
 	{
 		bIsAttacking = false;
-		if (GetAttackRange()->IsOverlappingActor(AiInfo.TargetPlayer) == false)
-			AiInfo.bTargetInAttackRange = false;
+		AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 		if (BossController)
 		{
 			BossController->UpdateAiInfo();
 		}
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 		OnAttackEnd.Broadcast();
 	}
 }
@@ -572,8 +603,10 @@ void AEnemyBoss::FreezingActivate()
 		return;
 	}
 
+	bFreezingHitted = true;
 	Target->ActivateFreezing(true);
 
+	// 파티클 위치 조정
 	if (TargetFreezingParticle)
 	{
 		FTransform ParticleTransform;
@@ -608,16 +641,25 @@ void AEnemyBoss::FreezingDurationEnd()
 
 void AEnemyBoss::FreezingMontageEnded()
 {
-	bIsAttacking = false;
 	bFreezingAttack = false;
-	bFreezingCoolTimeEnd = false;
-	AiInfo.bTargetInAttackRange = false;
-	if (BossController)
-	{
-		BossController->UpdateAiInfo();
-	}
 	GetWorldTimerManager().SetTimer(FreezingCoolTimer, this, &AEnemyBoss::FreezingCoolTimeEnd, FreezingCoolTime);
-	OnAttackEnd.Broadcast();
+
+	if (bFreezingHitted)
+	{
+		bFreezingHitted = false;
+		PlayAttackMontage();
+	}
+	else
+	{
+		bIsAttacking = false;
+		bFreezingCoolTimeEnd = false;
+		AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
+		if (BossController)
+		{
+			BossController->UpdateAiInfo();
+		}
+		OnAttackEnd.Broadcast();
+	}
 }
 
 void AEnemyBoss::FreezingCoolTimeEnd()
@@ -636,6 +678,7 @@ void AEnemyBoss::CheckTargetInBlizzardRange()
 	UGameplayStatics::GetAllActorsOfClass(this, AAOSCharacter::StaticClass(), InRangeTarget);
 	if (InRangeTarget.Num() > 0)
 	{
+		// 타겟 플레이어가 1000 거리 이내에 있다면 디버프 적용
 		if (InRangeTarget[0] == Target)
 		{
 			if(GetDistanceTo(Target) <= 1000.f)
@@ -664,15 +707,14 @@ void AEnemyBoss::BlizzardDotDamage(float DeltaTime)
 {
 	if (bBlizzardDebuffOn == false)
 		return;
-	UGameplayStatics::ApplyDamage(Target, DeltaTime * 80.f, GetController(), this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(Target, DeltaTime * 200.f, GetController(), this, UDamageType::StaticClass());
 }
 
 void AEnemyBoss::BlizzardDebuffEnd()
 {
 	bBlizzardDebuffOn = false;
 
-	Target->GetCombatComp()->GetEquippedWeapon() == nullptr ? 
-		Target->SetWalkingSpeed(EWalkingState::EWS_UnArmed) : Target->SetWalkingSpeed(EWalkingState::EWS_Armed);
+	Target->SetWalkingSpeed(EWalkingState::EWS_Armed);
 }
 
 void AEnemyBoss::BlizzardMontageEnd(UAnimMontage* Montage, bool bInterrupted)
@@ -681,6 +723,7 @@ void AEnemyBoss::BlizzardMontageEnd(UAnimMontage* Montage, bool bInterrupted)
 	{
 		bIsAttacking = false;
 		bRangedAttackCoolTimeEnd = false;
+		AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 		if (BossController)
 		{
 			BossController->UpdateAiInfo();
@@ -719,6 +762,7 @@ void AEnemyBoss::DashLaunch()
 
 void AEnemyBoss::DashMontageEnd()
 {
+	// 현재 대쉬 횟수가 최대값 이하면 다시 대쉬 호출
 	if (DashCount < MaxDashCount)
 	{
 		Dash();
@@ -728,6 +772,7 @@ void AEnemyBoss::DashMontageEnd()
 		SetBoxState(EBoxState::EBS_Disabled);
 		bIsAttacking = false;
 		bRangedAttackCoolTimeEnd = false;
+		AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 		bDashAttack = false;
 		DashCount = 0;
 		if (BossController)
@@ -749,14 +794,14 @@ void AEnemyBoss::SetBoxState(EBoxState State)
 		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 		break;
-	case EBoxState::EBS_Dash:
+	case EBoxState::EBS_Dash: // 플레이어와 오버랩되도록 설정
 		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Overlap);
 		DashAndWallBox->SetBoxExtent(FVector(50.f, 80.f, 150.f));
 		DashAndWallBox->SetRelativeLocation(FVector(180.f, 0.f, 60.f));
 		break;
-	case EBoxState::EBS_Wall:
+	case EBoxState::EBS_Wall: // 모든 액터를 블록하도록 설정
 		DashAndWallBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		DashAndWallBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		DashAndWallBox->SetCollisionResponseToChannel(ECC_Player, ECollisionResponse::ECR_Block);
@@ -811,6 +856,7 @@ void AEnemyBoss::OnFireMontageEnded()
 {
 	bIsAttacking = false;
 	bRangedAttackCoolTimeEnd = false;
+	AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 	if (BossController)
 	{
 		BossController->UpdateAiInfo();
@@ -827,43 +873,46 @@ void AEnemyBoss::IcicleAttack()
 
 void AEnemyBoss::RisingIcicle()
 {
-	if (IcicleParticle)
+	if (IcicleParticle == nullptr)
+		return;
+
+	bIcicleAttack = true;
+
+	FTransform ParticleTransform;
+	ParticleTransform.SetLocation(Target->GetActorLocation() + FVector(0.f, 120.f, 0.f));
+	ParticleTransform.SetRotation(FRotator(0.f, 120.f, 0.f).Quaternion());
+	ParticleTransform.SetScale3D(FVector(5.f, 5.f, 5.f));
+
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), IcicleParticle, ParticleTransform);
+	if (IcicleSound)
 	{
-		FTransform ParticleTransform;
-		ParticleTransform.SetLocation(Target->GetActorLocation() + FVector(0.f, 120.f, 0.f));
-		ParticleTransform.SetRotation(FRotator(0.f, 120.f, 0.f).Quaternion());
-		ParticleTransform.SetScale3D(FVector(5.f, 5.f, 5.f));
+		UGameplayStatics::PlaySoundAtLocation(this, IcicleSound, ParticleTransform.GetLocation());
+	}
 
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), IcicleParticle, ParticleTransform);
-		if (IcicleSound)
+	// 스페어 트레이스 수행 후 적중 시 데미지 적용
+	UCollisionProfile* Profile = UCollisionProfile::Get();
+	ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_EnemyWeaponTrace);
+	FHitResult SphereHit;
+	UKismetSystemLibrary::SphereTraceSingle
+	(
+		this,
+		IcicleLocation + FVector(0.f, 0.f, 10.f),
+		IcicleLocation + FVector(0.f, 0.f, 10.f),
+		100.f,
+		TraceType,
+		false,
+		TArray<AActor*>(),
+		EDrawDebugTrace::None,
+		SphereHit,
+		true
+	);
+
+	if (SphereHit.bBlockingHit)
+	{
+		if (Target == SphereHit.GetActor())
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, IcicleSound, ParticleTransform.GetLocation());
-		}
-
-		UCollisionProfile* Profile = UCollisionProfile::Get();
-		ETraceTypeQuery TraceType = Profile->ConvertToTraceType(ECC_EnemyWeaponTrace);
-		FHitResult SphereHit;
-		UKismetSystemLibrary::SphereTraceSingle
-		(
-			this,
-			IcicleLocation + FVector(0.f, 0.f, 10.f),
-			IcicleLocation + FVector(0.f, 0.f, 10.f),
-			100.f,
-			TraceType,
-			false,
-			TArray<AActor*>(),
-			EDrawDebugTrace::None,
-			SphereHit,
-			true
-		);
-
-		if (SphereHit.bBlockingHit)
-		{
-			if (Target == SphereHit.GetActor())
-			{
-				UGameplayStatics::ApplyPointDamage(Target, 400.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
-				Target->LaunchCharacter(Target->GetActorUpVector() * 500.f, true, false);
-			}
+			UGameplayStatics::ApplyPointDamage(Target, 400.f, SphereHit.ImpactPoint, SphereHit, GetController(), this, UDamageType::StaticClass());
+			Target->LaunchCharacter(Target->GetActorUpVector() * 1000.f, true, false);
 		}
 	}
 }
@@ -910,6 +959,7 @@ void AEnemyBoss::IcicleAttackMontageEnded()
 {
 	bIsAttacking = false;
 	bRangedAttackCoolTimeEnd = false;
+	bIcicleAttack = false;
 	if (BossController)
 	{
 		BossController->UpdateAiInfo();
@@ -931,6 +981,9 @@ void AEnemyBoss::DeactivateBurst()
 
 void AEnemyBoss::CreateIceWall()
 {
+	GetMesh()->SetSimulatePhysics(false);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	SetBoxState(EBoxState::EBS_Wall);
 
 	if (IceWallParticle)
@@ -955,16 +1008,23 @@ void AEnemyBoss::IcaWallDisappearAndCheck()
 {
 	GetMesh()->SetVisibility(false);
 
-	int8 RandNum = FMath::RandRange(0, 2);
-	FName Dir = RandNum == 0 ? FName("L") : RandNum == 1 ? FName("R") : FName("B");
+	LocationToAppear = GetActorLocation();
+	RotationToAppear = GetActorRotation();
 
-	bool bSafe = CheckObstacle(Target, Dir, 250.f);
-	if (bSafe == false)
+	// 3가지 랜덤한 방향 중 장애물이 없는 방향을 나타날 방향으로 설정
+	int8 RandNum = FMath::RandRange(0, 2);
+	for (int8 i = 0; i < 3; i++)
 	{
-		BackAttackMontageEnd(false);
-		return;
+		if (CheckObstacle(Target, CheckDirectionArr[RandNum], 250.f))
+		{
+			SetRotationToAppear(CheckDirectionArr[RandNum]);
+			break;
+		}
+		else
+		{
+			RandNum = (RandNum + 1) % 3;
+		}
 	}
-	SetRotationToAppear(Dir);
 
 	bEvadeSkillCoolTimeEnd = false;
 	PlayIceWallAttackMontage();
@@ -973,6 +1033,7 @@ void AEnemyBoss::IcaWallDisappearAndCheck()
 
 void AEnemyBoss::SetRotationToAppear(FName Direction)
 {
+	// 나타날 방향 설정
 	if (Direction == FName("L"))
 	{
 		RotationToAppear = Target->GetActorRightVector().Rotation();
@@ -1007,7 +1068,12 @@ void AEnemyBoss::IceWallAttackMontageEnd(bool IsSuccess)
 		BossController->UpdateAiInfo();
 		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
 	}
+
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetMesh()->SetSimulatePhysics(true);
+
 	SetBoxState(EBoxState::EBS_Disabled);
+
 	if (IsSuccess)
 	{
 		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
@@ -1023,6 +1089,9 @@ void AEnemyBoss::PlayerDead()
 {
 	Super::PlayerDead();
 
+	Target = nullptr;
+	BossController->SetTarget(nullptr);
+
 	if (MusicComp)
 	{
 		MusicComp->Stop();
@@ -1034,6 +1103,9 @@ void AEnemyBoss::BackAttack()
 {
 	if (Target == nullptr)
 		return;
+
+	GetMesh()->SetSimulatePhysics(false);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	UParticleSystemComponent* SwordParticle = Cast<UParticleSystemComponent>(GetMesh()->GetChildComponent(0));
 	if (SwordParticle)
@@ -1064,15 +1136,21 @@ void AEnemyBoss::BackAttack()
 
 void AEnemyBoss::BackAttackDisappearAndCheck()
 {
-	bool bSafe = CheckObstacle(Target, FName("B"), 250.f);
-	if (bSafe == false)
+	if (CheckObstacle(Target, FName("B"), 250.f))
 	{
-		BackAttackMontageEnd(false);
-		return;
+		RotationToAppear = GetActorRotation();
+		RotationToAppear.Yaw = Target->GetActorRotation().Yaw;
 	}
-
-	RotationToAppear = GetActorRotation();
-	RotationToAppear.Yaw = Target->GetActorRotation().Yaw;
+	else if(CheckObstacle(Target, FName("F"), 250.f))
+	{
+		RotationToAppear = GetActorRotation();
+		RotationToAppear.Yaw = Target->GetActorRotation().Yaw + 180.f;
+	}
+	else
+	{
+		LocationToAppear = GetActorLocation();
+		RotationToAppear = GetActorRotation();
+	}
 
 	bEvadeSkillCoolTimeEnd = false;
 	PlayBackAttackMontage();
@@ -1091,18 +1169,23 @@ bool AEnemyBoss::CheckObstacle(AActor* CenterActor, FName Direction, float Offse
 
 	if (Direction == FName("L"))
 	{
-		BoxTraceStart = BoxTraceStart + (-CenterActor->GetActorRightVector() * Offset) + FVector(0.f, 0.f, -30.f);
-		BoxExtent = FVector(70.f, 80.f, 30.f);
+		BoxTraceStart += ((-CenterActor->GetActorRightVector() * Offset) + FVector(0.f, 0.f, -30.f));
+		BoxExtent = FVector(150.f, 80.f, 30.f);
 	}
 	else if (Direction == FName("R"))
 	{
-		BoxTraceStart = BoxTraceStart + (CenterActor->GetActorRightVector() * Offset) + FVector(0.f, 0.f, -30.f);
-		BoxExtent = FVector(70.f, 80.f, 30.f);
+		BoxTraceStart += ((CenterActor->GetActorRightVector() * Offset) + FVector(0.f, 0.f, -30.f));
+		BoxExtent = FVector(150.f, 80.f, 30.f);
 	}
 	else if (Direction == FName("B"))
 	{
-		BoxTraceStart = BoxTraceStart + (-CenterActor->GetActorForwardVector() * Offset) + FVector(0.f, 0.f, -30.f);
-		BoxExtent = FVector(100.f, 70.f, 30.f);
+		BoxTraceStart += ((-CenterActor->GetActorForwardVector() * Offset) + FVector(0.f, 0.f, -30.f));
+		BoxExtent = FVector(200.f, 70.f, 30.f);
+	}
+	else if (Direction == FName("F"))
+	{
+		BoxTraceStart += ((CenterActor->GetActorForwardVector() * Offset) + FVector(0.f, 0.f, -30.f));
+		BoxExtent = FVector(200.f, 70.f, 30.f);
 	}
 	else
 	{
@@ -1121,12 +1204,9 @@ bool AEnemyBoss::CheckObstacle(AActor* CenterActor, FName Direction, float Offse
 		TraceType,
 		false,
 		TArray<AActor*>(),
-		EDrawDebugTrace::ForOneFrame,
+		EDrawDebugTrace::None,
 		BoxHit,
-		true,
-		FLinearColor::Green,
-		FLinearColor::Blue,
-		0.f
+		true
 	);
 
 	if (BoxHit.bBlockingHit == false)
@@ -1171,11 +1251,16 @@ void AEnemyBoss::BackAttackMontageEnd(bool IsSuccess)
 {
 	bIsAttacking = false;
 	bAbleEvadeSkill = false;
+	AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 	if (BossController)
 	{
 		BossController->UpdateAiInfo();
 		BossController->SetAbleEvadeSkill(bAbleEvadeSkill);
 	}
+
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
 	if (IsSuccess)
 	{
 		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
@@ -1189,10 +1274,12 @@ void AEnemyBoss::BackAttackMontageEnd(bool IsSuccess)
 
 void AEnemyBoss::Evade()
 {
+	// 타겟 플레이어가 원거리 무기를 장착하고 있으면 왼쪽, 오른쪽으로만 회피
 	ARangedWeapon* RW = Cast<ARangedWeapon>(Target->GetCombatComp()->GetEquippedWeapon());
 	FName Dir;
 	if (RW)
 	{
+		// 왼쪽 혹은 오른쪽에 장애물이 있는지 검사
 		int8 RanNum = FMath::RandRange(0, 1);
 		Dir = RanNum ? FName("L") : FName("R");
 		if (CheckObstacle(this, Dir, 180.f) == false)
@@ -1207,11 +1294,21 @@ void AEnemyBoss::Evade()
 	}
 	else
 	{
-		Dir = FName("B");
+		int8 RandNum = FMath::RandRange(0, 2);
+		Dir = RandNum ? RandNum == 1 ? FName("L") : FName("R") : FName("B"); // RandNum이 0이면 B, 1이면 L, 2이면 R
 		if (CheckObstacle(this, Dir, 180.f) == false)
 		{
-			EvadeMontageEnd(false);
-			return;
+			Dir = RandNum ? RandNum == 1 ? FName("B") : FName("L") : FName("R"); // RandNum이 0이면 R, 1이면 B, 2이면 L
+			if (CheckObstacle(this, Dir, 180.f) == false)
+			{
+				Dir = RandNum ? RandNum == 1 ? FName("R") : FName("B") : FName("L"); // RandNum이 0이면 L, 1이면 R, 2이면 B
+				if (CheckObstacle(this, Dir, 180.f) == false)
+				{
+					// 3 방향 모두 장애물이 있으면 회피 중단
+					EvadeMontageEnd(false);
+					return;
+				}
+			}
 		}
 	}
 
@@ -1236,6 +1333,7 @@ void AEnemyBoss::EvadeMontageEnd(bool IsSuccess)
 {
 	bIsAttacking = false;
 	bAbleEvadeSkill = false;
+	AiInfo.bTargetInAttackRange = GetAttackRange()->IsOverlappingActor(Target) ? true : false;
 	if (BossController)
 	{
 		BossController->UpdateAiInfo();
@@ -1243,7 +1341,7 @@ void AEnemyBoss::EvadeMontageEnd(bool IsSuccess)
 	}
 	if (IsSuccess)
 	{
-		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, EvadeSkillCoolTime);
+		GetWorldTimerManager().SetTimer(EvadeSkillCoolTimer, this, &AEnemyBoss::EvadeSkillCoolTimeEnd, 3.f);
 	}
 	else
 	{
@@ -1270,4 +1368,9 @@ bool AEnemyBoss::GetAbleEvadeSkill() const
 bool AEnemyBoss::GetDashAttack() const
 {
 	return bDashAttack;
+}
+
+bool AEnemyBoss::GetIcicleAttack() const
+{
+	return bIcicleAttack;
 }
