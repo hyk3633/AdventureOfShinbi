@@ -167,12 +167,12 @@ bool AEnemyMuriel::CheckSpawnPosition(FVector& SafePosition, AActor* CenterActor
     
     // CenterActor의 위치를 중심으로 8 방향에서 소환 가능한 위치를 SafePosition에 저장
     float Angle = 0.f;
-    const FVector Dim(PositionOffset, 0.f, 0.f);
     for (int8 i = 0; i < 8; i++)
     {
         FHitResult BoxHit;
 
-        const FVector BoxTraceStart = CenterActor->GetActorLocation() + Dim.RotateAngleAxis(Angle, FVector(0, 0, 1));
+        const FVector BoxTraceStart = 
+            CenterActor->GetActorLocation() + FVector(PositionOffset, 0.f, 0.f).RotateAngleAxis(Angle, FVector(0, 0, 1));
         const FVector BoxTraceEnd = BoxTraceStart + FVector(0.f, 0.f, 150.f);
 
         UKismetSystemLibrary::BoxTraceSingle

@@ -130,20 +130,20 @@ private:
 	/** Wolf 투사체 배열 */
 	TArray<AProjectileShinbiWolf*> CirclingWolvesArr;
 
-	/** 캐릭터를 중심으로 각 투사체의 Location을 회전한 각도의 누적값 배열 */
-	TArray<float> AngleAxis;
+	/** 캐릭터를 중심으로 각 투사체의 Location을 회전하기 위한 각도 누적값 */
+	float ProjAngle;
 
-	/** 캐릭터를 중심으로 각 투사체의 Location을 회전할 각도 값 배열 */
-	TArray<float> AngleOffset;
+	/** 캐릭터를 중심으로 각 투사체의 Location 간격을 유지하기 위한 각도 값 배열 */
+	TArray<float> ProjAngleOffset;
 
 	/** 스킬 활성화 bool */
 	bool bCirclingWolvesOn = false;
 
-	/** Wolf 투사체의 위치 값 업데이트 보정치 */
-	float Multiplier = -150.f;
+	/** Wolf 투사체의 위치 Vector 회전 속도 */
+	float LocRotateSpeed = -150.f;
 
 	/** Wolf 투사체의 Rotation 회전 속도 */
-	float RotateSpeed = -150.f;
+	float RotRotateSpeed = -150.f;
 
 	/** 스킬 지속 타이머 및 지속 시간 */
 	FTimerHandle CirclingWolvesDurationTimer;

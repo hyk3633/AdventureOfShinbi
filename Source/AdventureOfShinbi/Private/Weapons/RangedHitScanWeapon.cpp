@@ -115,14 +115,13 @@ FVector ARangedHitScanWeapon::GetTraceEnd(const FVector& Start)
 	// BulletSpread 0 이상이면 타겟으로 향하는 벡터값을 랜덤하게 변환
 	if (BulletSpread > 0.f)
 	{
-		const FVector ToTarget = HitPoint - Start;
 		const FVector RandomUnitVector = 
-			UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, BulletSpread);
-		return Start + (RandomUnitVector * 5000.f);
+			UKismetMathLibrary::RandomUnitVectorInConeInDegrees(HitPoint - Start, BulletSpread);
+		return Start + (RandomUnitVector * 10000.f);
 	}
 	else
 	{
-		return Start + (HitPoint - Start) * 1.25f;
+		return Start + ((HitPoint - Start) * 1.25f);
 	}
 }
 

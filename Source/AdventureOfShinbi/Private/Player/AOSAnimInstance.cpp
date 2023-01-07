@@ -67,12 +67,6 @@ void UAOSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 
 	bIsAccelerating = AOSCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 
-	bIsRunning = AOSCharacter->GetIsRunning();
-
-	bIsCrouched = AOSCharacter->bIsCrouched;
-
-	bIsAnimationPlaying = AOSCharacter->GetIsAnimationPlaying();
-
 	bIsAiming = AOSCharacter->GetIsAiming();
 
 	FRotator AimRotation = AOSCharacter->GetBaseAimRotation();
@@ -107,4 +101,34 @@ void UAOSAnimInstance::ActivateReloading()
 void UAOSAnimInstance::DeactivateReloading()
 {
 	bIsReloading = false;
+}
+
+void UAOSAnimInstance::ActivateCrouch()
+{
+	bIsCrouched = true;
+}
+
+void UAOSAnimInstance::DeactivateCrouch()
+{
+	bIsCrouched = false;
+}
+
+void UAOSAnimInstance::ActivateAnimationPlaying()
+{
+	bIsAnimationPlaying = true;
+}
+
+void UAOSAnimInstance::DeactivateAnimationPlaying()
+{
+	bIsAnimationPlaying = false;
+}
+
+void UAOSAnimInstance::ActivateRunning()
+{
+	bIsRunning = true;
+}
+
+void UAOSAnimInstance::DeactivateRunning()
+{
+	bIsRunning = false;
 }

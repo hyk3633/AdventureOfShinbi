@@ -106,5 +106,10 @@ public:
 	void SetWeaponType(EWeaponType Type);
 	void ActivateReloading();
 	void DeactivateReloading();
-
+	void ActivateCrouch();
+	void DeactivateCrouch();
+	void ActivateAnimationPlaying();
+	void DeactivateAnimationPlaying();
+	void ActivateRunning();
+	void DeactivateRunning();
 };

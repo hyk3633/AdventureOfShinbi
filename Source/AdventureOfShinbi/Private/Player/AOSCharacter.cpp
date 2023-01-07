@@ -212,14 +212,14 @@ FName AAOSCharacter::DistinguishHitDirection(FVector TargetLocation)
 	// 내적 계산
 	FVector ToTarget = TargetLocation - GetActorLocation();
 	ToTarget.Normalize();
-	const float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
+	const float AngleDegree = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(ToTarget, GetActorForwardVector())));
 
-	// 내적 값이 0.3 ~ 1.0 이면 앞쪽
-	if (Dot >= 0.3f && Dot < 1.0)
+	// 각도 60.0 보다 작으면 앞쪽
+	if (AngleDegree < 60.0)
 	{
 		return FName("F");
 	}
-	else if (Dot <= -0.1f) // -1.0 이하면 뒤쪽
+	else if (AngleDegree >= 120.f) // 120도 이상이면 뒤쪽
 	{
 		return FName("B");
 	}
@@ -230,7 +230,7 @@ FName AAOSCharacter::DistinguishHitDirection(FVector TargetLocation)
 		Cross.Normalize();
 		const float CrossDot = FVector::DotProduct(Cross, GetActorUpVector());
 
-		// 외적 값이 0 보다 크면 왼쪽, 작으면 오른쪽
+		// 0 보다 크면 왼쪽, 작으면 오른쪽
 		if (CrossDot > 0.f)
 		{
 			return FName("L");
@@ -278,19 +278,13 @@ void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
 void AAOSCharacter::ReloadingStart()
 {
 	CharacterState = ECharacterState::ECS_Reloading;
-	if (AnimInstance)
-	{
-		AnimInstance->ActivateReloading();
-	}
+	if (AnimInstance) AnimInstance->ActivateReloading();
 }
 
 void AAOSCharacter::ReloadingEnd()
 {
 	CharacterState = ECharacterState::ECS_Nothing;
-	if (AnimInstance)
-	{
-		AnimInstance->DeactivateReloading();
-	}
+	if (AnimInstance) AnimInstance->DeactivateReloading();
 }
 
 void AAOSCharacter::PlayerRespawn()
@@ -424,20 +418,17 @@ void AAOSCharacter::Jump()
 void AAOSCharacter::RunningButtonPressed()
 {
 	// 캐릭터가 기본 상태가 아니거나 달리기 불가능 이거나 속도가 0이면
-	if (CharacterState != ECharacterState::ECS_Nothing || bCanRunning == false || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f)
+	if (CharacterState != ECharacterState::ECS_Nothing || CombatComp->bCanRunning == false || GetCharacterMovement()->GetCurrentAcceleration().Size() <= 0.f)
 		return;
 
 	bIsRunning = true;
-
-	GetCharacterMovement()->MaxWalkSpeed = CurrentRunningSpeed;
+	StartRunning();
 }
 
 void AAOSCharacter::RunningButtonReleased()
 {
 	bIsRunning = false;
-
-	GetCharacterMovement()->MaxWalkSpeed = CurrentWalkingSpeed;
-	MakeNoise(1.f, GetInstigator(), GetActorLocation());
+	StopRunning();
 }
 
 void AAOSCharacter::Crouch_DashButtonPressed()
@@ -462,10 +453,12 @@ void AAOSCharacter::Crouching()
 	if (bIsCrouched)
 	{
 		UnCrouch();
+		if (AnimInstance) AnimInstance->DeactivateCrouch();
 	}
 	else
 	{
 		Crouch();
+		if (AnimInstance) AnimInstance->ActivateCrouch();
 	}
 }
 
@@ -685,28 +678,29 @@ void AAOSCharacter::MouseWheelButtonPressed()
 	if (CombatComp->EquippedWeapon == nullptr)
 		return;
 	
-	bCameraLockOn = bCameraLockOn ? false : true;
-
-	if (bCameraLockOn)
+	// 락온할 대상이 설정되어 있으면 락온 해제
+	if (LockOnTarget)
 	{
-		SetLockOnTarget();
-	}
-	else
-	{
-		LockOnTarget = nullptr;
 		if (LockOnParticleComp)
 		{
 			LockOnParticleComp->DestroyComponent();
 		}
+		bCameraLockOn = false;
+		LockOnTarget = nullptr;
+	}
+	else // 그렇지 않으면 락온할 대상을 찾기
+	{
+		SetLockOnTarget();
 	}
 }
 
 void AAOSCharacter::SetLockOnTarget()
 {
-	// 타겟이 있으면 타겟 위에 파티클 활성화
 	LockOnTarget = Cast<AEnemyCharacter>(FindTarget());
+	// 타겟이 있으면 타겟 위에 파티클 활성화
 	if (LockOnTarget)
 	{
+		bCameraLockOn = true;
 		const float CharacterHeight = LockOnTarget->GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 2 + 50.f;
 		LockOnParticleComp = UGameplayStatics::SpawnEmitterAttached
 		(
@@ -729,7 +723,7 @@ void AAOSCharacter::SetLockOnTarget()
 
 void AAOSCharacter::UpdateControlRotation()
 {
-	if (CharacterController == nullptr || CombatComp->EquippedWeapon == nullptr)
+	if (bCameraLockOn && (CharacterController == nullptr || CombatComp->EquippedWeapon == nullptr))
 	{
 		bCameraLockOn = false;
 		LockOnTarget = nullptr;
@@ -742,7 +736,7 @@ void AAOSCharacter::UpdateControlRotation()
 
 	if (bCameraLockOn)
 	{
-		if (LockOnTarget && LockOnTarget->GetIsDead())
+		if ((LockOnTarget && LockOnTarget->GetIsDead())|| IsValid(LockOnTarget) == false)
 		{
 			if (LockOnParticleComp)
 			{
@@ -817,27 +811,19 @@ FRotator AAOSCharacter::CalculateRotation(AActor* Target)
 void AAOSCharacter::TransitionAnimationStart()
 {
 	CharacterState = ECharacterState::ECS_AnimationPlaying;
+	if(AnimInstance) AnimInstance->ActivateAnimationPlaying();
 }
 
 void AAOSCharacter::TransitionAnimationEnd()
 {
 	CharacterState = ECharacterState::ECS_Nothing;
+	if (AnimInstance) AnimInstance->DeactivateAnimationPlaying();
 }
 
 void AAOSCharacter::HitReactionAnimationStart()
 {
 	CharacterState = ECharacterState::ECS_AnimationPlaying;
 	GetWorldTimerManager().SetTimer(StiffTimer, this, &AAOSCharacter::TransitionAnimationEnd, 0.4f);
-}
-
-void AAOSCharacter::ResumeRunning()
-{
-	RunningButtonPressed();
-}
-
-void AAOSCharacter::StopRunning()
-{
-	RunningButtonReleased();
 }
 
 void AAOSCharacter::SetGunRecoil(float Recoil)
@@ -1001,10 +987,10 @@ void AAOSCharacter::SetOverlappingItem()
 {
 	if (bExistOverlappingItem == false)
 	{
-		if (OverlappingItemLastFrame)
+		if (OverlappedItemPrev)
 		{
-			OverlappingItemLastFrame->GetWidget()->SetVisibility(false);
-			OverlappingItemLastFrame = nullptr;
+			OverlappedItemPrev->GetWidget()->SetVisibility(false);
+			OverlappedItemPrev = nullptr;
 		}
 		return;
 	}
@@ -1022,15 +1008,15 @@ void AAOSCharacter::SetOverlappingItem()
 			OverlappingItem = Item;
 			OverlappingItem->GetWidget()->SetVisibility(true);
 		}
-		if (OverlappingItemLastFrame)
+		if (OverlappedItemPrev)
 		{
 			// 이전에 적중한 아이템과 현재 적중한 아이템이 다르다면
-			if (OverlappingItemLastFrame != OverlappingItem)
+			if (OverlappedItemPrev != OverlappingItem)
 			{
-				OverlappingItemLastFrame->GetWidget()->SetVisibility(false);
+				OverlappedItemPrev->GetWidget()->SetVisibility(false);
 			}
 		}
-		OverlappingItemLastFrame = OverlappingItem;
+		OverlappedItemPrev = OverlappingItem;
 	}
 	else
 	{
@@ -1038,7 +1024,7 @@ void AAOSCharacter::SetOverlappingItem()
 		{
 			OverlappingItem->GetWidget()->SetVisibility(false);
 			OverlappingItem = nullptr;
-			OverlappingItemLastFrame = nullptr;
+			OverlappedItemPrev = nullptr;
 		}
 	}
 }
@@ -1064,7 +1050,7 @@ void AAOSCharacter::TraceItem(FHitResult& HitItem)
 
 	if (bScreenToWorld)
 	{
-		FVector TraceStart = CrosshairWorldPosition - FVector(0.f,0.f,50.f);
+		FVector TraceStart = CrosshairWorldPosition;
 		FVector TraceEnd = TraceStart + CrosshairWorldDirection * 10000.f;
 
 		UCollisionProfile* Profile = UCollisionProfile::Get();
@@ -1112,9 +1098,16 @@ bool AAOSCharacter::GetIsRunning() const
 	return bIsRunning;
 }
 
-void AAOSCharacter::SetCanRunning(bool IsCapable)
+void AAOSCharacter::StopRunning()
 {
-	bCanRunning = IsCapable;
+	if (AnimInstance) AnimInstance->DeactivateRunning();
+	GetCharacterMovement()->MaxWalkSpeed = CurrentWalkingSpeed;
+}
+
+void AAOSCharacter::StartRunning()
+{
+	if (AnimInstance) AnimInstance->ActivateRunning();
+	GetCharacterMovement()->MaxWalkSpeed = CurrentRunningSpeed;
 }
 
 bool AAOSCharacter::GetIsAnimationPlaying() const

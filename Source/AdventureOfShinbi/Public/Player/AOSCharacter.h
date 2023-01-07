@@ -269,7 +269,7 @@ private:
 	FTimerHandle FireTimer;
 
 	/** 이전의 반경 내 아이템 */
-	AItem* OverlappingItemLastFrame = nullptr;
+	AItem* OverlappedItemPrev = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Character | Dash")
 	UAnimMontage* DashMontage;
@@ -374,7 +374,8 @@ public:
 	UAOSAnimInstance* GetAnimInst() const;
 	void SetCharacterState(ECharacterState State);
 	bool GetIsRunning() const;
-	void SetCanRunning(bool IsCapable);
+	void StopRunning();
+	void StartRunning();
 	bool GetIsAnimationPlaying() const;
 	bool GetIsAiming() const;
 	void DeactivateAiming();
@@ -382,8 +383,6 @@ public:
 	void CallAttackFunction();
 	void SetAbleAttackFalse();
 	void SetOverlappingItemCount(int8 Quantity);
-	void ResumeRunning();
-	void StopRunning();
 	void SetGunRecoil(float Recoil);
 	UCombatComponent* GetCombatComp() const;
 	UItemComponent* GetItemComp() const;

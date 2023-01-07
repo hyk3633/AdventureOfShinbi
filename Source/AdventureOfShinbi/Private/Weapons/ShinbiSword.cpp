@@ -49,7 +49,7 @@ void AShinbiSword::BeginPlay()
 
 	for (int8 i = 0; i < 5; i++)
 	{
-		AngleOffset.Add(-72.f * i);
+		ProjAngleOffset.Add(-72.f * i);
 	}
 
 	if (SwordGlowLoop)
@@ -137,21 +137,21 @@ void AShinbiSword::CirclingWolvesOn(float DeltaTime)
 		const FVector Loc = GetOwner()->GetActorLocation();
 		for (int8 i = 0; i < 5; i++)
 		{
-			FVector Dim(300.f, 0.f, 0.f);
-			AngleAxis[i] += DeltaTime * Multiplier;
+			const FVector RotatedLocValue = 
+				FVector(300.f, 0.f, 0.f).RotateAngleAxis(ProjAngle + ProjAngleOffset[i], FVector(0,0,1));
 
-			if (AngleAxis[i] >= 360.0f)
-			{
-				AngleAxis[i] = 0;
-			}
+			FRotator RotatedRotValue = CirclingWolvesArr[i]->GetActorRotation();
+			RotatedRotValue += FRotator(0.f, RotRotateSpeed, 0.f) * DeltaTime;
 
-			const FVector RotateValue = Dim.RotateAngleAxis(AngleAxis[i] + AngleOffset[i], FVector(0,0,1));
+			CirclingWolvesArr[i]->SetActorLocation(Loc + RotatedLocValue);
+			CirclingWolvesArr[i]->SetActorRotation(RotatedRotValue);
+		}
 
-			FRotator Rotation = CirclingWolvesArr[i]->GetActorRotation();
-			Rotation += FRotator(0.f, RotateSpeed, 0.f) * DeltaTime;
+		ProjAngle += DeltaTime * LocRotateSpeed;
 
-			CirclingWolvesArr[i]->SetActorLocation(Loc + RotateValue);
-			CirclingWolvesArr[i]->SetActorRotation(Rotation);
+		if (ProjAngle >= 360.0f)
+		{
+			ProjAngle = 0;
 		}
 	}
 }
@@ -200,22 +200,21 @@ void AShinbiSword::CirclingWolves()
 	SpawnParams.Owner = WeaponOwner;
 	SpawnParams.Instigator = WeaponOwner;
 
-	AngleAxis.Init(0.f, 5);
+	ProjAngle = 0.f;
 
 	PlayCirclingWolvesEffect();
 	
-	FVector Center = WeaponOwner->GetActorLocation();
 	FRotator FirstRot(0.f, -18.f, 0.f);
 
 	// Wolf 투사체 스폰 위치 계산 후 스폰
 	for (int8 i = 0; i < 5; i++)
 	{
-		FVector RotateValue = FVector(300.f, 0.f, 0.f).RotateAngleAxis(-72.f * i, FVector(0,0,1));
+		const FVector RotateValue = FVector(300.f, 0.f, 0.f).RotateAngleAxis(-72.f * i, FVector(0,0,1));
 
 		FirstRot += FRotator(0.f, -72.f, 0.f);
 
 		AProjectile* SpawnedProj = GetWorld()->SpawnActor<AProjectile>
-			(WolfProjClass, Center + RotateValue, FirstRot, SpawnParams);
+			(WolfProjClass, WeaponOwner->GetActorLocation() + RotateValue, FirstRot, SpawnParams);
 		AProjectileShinbiWolf* WolfProjs = Cast<AProjectileShinbiWolf>(SpawnedProj);
 		WolfProjs->CirclingWolvesMode();
 

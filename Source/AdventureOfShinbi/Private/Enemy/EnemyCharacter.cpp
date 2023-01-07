@@ -665,25 +665,28 @@ void AEnemyCharacter::PlayHitReactionMontage()
 
 FName AEnemyCharacter::DistinguishHitDirection()
 {
-	const FVector TargetLocation = AiInfo.DetectedLocation;
-	FVector ToTarget = TargetLocation - GetActorLocation();
+	FVector ToTarget = AiInfo.DetectedLocation - GetActorLocation();
 	ToTarget.Normalize();
+	const float AngleDegree = FMath::RadiansToDegrees(FMath::Acos(FVector::DotProduct(ToTarget, GetActorForwardVector())));
 	const float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
 
-	FVector Cross = FVector::CrossProduct(ToTarget, GetActorForwardVector());
-	Cross.Normalize();
-	const float CrossDot = FVector::DotProduct(Cross, GetActorUpVector());
-
-	if (Dot >= 0.3f && Dot < 1.0)
+	// 각도 60.0 보다 작으면 앞쪽
+	if (AngleDegree < 60.0)
 	{
 		return FName("F");
 	}
-	else if (Dot >= -0.3f && Dot < -1.0)
+	else if (AngleDegree >= 120.f) // 120도 이상이면 뒤쪽
 	{
 		return FName("B");
 	}
-	else
+	else // 그 외의 값일 경우
 	{
+		// 외적 계산
+		FVector Cross = FVector::CrossProduct(ToTarget, GetActorForwardVector());
+		Cross.Normalize();
+		const float CrossDot = FVector::DotProduct(Cross, GetActorUpVector());
+
+		// 0 보다 크면 왼쪽, 작으면 오른쪽
 		if (CrossDot > 0.f)
 		{
 			return FName("L");

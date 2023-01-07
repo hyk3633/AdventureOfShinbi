@@ -513,7 +513,7 @@ void UCombatComponent::Reload()
 		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetMagazine());
 		GameMode->AddAmmoQuantity(AmmoType, -AmmoToReload);
 	}
-	else // 재장전할 탄약이 소지한 탄약보다 적으면 소지한 탄약 전부 장전
+	else // 재장전할 탄약이 소지한 탄약보다 많으면 소지한 탄약 전부 장전
 	{
 		RangedWeapon->SetLoadedAmmo(RangedWeapon->GetLoadedAmmo() + TotalAmmo);
 		GameMode->AddAmmoQuantity(AmmoType, -TotalAmmo);
@@ -789,13 +789,16 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 		// 달리고 있으면 지구력 감소 아니면 증가
 		if (Character->GetIsRunning())
 		{
-			float Decrease = DeltaTime * StaminaDecreaseRate;
+			const float Decrease = DeltaTime * StaminaDecreaseRate;
 			Stamina = FMath::Clamp(Stamina - Decrease, 0.f, MaxStamina);
 		}
 		else
 		{
-			float Increase = DeltaTime * StaminaIncreaseRate;
-			Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
+			if (Stamina < MaxStamina)
+			{
+				const float Increase = DeltaTime * StaminaIncreaseRate;
+				Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
+			}
 		}
 	}
 	else
@@ -804,25 +807,19 @@ void UCombatComponent::UpdateStamina(float DeltaTime)
 		if (FMath::FloorToFloat(Stamina) == 0.f)
 		{
 			bCanRunning = false;
-			Character->SetCanRunning(false);
 			Character->StopRunning();
 		}
 
 		// 지구력이 60% 이하면 지구력 계속 증가
 		if (Stamina <= MaxStamina * 0.6f)
 		{
-			float Increase = DeltaTime * StaminaIncreaseRate;
+			const float Increase = DeltaTime * StaminaIncreaseRate;
 			Stamina = FMath::Clamp(Stamina + Increase, 0.f, MaxStamina);
 		}
 		else // 지구력이 60% 초과되면 달리기 가능 상태로 설정
 		{
 			bCanRunning = true;
-			Character->SetCanRunning(true);
-			// 달리기 키가 눌려져 있으면 다시 달리기
-			if (Character->GetIsRunning())
-			{
-				Character->ResumeRunning();
-			}
+			if (Character->GetIsRunning()) Character->StartRunning();
 		}
 	}
 
