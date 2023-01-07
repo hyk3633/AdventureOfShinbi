@@ -1224,7 +1224,7 @@ void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
 			WeaponToChange->GetInventorySlot()->QuickSlot1ButtonClicked();
 		}
 	}
-}
+} // 수정
 
 // 무기 버림
 void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
