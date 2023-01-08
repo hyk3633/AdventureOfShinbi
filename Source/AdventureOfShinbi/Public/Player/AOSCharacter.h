@@ -393,4 +393,5 @@ public:
 	void DeactivateWeaponControlMode();
 	void SetOverlappedLTV(bool bIsOverlap);
 	void SetCharacterController();
+	void WeaponStateChanged(AWeapon* Weapon);
 };

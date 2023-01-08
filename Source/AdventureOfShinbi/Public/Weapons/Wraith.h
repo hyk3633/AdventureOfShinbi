@@ -58,8 +58,6 @@ protected:
 
 private:
 
-	AAOSCharacter* WeaponOwner;
-
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	TSubclassOf<UCameraShakeBase> CameraShakeAimingShot;
 
@@ -105,6 +103,4 @@ private:
 
 	FWeaponPartsLocation SniperMode;
 
-	/** 델리게이트 바인딩 여부 */
-	bool bDelBinded = false;
 };

@@ -958,6 +958,11 @@ void AAOSCharacter::SetCharacterController()
 	CharacterController = Cast<AAOSController>(GetController());
 }
 
+void AAOSCharacter::WeaponStateChanged(AWeapon* Weapon)
+{
+	CombatComp->OnChangedWeaponState(Weapon);
+}
+
 void AAOSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);

@@ -106,8 +106,11 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 
 void AGlaive::CheckMana()
 {
-	if (bSickleMode == false)
+	if (bSickleMode == false || WeaponOwner == nullptr)
+	{
+		bAbleMagicSkill = false;
 		return;
+	}
 
 	bAbleMagicSkill = WeaponOwner->GetCombatComp()->SpendMana(EmitMagicalBallManaConsumption);
 }
@@ -390,28 +393,27 @@ float AGlaive::GetUltiSkillMana() const
 
 void AGlaive::SetWeaponState(const EWeaponState State)
 {
+	EWeaponState PrevState = WeaponState;
+
 	Super::SetWeaponState(State);
 
-	if (State == EWeaponState::EWS_Equipped && bDelBinded == false)
+	if (State == EWeaponState::EWS_Equipped)
 	{
-		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-		if (WeaponOwner)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound() == false)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &AGlaive::FormChange);
-			bDelBinded = true;
 		}
 	}
-	else
+	else if (PrevState == EWeaponState::EWS_Equipped && State == EWeaponState::EWS_Field)
 	{
-		if (bDelBinded)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound())
 		{
 			WeaponOwner->DAimButtonPressed.Unbind();
-			bDelBinded = false;
-		}
 
-		if (UltimateActivateParticleComp)
-		{
-			UltimateActivateParticleComp->DestroyComponent();
+			if (UltimateActivateParticleComp)
+			{
+				UltimateActivateParticleComp->DestroyComponent();
+			}
 		}
 	}
 }

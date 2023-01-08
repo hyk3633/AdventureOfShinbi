@@ -77,11 +77,6 @@ protected:
 
 private:
 
-	AAOSCharacter* WeaponOwner;
-
-	/** 델리게이트 바인딩 여부 */
-	bool bDelBinded = false;
-
 	/** 우클릭 여부 */
 	bool bRightButtonClicking = false;
 

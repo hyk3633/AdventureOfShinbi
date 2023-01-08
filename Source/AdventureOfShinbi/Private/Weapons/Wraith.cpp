@@ -1,4 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Weapons/Wraith.h"
@@ -93,23 +92,22 @@ void AWraith::Firing()
 
 void AWraith::SetWeaponState(const EWeaponState State)
 {
+	EWeaponState PrevState = WeaponState;
+
 	Super::SetWeaponState(State);
 
-	if (GetWeaponState() == EWeaponState::EWS_Equipped && bDelBinded == false)
+	if (WeaponState == EWeaponState::EWS_Equipped)
 	{
-		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-		if (WeaponOwner)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound() == false)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &AWraith::FormChange);
-			bDelBinded = true;
 		}
 	}
-	else
+	else if(PrevState == EWeaponState::EWS_Equipped && State == EWeaponState::EWS_Field)
 	{
-		if (bDelBinded)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound())
 		{
 			WeaponOwner->DAimButtonPressed.Unbind();
-			bDelBinded = false;
 		}
 	}
 }
