@@ -75,13 +75,8 @@ protected:
 
 private:
 
-	AAOSCharacter* WeaponOwner;
-
 	/** 모드 토글 변수 */
 	bool bSickleMode = false;
-
-	/** 델리게이트가 바인딩 여부 */
-	bool bDelBinded = false;
 
 	/** 스킬 사용 가능여부 */
 	bool bAbleMagicSkill = false;

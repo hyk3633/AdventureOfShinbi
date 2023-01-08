@@ -164,6 +164,7 @@ void UInventorySlot::DiscardButtonClicked()
 	{
 		SlottedWeapon->SetWeaponState(EWeaponState::EWS_Field);
 		DeactivateInventorySlotClick();
+		
 	}
 }
 

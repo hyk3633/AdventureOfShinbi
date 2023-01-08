@@ -80,8 +80,6 @@ protected:
 
 private:
 
-	AAOSCharacter* WeaponOwner;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Effect")
 	UParticleSystem* SwordGlowStart;
 

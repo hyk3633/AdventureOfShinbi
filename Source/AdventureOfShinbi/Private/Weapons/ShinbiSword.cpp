@@ -87,8 +87,6 @@ void AShinbiSword::SetWeaponState(const EWeaponState State)
 
 	if (GetWeaponState() == EWeaponState::EWS_Equipped)
 	{
-		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-
 		if (SwordGlowStart)
 		{
 			const USkeletalMeshSocket* GlowSocket = ItemMesh->GetSocketByName(FName("GlowSocket"));
@@ -266,10 +264,6 @@ void AShinbiSword::PlayCirclingWolvesEffect()
 
 void AShinbiSword::CirclingWolvesDurationEnd()
 {
-	if (WeaponOwner == nullptr)
-	{
-		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-	}
 	WeaponOwner->GetCombatComp()->CirclingWolvesEnd();
 
 	CirclingParticleComp->Deactivate();
@@ -286,6 +280,11 @@ void AShinbiSword::CirclingWolvesDurationEnd()
 
 void AShinbiSword::UltimateWolfRush()
 {
+	if (WeaponOwner == nullptr)
+	{
+		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
+	}
+
 	// 모든 적 액터 가져오기
 	Enemies.Empty();
 	UGameplayStatics::GetAllActorsOfClass(this, AEnemyCharacter::StaticClass(), Enemies);

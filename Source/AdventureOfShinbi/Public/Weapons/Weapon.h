@@ -11,10 +11,9 @@
 * 무기 아이템 기본 클래스
 */
 
+class AAOSCharacter;
 class UBoxComponent;
 class USoundCue;
-
-DECLARE_MULTICAST_DELEGATE_OneParam(OnWeaponStateChangedDelegate, AWeapon* Weapon);
 
 UCLASS()
 class ADVENTUREOFSHINBI_API AWeapon : public AItem
@@ -40,18 +39,20 @@ protected:
 
 protected:
 
+	AAOSCharacter* WeaponOwner;
+
 	UPROPERTY(EditAnywhere)
 	float Damage = 20.f;
+
+	/** 무기 상태 enum class 변수 */
+	UPROPERTY(VisibleAnywhere)
+	EWeaponState WeaponState = EWeaponState::EWS_MAX;
 
 	/** 무기 유형 enum class 변수 */
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	EWeaponType WeaponType = EWeaponType::EWT_MAX;
 
 private:
-
-	/** 무기 상태 enum class 변수 */
-	UPROPERTY(VisibleAnywhere)
-	EWeaponState WeaponState = EWeaponState::EWS_MAX;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	USoundCue* PickAndEquipSound;
@@ -61,9 +62,7 @@ private:
 
 public:
 
-	/** 무기 상태가 변경됨을 알리는 델리게이트 */
-	OnWeaponStateChangedDelegate WeaponStateChanged;
-
+	void SetWeaponOwner(AAOSCharacter* OwnerToSet);
 	EWeaponType GetWeaponType() const;
 	EWeaponState GetWeaponState() const;
 

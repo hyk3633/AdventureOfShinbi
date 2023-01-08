@@ -50,7 +50,6 @@ void UCombatComponent::RestartCombatComp()
 		for (int32 i = 0; i < GameMode->GetWeaponCount(); i++)
 		{
 			GameMode->GetWeaponItem(i)->SetWeaponState(EWeaponState::EWS_PickedUp);
-			GameMode->GetWeaponItem(i)->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
 		}
 		if (GameMode->GetEquippedWeapon())
 		{
@@ -944,8 +943,8 @@ void UCombatComponent::PickingUpItem(AItem* PickedItem)
 			CharacterController->CreateHUDInventorySlot();
 		}
 		GameMode->AddWeaponToArr(PickedWeapon);
+		PickedWeapon->SetWeaponOwner(Character);
 		PickedWeapon->SetWeaponState(EWeaponState::EWS_PickedUp);
-		PickedWeapon->WeaponStateChanged.AddUObject(this, &UCombatComponent::OnChangedWeaponState);
 		CharacterController->AddWeaponToSlot(GameMode->GetWeaponCount() - 1, PickedWeapon);
 	}
 	else
@@ -1084,7 +1083,7 @@ void UCombatComponent::EquipWeapon(AWeapon* Weapon)
 	CharacterController->SetHUDEquippedWeaponIcon(EquippedWeapon->GetItemIcon());
 	CharacterController->SetHUDInventoryEquippedWeaponSlotIcon(EquippedWeapon->GetItemIcon());
 
-	EquippedWeapon->SetOwner(Character);
+	//EquippedWeapon->SetWeaponOwner(Character);
 	AnimInstance->SetWeaponType(EquippedWeapon->GetWeaponType());
 
 	// 장착되어 있던 무기가 nullptr 이 아니면
@@ -1138,7 +1137,7 @@ void UCombatComponent::UnEquipWeapon(AWeapon* Weapon)
 		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 		EquippedWeapon->GetItemMesh()->DetachFromComponent(DetachRules);
 		AnimInstance->SetWeaponType(EWeaponType::EWT_None);
-		EquippedWeapon->SetOwner(nullptr);
+		EquippedWeapon->SetWeaponOwner(nullptr);
 		EquippedWeapon = nullptr;
 
 		GameMode->KeepEquippedWeapon(nullptr);
@@ -1224,7 +1223,7 @@ void UCombatComponent::WeaponToQuickSlot2(AWeapon* Weapon)
 			WeaponToChange->GetInventorySlot()->QuickSlot1ButtonClicked();
 		}
 	}
-} // 수정
+}
 
 // 무기 버림
 void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
@@ -1241,7 +1240,6 @@ void UCombatComponent::DiscardWeapon(AWeapon* Weapon)
 	CharacterController->UpdateInventory(Weapon->GetInventorySlot());
 	Weapon->SetInventorySlot(nullptr);
 	Weapon->SetOwner(nullptr);
-	Weapon->WeaponStateChanged.RemoveAll(this);
 }
 
 void UCombatComponent::DmgDebuffEnd()

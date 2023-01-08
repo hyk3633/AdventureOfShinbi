@@ -170,26 +170,25 @@ void ARevenant::RightButtonClicking(bool bClicking)
 
 void ARevenant::SetWeaponState(const EWeaponState State)
 {
+	EWeaponState PrevState = WeaponState;
+
 	Super::SetWeaponState(State);
 
-	if (GetWeaponState() == EWeaponState::EWS_Equipped && bDelBinded == false)
+	if (WeaponState == EWeaponState::EWS_Equipped)
 	{
-		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
-		if (WeaponOwner)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound() == false)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &ARevenant::RightButtonClicking);
-			bDelBinded = true;
 		}
 
 		ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		ItemMesh->SetEnableGravity(true);
 	}
-	else
+	else if (PrevState == EWeaponState::EWS_Equipped && State == EWeaponState::EWS_Field)
 	{
-		if (bDelBinded)
+		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound())
 		{
 			WeaponOwner->DAimButtonPressed.Unbind();
-			bDelBinded = false;
 		}
 	}
 }

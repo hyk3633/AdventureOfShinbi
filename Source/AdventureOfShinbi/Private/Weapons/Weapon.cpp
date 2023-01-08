@@ -40,6 +40,11 @@ void AWeapon::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 	ItemMesh->SetNotifyRigidBodyCollision(false);
 }
 
+void AWeapon::SetWeaponOwner(AAOSCharacter* OwnerToSet)
+{
+	WeaponOwner = OwnerToSet;
+}
+
 EWeaponType AWeapon::GetWeaponType() const
 {
 	return WeaponType;
@@ -101,7 +106,10 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		break;
 	}
 
-	WeaponStateChanged.Broadcast(this);
+	if (WeaponOwner)
+	{
+		WeaponOwner->WeaponStateChanged(this);
+	}
 }
 
 EWeaponState AWeapon::GetWeaponState() const

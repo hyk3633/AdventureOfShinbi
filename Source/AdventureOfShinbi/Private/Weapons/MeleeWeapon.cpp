@@ -38,7 +38,10 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 	if (bHitSomething == false)
 		return false;
 
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (WeaponOwner == nullptr)
+	{
+		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
+	}
 	
 	TArray<AActor*> HitEnemies;
 	for (FHitResult Result : WeaponHitResults)
@@ -64,7 +67,7 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 				Damage,
 				Result.ImpactPoint,
 				Result,
-				OwnerPawn->GetController(),
+				WeaponOwner->GetController(),
 				GetOwner(),
 				UDamageType::StaticClass()
 			);
