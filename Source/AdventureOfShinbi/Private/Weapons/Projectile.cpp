@@ -19,19 +19,18 @@ AProjectile::AProjectile()
 	SetRootComponent(BoxCollision);
 	BoxCollision->SetGenerateOverlapEvents(true);
 	BoxCollision->SetNotifyRigidBodyCollision(true);
-	//BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	BoxCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BoxCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	BoxCollision->SetEnableGravity(false);
 
-	//SetActorHiddenInGame(true);
+	SetActorHiddenInGame(true);
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->InitialSpeed = 10000.f;
 	ProjectileMovementComponent->MaxSpeed = 10000.f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
-	//ProjectileMovementComponent->SetAutoActivate(false);
+	ProjectileMovementComponent->SetAutoActivate(false);
 
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
 	RadialForce->SetupAttachment(BoxCollision);

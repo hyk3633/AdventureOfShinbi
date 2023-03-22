@@ -27,7 +27,7 @@ public:
 	virtual void Firing() override;
 
 	/** 산탄 */
-	void ScatterFiring(TSubclassOf<AProjectile> Projectile);
+	void ScatterFiring();
 
 	/** 한 발만 발사 */
 	void SingleFiring(TSubclassOf<AProjectile> Projectile);
@@ -45,6 +45,8 @@ protected:
 	/** 메쉬의 총구에서 크로스헤어가 조준하는 방향으로의 Rotation 값을 저장 */
 	void GetSpawnRotation(const FVector& ProjLoc, FRotator& ProjRot);
 
+	void SetDamage(float Dmg);
+
 protected:
 
 	/** 산탄 여부 */
@@ -60,10 +62,6 @@ protected:
 	float ScatterRange = 1.0f;
 
 private:
-
-	/** 투사체 템플릿 클래스 */
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Projectile")
-	TSubclassOf<AProjectile> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Object Pooling")
 	UObjectPool* ObjectPooler;

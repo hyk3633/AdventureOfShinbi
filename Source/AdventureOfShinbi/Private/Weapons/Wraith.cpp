@@ -2,6 +2,8 @@
 
 #include "Weapons/Wraith.h"
 #include "Player/AOSCharacter.h"
+#include "System/ObjectPool.h"
+#include "Weapons/Projectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -10,6 +12,8 @@
 AWraith::AWraith()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	AimShotPooler = CreateDefaultSubobject<UObjectPool>(TEXT("AimShot Pooler"));
 
 	WeaponType = EWeaponType::EWT_Wraith;
 
@@ -79,7 +83,7 @@ void AWraith::Firing()
 		PlayFireEffect(AimedSmokeParticle, nullptr);
 		PlayFireEffect(AimedStabilizerParticle, nullptr);
 
-		SingleFiring(AimingProjectileClass);
+		AimShotFiring();
 
 		ConsumeAmmo();
 	}
@@ -87,6 +91,23 @@ void AWraith::Firing()
 	{
 		Super::Firing();
 	}
+}
+
+void AWraith::AimShotFiring()
+{
+	AProjectile* PooledActor = AimShotPooler->GetPooledActor();
+	if (PooledActor == nullptr) return;
+
+	FVector LocationToSpawn;
+	GetSpawnLocation(LocationToSpawn);
+
+	FRotator RotationToSpawn;
+	GetSpawnRotation(LocationToSpawn, RotationToSpawn);
+
+	PooledActor->SetActorLocation(LocationToSpawn);
+	PooledActor->SetActorRotation(RotationToSpawn);
+	PooledActor->SetLifeSpan(3.f);
+	PooledActor->Activate();
 }
 
 void AWraith::SetWeaponState(const EWeaponState State)
@@ -101,6 +122,8 @@ void AWraith::SetWeaponState(const EWeaponState State)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &AWraith::FormChange);
 		}
+		AimShotPooler->SetOwner(GetOwner());
+		AimShotPooler->StartPooling();
 	}
 	else if(PrevState == EWeaponState::EWS_Equipped && State == EWeaponState::EWS_Field)
 	{
@@ -108,6 +131,7 @@ void AWraith::SetWeaponState(const EWeaponState State)
 		{
 			WeaponOwner->DAimButtonPressed.Unbind();
 		}
+		AimShotPooler->DestroyPool();
 	}
 }
 

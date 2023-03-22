@@ -63,9 +63,6 @@ protected:
 	/** 스켈레탈 메쉬의 본 위치 업데이트 */
 	void Charging(float DeltaTime);
 
-	/** 우클릭이 2초 유지되면 더 강력한 투사체 발사 */
-	void ChargeShot();
-
 	/** 우클릭이 활성화되는 동안 사운드 재생 */
 	UFUNCTION()
 	void RightButtonClicking(bool bClicking);
@@ -80,22 +77,8 @@ private:
 	/** 우클릭 여부 */
 	bool bRightButtonClicking = false;
 
-	/** 추가 투사체 템플릿 클래스 */
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Normal Shot")
-	TSubclassOf<AProjectile> ObliterateClass;
-
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Normal Shot")
 	UParticleSystem* MuzzleFlash2;
-
-	/** 더 강력한 투사체 템플릿 클래스 */
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
-	TSubclassOf<AProjectile> ChargeShotPorjClass;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
-	UParticleSystem* ChargeShotMuzzleFlash;
-
-	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
-	UParticleSystem* ChargeShotMuzzleFlash2;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
 	UParticleSystem* ChargingParticle;

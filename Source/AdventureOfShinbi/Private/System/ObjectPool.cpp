@@ -9,7 +9,6 @@ UObjectPool::UObjectPool()
 
 }
 
-
 //AProjectile* UObjectPool::GetPooledActor()
 //{
 //	for (AProjectile* PooledActor : Pool)
@@ -60,6 +59,14 @@ void UObjectPool::DestroyPool()
 		PooledActor->Destroy();
 	}
 	Pool.Empty();
+}
+
+void UObjectPool::SetProjectileDmg(float Dmg)
+{
+	for (AProjectile* PooledActor : Pool)
+	{
+		PooledActor->SetDamage(Dmg);
+	}
 }
 
 void UObjectPool::BeginPlay()

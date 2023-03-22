@@ -6,6 +6,7 @@
 #include "Wraith.generated.h"
 
 class AAOSCharacter;
+class UObjectPool;
 
 /** 무기 스켈레탈 메쉬의 본 Location, Rotation 구조체 */
 USTRUCT(BlueprintType)
@@ -56,7 +57,12 @@ protected:
 
 	void ActivateScopeParticle();
 
+	void AimShotFiring();
+
 private:
+
+	UPROPERTY(EditAnywhere, Category = "Object Pooling")
+	UObjectPool* AimShotPooler;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	TSubclassOf<UCameraShakeBase> CameraShakeAimingShot;

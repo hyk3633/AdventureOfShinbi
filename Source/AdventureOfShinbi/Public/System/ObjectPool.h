@@ -22,6 +22,8 @@ public:
 
 	void DestroyPool();
 
+	void SetProjectileDmg(float Dmg);
+
 	FORCEINLINE void SetOwner(AActor* NewOwner) { ThisOwner = NewOwner; };
 
 protected:

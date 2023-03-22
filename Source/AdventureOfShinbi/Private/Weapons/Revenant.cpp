@@ -102,6 +102,7 @@ void ARevenant::Charging(float DeltaTime)
 		if (ChargingTime >= 2.f && ChargingParticleComp->IsActive() == false)
 		{
 			ChargingParticleComp->Activate();
+			SetDamage(100.f);
 		}
 	}
 	else
@@ -117,35 +118,24 @@ void ARevenant::Firing()
 {
 	if (bRightButtonClicking && ChargingTime>= 2.f)
 	{
-		ChargeShot();
-		ConsumeAmmo();
-
-		ScatterRange = 10.f;
-		AmmoConsumption = 1;
+		ScatterRange = 5.f;
+		AmmoConsumption = Magazine;
 	}
-	else
-	{
-		Super::Firing();
+	
+	Super::Firing();
 
-		PlayFireEffect(MuzzleFlash2, nullptr);
-
-		SingleFiring(ObliterateClass);
-	}
+	PlayFireEffect(MuzzleFlash2, nullptr);
 
 	WeaponOwner->DeactivateAiming();
 
 	bRightButtonClicking = false;
-}
 
-void ARevenant::ChargeShot()
-{
-	ScatterRange = 5.f;
-	AmmoConsumption = Magazine;
-
-	PlayFireEffect(ChargeShotMuzzleFlash, ChargeShotSound);
-	PlayFireEffect(ChargeShotMuzzleFlash2, nullptr);
-
-	ScatterFiring(ChargeShotPorjClass);
+	if (bRightButtonClicking && ChargingTime >= 2.f)
+	{
+		SetDamage(70.f);
+		ScatterRange = 10.f;
+		AmmoConsumption = 1;
+	}
 }
 
 void ARevenant::RightButtonClicking(bool bClicking)

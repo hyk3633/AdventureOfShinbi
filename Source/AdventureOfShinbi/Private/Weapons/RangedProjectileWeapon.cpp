@@ -36,22 +36,18 @@ void ARangedProjectileWeapon::Firing()
 
 	if (bScatterGun)
 	{
-		ScatterFiring(ProjectileClass);
+		ScatterFiring();
 	}
 	else
 	{
-		//SingleFiring(ProjectileClass);
 		SingleFiring();
 	}
 
 	ConsumeAmmo();
 }
 
-void ARangedProjectileWeapon::ScatterFiring(TSubclassOf<AProjectile> Projectile)
+void ARangedProjectileWeapon::ScatterFiring()
 {
-	if (Projectile == nullptr)
-		return;
-
 	FVector LocationToSpawn;
 	GetSpawnLocation(LocationToSpawn);
 
@@ -59,17 +55,17 @@ void ARangedProjectileWeapon::ScatterFiring(TSubclassOf<AProjectile> Projectile)
 	CrosshairLineTrace(HitPoint);
 
 	// ·£´ýÇÑ ÃÑ¾Ë ¹ß»ç º¤ÅÍ¸¦ Åº¾Ë ¼ö ¸¸Å­ ÀúÀå
-	TArray<FRotator> ShotRotator;
 	for (int8 i = 0; i < NumberOfShots; i++)
 	{
-		const FVector ToTarget = HitPoint - LocationToSpawn;
-		const FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, ScatterRange);
-		ShotRotator.Add(RandomUnitVector.Rotation());
-	}
+		AProjectile* PooledActor = ObjectPooler->GetPooledActor();
+		if (PooledActor == nullptr) return;
 
-	for (int8 i = 0; i < NumberOfShots; i++)
-	{
-		SpawnProjectile(Projectile, LocationToSpawn, ShotRotator[i]);
+		const FVector RandomUnitVector = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(HitPoint - LocationToSpawn, ScatterRange);
+
+		PooledActor->SetActorLocation(LocationToSpawn);
+		PooledActor->SetActorRotation(RandomUnitVector.Rotation());
+		PooledActor->SetLifeSpan(LifeSpan);
+		PooledActor->Activate();
 	}
 }
 
@@ -145,4 +141,9 @@ void ARangedProjectileWeapon::GetSpawnRotation(const FVector& ProjLoc, FRotator&
 
 	FVector ToTarget = HitPoint - ProjLoc;
 	ProjRot = ToTarget.Rotation();
+}
+
+void ARangedProjectileWeapon::SetDamage(float Dmg)
+{
+	ObjectPooler->SetProjectileDmg(Dmg);
 }
