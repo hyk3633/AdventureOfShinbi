@@ -39,5 +39,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Check Point")
 	USoundCue* CheckSound;
 
+	UPROPERTY()
 	UUserWidget* CheckPointSign;
 };

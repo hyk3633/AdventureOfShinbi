@@ -13,7 +13,21 @@ AProjectileBullet::AProjectileBullet()
 {
 	BodyParticleComponent = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("BodyParticle"));
 	BodyParticleComponent->SetupAttachment(RootComponent);
+}
 
+void AProjectileBullet::Activate()
+{
+	Super::Activate();
+
+	BodyParticleComponent->Activate();
+	GetWorldTimerManager().SetTimer(NoHitTimer, this, &AProjectileBullet::PlayNoHitParticle, LifeSpan, false);
+}
+
+void AProjectileBullet::Deactivate()
+{
+	Super::Deactivate();
+
+	BodyParticleComponent->Deactivate();
 }
 
 void AProjectileBullet::BeginPlay()
@@ -31,17 +45,14 @@ void AProjectileBullet::BeginPlay()
 			EAttachLocation::KeepWorldPosition
 		);
 	}
-
-	GetWorldTimerManager().SetTimer(LifeTimer, this, &AProjectileBullet::LifeOver, LifeSpan);
 }
 
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	Super::OnHit(HitComp, OtherActor, OtherComp, NormalImpulse, Hit);
 
+	GetWorldTimerManager().ClearTimer(NoHitTimer);
 	PlayHitEffect(Hit, OtherActor);
-
-	LifeOver();
 }
 
 void AProjectileBullet::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
@@ -77,19 +88,10 @@ void AProjectileBullet::PlayHitEffect(const FHitResult& Hit, AActor* OtherActor)
 	}
 }
 
-void AProjectileBullet::LifeOver()
+void AProjectileBullet::PlayNoHitParticle()
 {
-	BodyParticleComponent->Deactivate();
-
 	if (NoHitParticle)
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), NoHitParticle, GetActorLocation(), GetActorRotation(), false);
 	}
-
-	GetWorldTimerManager().SetTimer(DestroyTimer, this, &AProjectileBullet::DestroyProjectile, 2.f);
-}
-
-void AProjectileBullet::DestroyProjectile()
-{
-	Destroy();
 }

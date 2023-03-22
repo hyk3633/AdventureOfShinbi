@@ -53,16 +53,10 @@ void AAOSGameModeBase::RespawnPlayer()
 	DPlayerRespawn.Broadcast();
 }
 
-bool AAOSGameModeBase::IsPlayerRespawn()
-{
-	return PlayerDeathCount > 0;
-}
-
 void AAOSGameModeBase::LoadPlayerData()
 {
-	GI = GetWorld()->GetGameInstance<UAOSGameInstance>();
-	if (GI == nullptr)
-		return;
+	if (GI == nullptr) 
+		GI = GetWorld()->GetGameInstance<UAOSGameInstance>();
 
 	Character = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 	UAOSAnimInstance* AnimInstance = Cast<UAOSAnimInstance>(Character->GetMesh()->GetAnimInstance());
@@ -103,6 +97,9 @@ void AAOSGameModeBase::BindBossDefeatEvent()
 void AAOSGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GI = GetWorld()->GetGameInstance<UAOSGameInstance>();
+	//GI->SetAsyncLoad(); 
 
 	Character = Cast<AAOSCharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
 	if (Character)
@@ -293,56 +290,6 @@ void AAOSGameModeBase::BossDefeatedSignDestroy()
 	BossDefeatedSignWidget->RemoveFromViewport();
 }
 
-void AAOSGameModeBase::AddWeaponToArr(AWeapon* Weapon)
-{
-	AcquiredWeapons.Add(Weapon);
-}
-
-void AAOSGameModeBase::RemoveWeaponFromArr(AWeapon* Weapon)
-{
-	AcquiredWeapons.Remove(Weapon);
-}
-
-void AAOSGameModeBase::KeepEquippedWeapon(AWeapon* Weapon)
-{
-	EquippedWeapon = Weapon;
-}
-
-void AAOSGameModeBase::KeepQuickSlot1Weapon(AWeapon* Weapon)
-{
-	QuickSlot1Weapon = Weapon;
-}
-
-void AAOSGameModeBase::KeepQuickSlot2Weapon(AWeapon* Weapon)
-{
-	QuickSlot2Weapon = Weapon;
-}
-
-int32 AAOSGameModeBase::GetWeaponCount() const
-{
-	return AcquiredWeapons.Num();
-}
-
-AWeapon* AAOSGameModeBase::GetWeaponItem(int32 Index) const
-{
-	return AcquiredWeapons[Index];
-}
-
-AWeapon* AAOSGameModeBase::GetEquippedWeapon()
-{
-	return EquippedWeapon;
-}
-
-AWeapon* AAOSGameModeBase::GetQuickSlot1Weapon()
-{
-	return QuickSlot1Weapon;
-}
-
-AWeapon* AAOSGameModeBase::GetQuickSlot2Weapon()
-{
-	return QuickSlot2Weapon;
-}
-
 void AAOSGameModeBase::InitializeTMap()
 {
 	RecoveryItemMap.Add(ERecoveryType::ERT_Health, 0);
@@ -362,41 +309,6 @@ void AAOSGameModeBase::InitializeQuickSlotItemArray()
 	}
 }
 
-AItem* AAOSGameModeBase::GetItem(int32 Index) const
-{
-	return ItemArray[Index];
-}
-
-void AAOSGameModeBase::AddItemToArr(AItem* Item)
-{
-	ItemArray.Add(Item);
-}
-
-void AAOSGameModeBase::RemoveItemFromArr(AItem* Item)
-{
-	ItemArray.Remove(Item);
-}
-
-int32 AAOSGameModeBase::GetItemIndex(AItem* Item) const
-{
-	return ItemArray.Find(Item);
-}
-
-int32 AAOSGameModeBase::GetItemCount() const
-{
-	return ItemArray.Num();
-}
-
-int32 AAOSGameModeBase::GetRecoveryItemCount(ERecoveryType Type) const
-{
-	return RecoveryItemMap[Type];
-}
-
-void AAOSGameModeBase::AddRecoveryItem(ERecoveryType Type, int32 Quantity)
-{
-	RecoveryItemMap[Type] += Quantity;
-}
-
 int8 AAOSGameModeBase::GetRecoveryIndex(ERecoveryType Type) const
 {
 	if (RecoveryIndexMap.Contains(Type))
@@ -405,56 +317,11 @@ int8 AAOSGameModeBase::GetRecoveryIndex(ERecoveryType Type) const
 		return -1;
 }
 
-void AAOSGameModeBase::SetRecoveryIndex(ERecoveryType Type, int8 Index)
-{
-	RecoveryIndexMap.Add(Type, Index);
-}
-
-void AAOSGameModeBase::AddAmmoToAmmoMap(EAmmoType Type, int32 AmmoQuantity)
-{
-	AmmoQuantityMap.Add(Type, AmmoQuantity);
-}
-
-void AAOSGameModeBase::AddAmmoQuantity(EAmmoType Type, int32 AmmoQuantity)
-{
-	AmmoQuantityMap[Type] += AmmoQuantity;
-}
-
-int32 AAOSGameModeBase::GetAmmoQuantity(EAmmoType Type) const
-{
-	return AmmoQuantityMap[Type];
-}
-
-bool AAOSGameModeBase::IsAmmoTypeExist(EAmmoType Type)
-{
-	return AmmoQuantityMap.Contains(Type);
-}
-
-int32 AAOSGameModeBase::GetAmmoIndex(EAmmoType Type) const
-{
-	return AmmoIndexMap[Type];
-}
-
-void AAOSGameModeBase::SetAmmoIndex(EAmmoType Type, int32 Count)
-{
-	AmmoIndexMap[Type] = Count;
-}
-
-AItem* AAOSGameModeBase::GetQuickSlotItem(int8 Index)
-{
-	return QuickSlotItemArray[Index].QuickSlotItem;
-}
-
 void AAOSGameModeBase::SetQuickSlotItem(int32 Index, AItem* Item, UImage* Icon, UTextBlock* CountText)
 {
 	QuickSlotItemArray[Index].QuickSlotItem = Item;
 	QuickSlotItemArray[Index].QuickSlotIcon = Icon;
 	QuickSlotItemArray[Index].QuickSlotItemCountText = CountText;
-}
-
-void AAOSGameModeBase::SetQuickSlotCountText(int32 Index, FText Text)
-{
-	QuickSlotItemArray[Index].QuickSlotItemCountText->SetText(Text);
 }
 
 void AAOSGameModeBase::ClearQuickSlot(int32 Index)
@@ -465,26 +332,6 @@ void AAOSGameModeBase::ClearQuickSlot(int32 Index)
 	QuickSlotItemArray[Index].QuickSlotIcon->SetBrush(Brush);
 	QuickSlotItemArray[Index].QuickSlotItemCountText->SetVisibility(ESlateVisibility::Hidden);
 	QuickSlotItemArray[Index] = FQuickSlotItem{ nullptr, nullptr, nullptr };
-}
-
-int32 AAOSGameModeBase::GetQuickSlotItemArrLength() const
-{
-	return QuickSlotItemArray.Num();
-}
-
-FQuickSlotItem AAOSGameModeBase::GetQuickSlotItemArr(int32 Index)
-{
-	return QuickSlotItemArray[Index];
-}
-
-int8 AAOSGameModeBase::GetActivatedQuickSlotNumber() const
-{
-	return ActivatedQuickSlotNumber;
-}
-
-void AAOSGameModeBase::SetActivatedQuickSlotNumber(int8 Number)
-{
-	ActivatedQuickSlotNumber = Number;
 }
 
 void AAOSGameModeBase::SetPlayerStart(APlayerStart* RespawnPoint)

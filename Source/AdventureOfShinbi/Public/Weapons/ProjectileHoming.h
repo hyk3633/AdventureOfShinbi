@@ -42,9 +42,6 @@ protected:
 private:
 
 	UPROPERTY(EditAnywhere)
-	float LifeSpan = 5.f;
-
-	UPROPERTY(EditAnywhere)
 	UParticleSystemComponent* BodyParticleComp;
 
 	UPROPERTY(EditAnywhere)

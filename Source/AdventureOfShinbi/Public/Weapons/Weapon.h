@@ -38,7 +38,8 @@ protected:
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 protected:
-
+	
+	UPROPERTY()
 	AAOSCharacter* WeaponOwner;
 
 	UPROPERTY(EditAnywhere)
@@ -62,7 +63,6 @@ private:
 
 public:
 
-	void SetWeaponOwner(AAOSCharacter* OwnerToSet);
 	EWeaponType GetWeaponType() const;
 	EWeaponState GetWeaponState() const;
 

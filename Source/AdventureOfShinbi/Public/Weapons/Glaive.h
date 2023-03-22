@@ -113,6 +113,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Glaive | Sickle Mode")
 	UParticleSystem* SickleModeParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* SickleModeParticleComp;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Sickle Mode")
@@ -134,6 +135,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Glaive | Glaive Mode")
 	UParticleSystem* UltimateActivateParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* UltimateActivateParticleComp;
 
 	UPROPERTY(EditAnywhere, Category = "Glaive | Glaive Mode")

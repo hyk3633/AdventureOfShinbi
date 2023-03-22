@@ -66,12 +66,16 @@ protected:
 
 private:
 
+	UPROPERTY()
 	UCombatComponent* CombatComp;
 
+	UPROPERTY()
 	AAOSCharacter* Character;
 
+	UPROPERTY()
 	AAOSGameModeBase* GameMode;
 
+	UPROPERTY()
 	AAOSController* CharacterController;
 
 	UPROPERTY(EditAnywhere, Category = "Item Compnent | Voice")

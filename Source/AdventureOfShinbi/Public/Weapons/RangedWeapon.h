@@ -89,6 +89,7 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AItem* AmmoItem;
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess = "true"))

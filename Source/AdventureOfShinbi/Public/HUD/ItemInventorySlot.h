@@ -86,6 +86,7 @@ public:
 private:
 
 	/** 슬롯에 저장된 아이템 */
+	UPROPERTY()
 	AItem* SlottedItem;
 
 	/** 아이템이 퀵슬롯에 장착되어 있으면 true */

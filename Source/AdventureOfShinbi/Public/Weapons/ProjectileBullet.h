@@ -1,5 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿
 #pragma once
 
 #include "CoreMinimal.h"
@@ -23,6 +22,10 @@ public:
 	
 	AProjectileBullet();
 
+	virtual void Activate() override;
+
+	virtual void Deactivate() override;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -31,18 +34,12 @@ protected:
 
 	void PlayHitEffect(const FHitResult& Hit, AActor* OtherActor);
 
-	/** 투사체의 수명이 끝난 후 이펙트 처리 */
-	void LifeOver();
-
-	void DestroyProjectile();
+	void PlayNoHitParticle();
 
 protected:
 
 	UPROPERTY(EditAnywhere)
 	UParticleSystemComponent* BodyParticleComponent;
-
-	UPROPERTY(EditAnywhere, Category = "Projectile")
-	float LifeSpan = 7.f;
 
 private:
 
@@ -61,7 +58,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Projectile | Effects")
 	USoundCue* HitSound;
 
-	FTimerHandle LifeTimer;
+	FTimerHandle NoHitTimer;
 
-	FTimerHandle DestroyTimer;
 };

@@ -45,6 +45,7 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AEnemyBoss* PossessedCharacter;
 
 	UPROPERTY(EditAnywhere, Category = "AI")
@@ -53,7 +54,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "AI")
 	UBlackboardData* BBAsset;
 
+	UPROPERTY()
 	UBehaviorTreeComponent* BTComp;
 
+	UPROPERTY()
 	UBlackboardComponent* BBComp;
 };

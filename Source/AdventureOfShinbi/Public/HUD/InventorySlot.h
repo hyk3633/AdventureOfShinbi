@@ -95,6 +95,7 @@ public:
 private:
 
 	/** 슬롯에 저장된 무기 아이템 */
+	UPROPERTY()
 	AWeapon* SlottedWeapon;
 
 	/** 무기의 퀵슬롯 저장 여부 */

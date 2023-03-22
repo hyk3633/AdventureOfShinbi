@@ -25,6 +25,8 @@ AEnemyRanged::AEnemyRanged()
 	Defense = 20.f;
 	DefaultValue = 10.f;
 	RandRangeValue = 10;
+
+	AssetName = TEXT("Ranged_Core");
 }
 
 void AEnemyRanged::BeginPlay()

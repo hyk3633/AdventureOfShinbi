@@ -77,14 +77,19 @@ public:
 
 	/** 크로스헤어 텍스쳐 */
 
+	UPROPERTY()
 	UTexture2D* CrosshairCenter;
 
+	UPROPERTY()
 	UTexture2D* CrosshairLeft;
 
+	UPROPERTY()
 	UTexture2D* CrosshairRight;
 
+	UPROPERTY()
 	UTexture2D* CrosshairTop;
 
+	UPROPERTY()
 	UTexture2D* CrosshairBottom;
 
 	UPROPERTY(EditAnywhere, Category = "HUD")

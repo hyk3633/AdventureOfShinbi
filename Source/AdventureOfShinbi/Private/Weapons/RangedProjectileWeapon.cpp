@@ -2,9 +2,32 @@
 
 #include "Weapons/RangedProjectileWeapon.h"
 #include "Weapons/Projectile.h"
+#include "Weapons/ProjectileBullet.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "System/ObjectPool.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "DrawDebugHelpers.h"
+
+ARangedProjectileWeapon::ARangedProjectileWeapon()
+{
+	ObjectPooler = CreateDefaultSubobject<UObjectPool>(TEXT("Bullet Pooler"));
+	LoadedAmmo = 100;
+}
+
+void ARangedProjectileWeapon::SetWeaponState(const EWeaponState State)
+{
+	Super::SetWeaponState(State);
+
+	if (State == EWeaponState::EWS_Equipped)
+	{
+		ObjectPooler->SetOwner(GetOwner());
+		ObjectPooler->StartPooling();
+	}
+	else if (State == EWeaponState::EWS_Field)
+	{
+		ObjectPooler->DestroyPool();
+	}
+}
 
 void ARangedProjectileWeapon::Firing()
 {
@@ -17,7 +40,8 @@ void ARangedProjectileWeapon::Firing()
 	}
 	else
 	{
-		SingleFiring(ProjectileClass);
+		//SingleFiring(ProjectileClass);
+		SingleFiring();
 	}
 
 	ConsumeAmmo();
@@ -63,8 +87,28 @@ void ARangedProjectileWeapon::SingleFiring(TSubclassOf<AProjectile> Projectile)
 	SpawnProjectile(Projectile, LocationToSpawn, RotationToSpawn);
 }
 
+void ARangedProjectileWeapon::SingleFiring()
+{
+	AProjectile* PooledActor = ObjectPooler->GetPooledActor();
+	if (PooledActor == nullptr) return;
+
+	FVector LocationToSpawn;
+	GetSpawnLocation(LocationToSpawn);
+
+	FRotator RotationToSpawn;
+	GetSpawnRotation(LocationToSpawn, RotationToSpawn);
+
+	PooledActor->SetActorLocation(LocationToSpawn);
+	PooledActor->SetActorRotation(RotationToSpawn);
+	PooledActor->SetLifeSpan(LifeSpan);
+	PooledActor->Activate();
+}
+
 void ARangedProjectileWeapon::SpawnProjectile(TSubclassOf<AProjectile> Projectile, const FVector& LocToSpawn, const FRotator& RotToSpawn)
 {
+	if (GetOwner() == nullptr)
+		return;
+
 	APawn* InstigatorPawn = Cast<APawn>(GetOwner());
 	if (InstigatorPawn == nullptr)
 		return;

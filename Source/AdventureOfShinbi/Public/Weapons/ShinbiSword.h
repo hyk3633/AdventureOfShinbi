@@ -86,6 +86,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Effect")
 	UParticleSystem* SwordGlowLoop;
 
+	UPROPERTY()
 	UParticleSystemComponent* SwordGlowLoopComp;
 
 	/** SwordGlowLoop 파티클 재생에 딜레이를 주는 타이머 */
@@ -97,6 +98,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Wolf Attack")
 	TSubclassOf<AProjectile> WolfProjClass;
 
+	UPROPERTY()
 	AProjectileShinbiWolf* WolfProj;
 
 	/** 스킬 마나 소모량 */
@@ -110,11 +112,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Circling Wolves")
 	UParticleSystem* CirclingParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* CirclingParticleComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Circling Wolves")
 	UParticleSystem* LensFlareParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* LensFlareParticleComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Circling Wolves")
@@ -123,9 +127,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Circling Wolves")
 	USoundCue* CirclingLoopingSound;
 
+	UPROPERTY()
 	UAudioComponent* CirclingLoopingSoundComp;
 
 	/** Wolf 투사체 배열 */
+	UPROPERTY()
 	TArray<AProjectileShinbiWolf*> CirclingWolvesArr;
 
 	/** 캐릭터를 중심으로 각 투사체의 Location을 회전하기 위한 각도 누적값 */
@@ -161,6 +167,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Ultimate Wolf Rush")
 	UParticleSystem* LightParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* LightParticleComp;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shinbi Sword | Ultimate Wolf Rush")
@@ -189,6 +196,7 @@ private:
 	float UltimateWolfAttackTime = 0.3f;
 
 	/** 탐지된 적 배열 */
+	UPROPERTY()
 	TArray<AActor*> Enemies;
 
 	/** 스킬 마나 소모량 */

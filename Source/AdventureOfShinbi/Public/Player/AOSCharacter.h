@@ -80,6 +80,9 @@ protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
+	void SetCharacterMesh();
+
+	UFUNCTION()
 	void TakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
 
 	UFUNCTION()
@@ -100,7 +103,7 @@ protected:
 	* 피격 위치 판별 
 	* @param TargetLocation 데미지를 입힌 대상의 위치
 	*/
-	FName DistinguishHitDirection(FVector TargetLocation);
+	FName DistinguishDirection(FVector TargetLocation);
 
 	/** 플레이어를 뒤로 밀려나게함 */
 	void PlayerKnockBack(AActor* DamageCauser, float Power);
@@ -158,6 +161,8 @@ private:
 
 	void UpdateControlRotation();
 
+	void DeactivateLockOn();
+
 	/** 락온 할 타겟을 탐색 */
 	AActor* FindTarget();
 
@@ -206,6 +211,7 @@ private:
 
 private:
 
+	UPROPERTY()
 	AAOSController* CharacterController;
 
 	UPROPERTY(EditAnywhere)
@@ -214,9 +220,12 @@ private:
 	UPROPERTY(EditAnywhere)
 	UCameraComponent* Camera;
 
+	UPROPERTY()
 	UAOSAnimInstance* AnimInstance;
 
 	int32 OverlappingItemCount = 0;
+
+	FSoftObjectPath RefPath;
 
 	/** 반경에 들어온 아이템이 있는지 여부 */
 	bool bExistOverlappingItem = false;
@@ -247,6 +256,7 @@ private:
 	float PlayerRespawnTime = 5.5f;
 
 	/** 반경 내에 들어온 아이템 */
+	UPROPERTY()
 	AItem* OverlappingItem;
 
 	/** 캐릭터 상태 */
@@ -269,6 +279,7 @@ private:
 	FTimerHandle FireTimer;
 
 	/** 이전의 반경 내 아이템 */
+	UPROPERTY()
 	AItem* OverlappedItemPrev = nullptr;
 
 	UPROPERTY(EditAnywhere, Category = "Character | Dash")
@@ -335,6 +346,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Character | Sign")
 	TSubclassOf<UUserWidget> FreezingSignClass;
 
+	UPROPERTY()
 	UUserWidget* FreezingSign;
 
 	/** 보스의 프리징 스킬 피격 여부 */
@@ -344,6 +356,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Character | Sign")
 	TSubclassOf<UUserWidget> SlowSignClass;
 
+	UPROPERTY()
 	UUserWidget* SlowSign;
 
 	/** 이동 속도 감소 여부 */
@@ -354,11 +367,13 @@ private:
 	bool bCameraLockOn = false;
 
 	/** 락온 한 적 캐릭터 */
+	UPROPERTY()
 	AEnemyCharacter* LockOnTarget;
 
 	UPROPERTY(EditAnywhere, Category = "Character | LockOn")
 	UParticleSystem* LockOnParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* LockOnParticleComp;
 
 	/** 경직 타이머 */

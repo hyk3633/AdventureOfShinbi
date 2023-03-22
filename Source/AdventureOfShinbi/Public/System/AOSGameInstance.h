@@ -3,6 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Engine/StreamableManager.h"
 #include "Types/WeaponType.h"
 #include "Types/ItemType.h"
 #include "Types/AmmoType.h"
@@ -68,12 +69,18 @@ public:
 
 };
 
+class UObjectLibrary;
+
 UCLASS()
 class ADVENTUREOFSHINBI_API UAOSGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 	
 public:
+
+	void SetAsyncLoad();
+
+	FString GetAssetReference(FString AssetName);
 
 	void SavePlayerData();
 
@@ -101,7 +108,15 @@ protected:
 
 	void SaveItemInfo();
 
+public:
+
+	FStreamableManager AssetLoader;
+
 private:
+
+	UObjectLibrary* ObjectLibrary;
+
+	TArray<FAssetData> AssetDatas;
 
 	TArray<FWeaponInfo> WeaponInfoArr;
 

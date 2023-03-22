@@ -25,6 +25,7 @@ public:
 
 private:
 
+	UPROPERTY()
 	AEnemyBoss* Boss;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))

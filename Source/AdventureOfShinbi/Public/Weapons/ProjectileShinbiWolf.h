@@ -74,6 +74,7 @@ private:
 	FTimerHandle DestroyDelayTimer;
 	float DestroyDelayTime = 1.0f;
 
+	UPROPERTY()
 	AActor* HittedEnemy;
 
 	FTimerHandle InitHittedEnemyTimer;
@@ -92,6 +93,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Shinbi Wolf | Wolf Attack")
 	UParticleSystem* WolfAttackTrail;
 
+	UPROPERTY()
 	UParticleSystemComponent* WolfAttackTrailComp;
 
 	UPROPERTY(EditAnywhere, Category = "Shinbi Wolf | Wolf Attack")
@@ -107,6 +109,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Shinbi Wolf | Circling Wolves")
 	UParticleSystem* CirclingWolvesTrail;
 
+	UPROPERTY()
 	UParticleSystemComponent* CirclingWolvesTrailComp;
 
 	UPROPERTY(EditAnywhere, Category = "Shinbi Wolf | Circling Wolves")

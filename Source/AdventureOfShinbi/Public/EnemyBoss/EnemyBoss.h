@@ -251,10 +251,13 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AAOSCharacter* Target;
 
+	UPROPERTY()
 	ABossAIController* BossController;
 
+	UPROPERTY()
 	AAOSController* PlayerController;
 
 	/** 페이즈 2 여부 */
@@ -437,6 +440,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Music")
 	USoundCue* Phase2Music;
 
+	UPROPERTY()
 	UAudioComponent* MusicComp;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy | Boss | Music")

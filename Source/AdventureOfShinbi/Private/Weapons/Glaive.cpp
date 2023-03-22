@@ -76,7 +76,7 @@ void AGlaive::InterpWeaponPartsRotator(float DeltaTime, bool SickleMode)
 
 void AGlaive::FormChange(bool bRightButtonClicked)
 {
-	if (bRightButtonClicked == false || WeaponOwner->GetIsAnimationPlaying())
+	if (bRightButtonClicked == false || WeaponOwner == nullptr)
 		return;
 
 	// 낫 모드 활성화
@@ -106,7 +106,7 @@ void AGlaive::FormChange(bool bRightButtonClicked)
 
 void AGlaive::CheckMana()
 {
-	if (bSickleMode == false || WeaponOwner == nullptr)
+	if (bSickleMode == false || GetOwner() == nullptr)
 	{
 		bAbleMagicSkill = false;
 		return;
@@ -399,6 +399,7 @@ void AGlaive::SetWeaponState(const EWeaponState State)
 
 	if (State == EWeaponState::EWS_Equipped)
 	{
+
 		if (WeaponOwner && WeaponOwner->DAimButtonPressed.IsBound() == false)
 		{
 			WeaponOwner->DAimButtonPressed.BindUObject(this, &AGlaive::FormChange);

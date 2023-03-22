@@ -89,8 +89,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item | Setting")
 	UTexture2D* ItemIcon;
 
+	UPROPERTY()
 	UInventorySlot* InventorySlot;
 
+	UPROPERTY()
 	UItemInventorySlot* ItemInventorySlot;
 
 	float RunningTime = 0.f;

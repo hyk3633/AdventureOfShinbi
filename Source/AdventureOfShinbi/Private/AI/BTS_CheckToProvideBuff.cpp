@@ -20,44 +20,44 @@ void UBTS_CheckToProvideBuff::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-    AEnemyMuriel* Muriel = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
-    if (nullptr == Muriel)
-        return;
+	AEnemyMuriel* Muriel = Cast<AEnemyMuriel>(OwnerComp.GetAIOwner()->GetPawn());
+	if (nullptr == Muriel)
+		return;
 
-    if (Muriel->GetIsAttacking())
-        return;
+	if (Muriel->GetIsAttacking())
+		return;
 
-    TArray<AActor*> Allies;
-    UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), Muriel->GetFriendlyTag(), Allies);
+	TArray<AActor*> Allies;
+	UGameplayStatics::GetAllActorsOfClassWithTag(this, AEnemyCharacter::StaticClass(), Muriel->GetFriendlyTag(), Allies);
 
-    int8 AlliesNearbyCount = 0;
-    int8 LowHealthCount = 0;
-    for (AActor* const& TaggedActor : Allies)
-    {
-        AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
-        if (Friendly)
-        {
-            if (Muriel->GetDistanceTo(Friendly) <= 1250.f)
-            {
-                AlliesNearbyCount++;
-                if (Friendly->GetHealthPercentage() <= 0.6f)
-                {
-                    LowHealthCount++;
-                }
-            }
-        }
-    }
-    
-    if (Muriel->GetSummonCoolTimeEnd() && AlliesNearbyCount <= 1)
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSummonMinion"), true);
-    }
-    else if (Muriel->GetBuffCoolTimeEnd() && LowHealthCount >= 2)
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleBuff"), true);
-    }
-    else if (Muriel->GetTeleportMinionCoolTimeEnd() && AlliesNearbyCount >= 1)
-    {
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), true);
-    }
+	int8 AlliesNearbyCount = 0;
+	int8 LowHealthCount = 0;
+	for (AActor* const& TaggedActor : Allies)
+	{
+		AEnemyCharacter* Friendly = Cast<AEnemyCharacter>(TaggedActor);
+		if (Friendly)
+		{
+			if (Muriel->GetDistanceTo(Friendly) <= 1250.f)
+			{
+				AlliesNearbyCount++;
+				if (Friendly->GetHealthPercentage() <= 0.6f)
+				{
+					LowHealthCount++;
+				}
+			}
+		}
+	}
+	
+	if (Muriel->GetSummonCoolTimeEnd() && AlliesNearbyCount <= 1)
+	{
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleSummonMinion"), true);
+	}
+	else if (Muriel->GetBuffCoolTimeEnd() && LowHealthCount >= 2)
+	{
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleBuff"), true);
+	}
+	else if (Muriel->GetTeleportMinionCoolTimeEnd() && AlliesNearbyCount >= 1)
+	{
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("AbleTeleportMinion"), true);
+	}
 }

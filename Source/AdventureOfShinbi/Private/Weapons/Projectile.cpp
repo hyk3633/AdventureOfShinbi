@@ -19,15 +19,19 @@ AProjectile::AProjectile()
 	SetRootComponent(BoxCollision);
 	BoxCollision->SetGenerateOverlapEvents(true);
 	BoxCollision->SetNotifyRigidBodyCollision(true);
+	//BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BoxCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BoxCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	BoxCollision->SetEnableGravity(false);
+
+	//SetActorHiddenInGame(true);
 
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->InitialSpeed = 10000.f;
 	ProjectileMovementComponent->MaxSpeed = 10000.f;
 	ProjectileMovementComponent->ProjectileGravityScale = 0.f;
+	//ProjectileMovementComponent->SetAutoActivate(false);
 
 	RadialForce = CreateDefaultSubobject<URadialForceComponent>(TEXT("RadialForce"));
 	RadialForce->SetupAttachment(BoxCollision);
@@ -41,6 +45,27 @@ void AProjectile::SetDamage(float Value)
 {
 	Damage = Value;
 	HeadShotDamage = Value * 1.5f;
+}
+
+void AProjectile::Activate()
+{
+	SetActorHiddenInGame(false);
+	
+	BoxCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ProjectileMovementComponent->SetUpdatedComponent(RootComponent);
+	ProjectileMovementComponent->SetVelocityInLocalSpace(FVector(18000.f, 0, 0));
+	ProjectileMovementComponent->Activate();
+
+	GetWorldTimerManager().SetTimer(LifeTimer, this, &AProjectile::Deactivate, LifeSpan, false);
+}
+
+void AProjectile::Deactivate()
+{
+	DDeactivatePooledObject.ExecuteIfBound();
+	SetActorHiddenInGame(true);
+
+	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ProjectileMovementComponent->Deactivate();
 }
 
 void AProjectile::BeginPlay()
@@ -78,6 +103,7 @@ void AProjectile::BeginPlay()
 void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	BoxCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetActorHiddenInGame(true);
 
 	if (bIsExplosive)
 	{
@@ -120,4 +146,3 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 		);
 	}
 }
-

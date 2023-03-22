@@ -157,11 +157,14 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AAOSGameModeBase* GameMode;
 
+	UPROPERTY()
 	AAOSHUD* AOSHUD;
 
 	/** 퀵슬롯에 장착할 아이템 */
+	UPROPERTY()
 	AItem* SelectedItem;
 
 	FTimerHandle InventoryOffDelayTimer;

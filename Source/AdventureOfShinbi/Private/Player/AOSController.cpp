@@ -56,7 +56,7 @@ void AAOSController::OnPossess(APawn* aPawn)
 		}
 
 		// 플레이어가 리스폰 했다면
-		if (GameMode->IsPlayerRespawn())
+		if (GameMode->PlayerDeathCount > 0)
 		{
 			AAOSCharacter* Cha = Cast<AAOSCharacter>(aPawn);
 			if (Cha)
@@ -219,7 +219,7 @@ void AAOSController::HUDInventoryOff()
 
 void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon, UTextBlock* QuickSlotCountText)
 {
-	const int32 ItemIndex = GameMode->GetItemIndex(SelectedItem);
+	const int32 ItemIndex = GameMode->ItemArray.Find(SelectedItem);
 
 	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[ItemIndex]->ButtonCancel->SetVisibility(ESlateVisibility::Hidden);
 	AOSHUD->CharacterOverlay->InventoryWidget->AllQuickSlotButtonDisabled();
@@ -230,7 +230,7 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 		if (QuickSlotIcon && QuickSlotCountText)
 		{
 			// 선택한 아이템이 퀵슬롯에 이미 등록되어 있을 경우
-			AItem* QuickSlotItem = GameMode->GetQuickSlotItem(SlotIndex);
+			AItem* QuickSlotItem = GameMode->QuickSlotItemArray[SlotIndex].QuickSlotItem;
 			if (QuickSlotItem == SelectedItem)
 			{
 				AItemRecovery* Recovery = Cast<AItemRecovery>(QuickSlotItem);
@@ -242,7 +242,7 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 			{
 				AItemRecovery* Recovery = Cast<AItemRecovery>(QuickSlotItem);
 				Recovery->SetQuickSlotIndex(-1);
-				const int32 QuickSlotItemIndex = GameMode->GetItemIndex(QuickSlotItem);
+				const int32 QuickSlotItemIndex = GameMode->ItemArray.Find(QuickSlotItem);
 				AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[QuickSlotItemIndex]->ItemQuickSlotButtonText->SetText(FText::FromString(TEXT("퀵슬롯에 장착")));
 				AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[QuickSlotItemIndex]->SetItemEquippedQuickSlot(false);
 			}
@@ -258,7 +258,9 @@ void AAOSController::EquipToItemQuickSlot(int8 SlotIndex, UImage* QuickSlotIcon,
 				SetEquippedQuickItem(SlotIndex, SelectedItem);
 			}
 
-			GameMode->SetQuickSlotItem(SlotIndex, SelectedItem, QuickSlotIcon, QuickSlotCountText);
+			GameMode->QuickSlotItemArray[SlotIndex].QuickSlotItem = SelectedItem;
+			GameMode->QuickSlotItemArray[SlotIndex].QuickSlotIcon = QuickSlotIcon;
+			GameMode->QuickSlotItemArray[SlotIndex].QuickSlotItemCountText = QuickSlotCountText;
 
 			FSlateBrush Brush;
 			Brush.DrawAs = ESlateBrushDrawType::Image;
@@ -285,10 +287,10 @@ void AAOSController::UpdateQuickSlotItemText(int8 Index, int32 ItemCount)
 {
 	for (int8 i = 0; i < 5; i++)
 	{
-		if (GameMode->GetQuickSlotItemArr(i).QuickSlotItem == GameMode->GetItem(Index))
+		if (GameMode->QuickSlotItemArray[i].QuickSlotItem == GameMode->ItemArray[Index])
 		{
-			GameMode->GetQuickSlotItemArr(i).QuickSlotItemCountText->SetText(FText::FromString(FString::FromInt(ItemCount)));
-			if (GameMode->GetActivatedQuickSlotNumber() == i)
+			GameMode->QuickSlotItemArray[i].QuickSlotItemCountText->SetText(FText::FromString(FString::FromInt(ItemCount)));
+			if (GameMode->ActivatedQuickSlotNumber == i)
 			{
 				AOSHUD->CharacterOverlay->EquippedItemSlotCountText->SetText(FText::FromString(FString::FromInt(ItemCount)));
 			}
@@ -298,7 +300,7 @@ void AAOSController::UpdateQuickSlotItemText(int8 Index, int32 ItemCount)
 
 void AAOSController::SetEquippedQuickItem(int8 SlotIndex, AItem* Item)
 {
-	GameMode->SetActivatedQuickSlotNumber(SlotIndex);
+	GameMode->ActivatedQuickSlotNumber = SlotIndex;
 	AItemRecovery* Recovery = Cast<AItemRecovery>(Item);
 	Recovery->SetQuickSlotIndex(SlotIndex);
 
@@ -318,13 +320,13 @@ int32 AAOSController::GetItemCount(AItem* Item)
 	if (Item->GetItemType() == EItemType::EIT_Recovery)
 	{
 		AItemRecovery* IR = Cast<AItemRecovery>(Item);
-		const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(IR->GetRecoveryType());
+		const int32 RecoveryItemCount = GameMode->RecoveryItemMap[IR->GetRecoveryType()];
 		return RecoveryItemCount;
 	}
 	else if (Item->GetItemType() == EItemType::EIT_Ammo)
 	{
 		AItemAmmo* IA = Cast<AItemAmmo>(Item);
-		const int32 AmmoQuantity = GameMode->GetAmmoQuantity(IA->GetAmmoType());
+		const int32 AmmoQuantity = GameMode->AmmoQuantityMap[IA->GetAmmoType()];
 		return AmmoQuantity;
 	}
 	else
@@ -337,7 +339,7 @@ bool AAOSController::CheckQuickSlotArrayIsEmpty()
 {
 	for (int8 i = 0; i < 5; i++)
 	{
-		if (GameMode->GetQuickSlotItem(i) != nullptr)
+		if (GameMode->QuickSlotItemArray[i].QuickSlotItem != nullptr)
 		{
 			return false;
 		}
@@ -507,7 +509,7 @@ void AAOSController::UpdateItemInventory(int32 Index)
 
 void AAOSController::CreateHUDItemInventorySlot()
 {
-	if (GameMode->GetItemCount() == AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray.Num())
+	if (GameMode->ItemArray.Num() == AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray.Num())
 	{
 		AOSHUD->CreateItemInventorySlot();
 	}
@@ -517,11 +519,11 @@ void AAOSController::CreateHUDItemInventorySlot()
 void AAOSController::ItemChange()
 {
 	// 인덱스 순환
-	GameMode->SetActivatedQuickSlotNumber((GameMode->GetActivatedQuickSlotNumber() + 1) % 5);
+	GameMode->ActivatedQuickSlotNumber = (GameMode->ActivatedQuickSlotNumber + 1) % 5;
 
 	for (int8 i = 0; i < 4; i++)
 	{
-		AItem* QuickSlotItem = GameMode->GetQuickSlotItem(GameMode->GetActivatedQuickSlotNumber());
+		AItem* QuickSlotItem = GameMode->QuickSlotItemArray[GameMode->ActivatedQuickSlotNumber].QuickSlotItem;
 		if (QuickSlotItem)
 		{
 			FSlateBrush Brush;
@@ -535,23 +537,23 @@ void AAOSController::ItemChange()
 		}
 		else
 		{
-			GameMode->SetActivatedQuickSlotNumber((GameMode->GetActivatedQuickSlotNumber() + 1) % 5);
+			GameMode->ActivatedQuickSlotNumber = (GameMode->ActivatedQuickSlotNumber + 1) % 5;
 		}
 	}
 }
 
 void AAOSController::UpdateAmmo(EAmmoType AmmoType)
 {
-	const int32 AmmoQuatity = GameMode->GetAmmoQuantity(AmmoType);
+	const int32 AmmoQuatity = GameMode->AmmoQuantityMap[AmmoType];
 	FText AmmoCount = FText::FromString(FString::FromInt(AmmoQuatity));
 
-	const int32 AmmoIndex = GameMode->GetAmmoIndex(AmmoType);
+	const int32 AmmoIndex = GameMode->AmmoIndexMap[AmmoType];
 	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[AmmoIndex]->ItemSlotCountText->SetText(AmmoCount);
 }
 
 void AAOSController::AddItemToSlot(AItem* Item)
 {
-	AOSHUD->AddItemToSlot(GameMode->GetItemCount() - 1, Item);
+	AOSHUD->AddItemToSlot(GameMode->ItemArray.Num() - 1, Item);
 }
 
 void AAOSController::BindToItemSlot(int32 Index)
@@ -566,7 +568,7 @@ void AAOSController::SetItemSlotCountText(int32 Index, int32 Count)
 
 void AAOSController::DisableItemSlotButton()
 {
-	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[GameMode->GetItemCount() - 1]->ItemInventorySlotIconButton->SetIsEnabled(false);
+	AOSHUD->CharacterOverlay->InventoryWidget->ItemSlotArray[GameMode->ItemArray.Num() - 1]->ItemInventorySlotIconButton->SetIsEnabled(false);
 }
 
 void AAOSController::AllHUDQuickSlotButtonEnabled()
@@ -624,9 +626,9 @@ void AAOSController::SetQuickSlotItemAuto()
 {
 	if (CheckQuickSlotArrayIsEmpty() == false)
 	{
-		for (int8 i = 0; i < GameMode->GetQuickSlotItemArrLength(); i++)
+		for (int8 i = 0; i < GameMode->QuickSlotItemArray.Num(); i++)
 		{
-			FQuickSlotItem QItem = GameMode->GetQuickSlotItemArr(i);
+			FQuickSlotItem QItem = GameMode->QuickSlotItemArray[i];
 			if (QItem.QuickSlotItem)
 			{
 				SelectedItem = QItem.QuickSlotItem;

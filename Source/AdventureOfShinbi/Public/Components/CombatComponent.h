@@ -69,6 +69,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	void SetAnimInstance();
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/** ShinbiSword 관련 함수 */
@@ -172,14 +174,19 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AAOSCharacter* Character;
 
+	UPROPERTY()
 	AAOSGameModeBase* GameMode;
 
+	UPROPERTY()
 	UAOSAnimInstance* AnimInstance;
 
+	UPROPERTY()
 	AAOSController* CharacterController;
 
+	UPROPERTY()
 	UItemComponent* ItemComp;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Player Stats", meta = (ClampMin = "1.0"))
@@ -216,7 +223,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	AWeapon* EquippedWeapon = nullptr;
 
+	UPROPERTY()
 	AWeapon* QuickSlot1Weapon = nullptr;
+	UPROPERTY()
 	AWeapon* QuickSlot2Weapon = nullptr;
 
 	int8 MeleeAttackComboCount = 0;
@@ -236,6 +245,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Voice")
 	USoundCue* VoiceBreathingRun;
 
+	UPROPERTY()
 	UAudioComponent* VoiceBreathingRunComp = nullptr;
 
 	bool bVoiceLowHealthPlayed = false;
@@ -345,11 +355,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Sign")
 	TSubclassOf<UUserWidget> HealBanSignClass;
 
+	UPROPERTY()
 	UUserWidget* HealBanSign;
 
 	UPROPERTY(EditAnywhere, Category = "Combat Compnent | Sign")
 	TSubclassOf<UUserWidget> AttackDebuffSignClass;
 
+	UPROPERTY()
 	UUserWidget* AttackDebuffSign;
 
 public:

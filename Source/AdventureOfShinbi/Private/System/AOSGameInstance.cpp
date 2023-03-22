@@ -8,6 +8,38 @@
 #include "Items/ItemRecovery.h"
 #include "Items/ItemAmmo.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/ObjectLibrary.h"
+
+void UAOSGameInstance::SetAsyncLoad()
+{
+	if (!ObjectLibrary)
+	{
+		ObjectLibrary = UObjectLibrary::CreateLibrary(USkeletalMesh::StaticClass(), false, GIsEditor);
+		ObjectLibrary->AddToRoot();
+	}
+	int32 AssetNumber = ObjectLibrary->LoadAssetDataFromPath(TEXT("/Game/_Assets/SkeletalMesh"));
+	if (AssetNumber > 0)
+	{
+		ObjectLibrary->LoadAssetsFromAssetData();
+	}
+
+	ObjectLibrary->GetAssetDataList(AssetDatas);
+}
+
+FString UAOSGameInstance::GetAssetReference(FString AssetName)
+{
+	for (int32 i = 0; i < AssetDatas.Num(); ++i)
+	{
+		FAssetData& AssetData = AssetDatas[i];
+
+		if (AssetData.AssetName.ToString().Contains(AssetName))
+		{
+			return AssetData.ToSoftObjectPath().GetAssetPathString();
+		}
+	}
+
+	return FString(TEXT(""));
+}
 
 void UAOSGameInstance::SavePlayerData()
 {
@@ -71,27 +103,27 @@ void UAOSGameInstance::SaveWeaponInfo()
 	if (GameMode == nullptr)
 		return;
 
-	if (GameMode->GetWeaponCount() == 0)
+	if (GameMode->AcquiredWeapons.Num() == 0)
 		return;
 
-	for (int32 i = 0; i < GameMode->GetWeaponCount(); i++)
+	for (int32 i = 0; i < GameMode->AcquiredWeapons.Num(); i++)
 	{
 		FWeaponInfo WeaponInfo;
 
-		AWeapon* TempWeapon = GameMode->GetWeaponItem(i);
+		AWeapon* TempWeapon = GameMode->AcquiredWeapons[i];
 
 		WeaponInfo.WeaponType = TempWeapon->GetWeaponType();
 
-		if (TempWeapon == GameMode->GetEquippedWeapon())
+		if (TempWeapon == GameMode->EquippedWeapon)
 		{
 			WeaponInfo.SlotType = ESlotType::EST_Equip;
 			bIsArmed = true;
 		}
-		else if (TempWeapon == GameMode->GetQuickSlot1Weapon())
+		else if (TempWeapon == GameMode->QuickSlot1Weapon)
 		{
 			WeaponInfo.SlotType = ESlotType::EST_Quick1;
 		}
-		else if (TempWeapon == GameMode->GetQuickSlot2Weapon())
+		else if (TempWeapon == GameMode->QuickSlot2Weapon)
 		{
 			WeaponInfo.SlotType = ESlotType::EST_Quick2;
 		}
@@ -115,14 +147,14 @@ void UAOSGameInstance::SaveItemInfo()
 	if (GameMode == nullptr)
 		return;
 
-	if (GameMode->GetItemCount() == 0)
+	if (GameMode->ItemArray.Num() == 0)
 		return;
 
-	for (int32 i = 0; i < GameMode->GetItemCount(); i++)
+	for (int32 i = 0; i < GameMode->ItemArray.Num(); i++)
 	{
 		FItemInfo ItemInfo;
 
-		AItem* TempItem = GameMode->GetItem(i);
+		AItem* TempItem = GameMode->ItemArray[i];
 
 		ItemInfo.ItemType = TempItem->GetItemType();
 		
@@ -132,7 +164,7 @@ void UAOSGameInstance::SaveItemInfo()
 			if (Ammo)
 			{
 				ItemInfo.ItemDetailType = static_cast<int8>(Ammo->GetAmmoType());
-				ItemInfo.ItemCount = GameMode->GetAmmoQuantity(Ammo->GetAmmoType());
+				ItemInfo.ItemCount = GameMode->AmmoQuantityMap[Ammo->GetAmmoType()];
 				ItemInfo.QuickSlotIndex = -1;
 				ItemInfo.bIsEquipped = false;
 			}
@@ -143,9 +175,9 @@ void UAOSGameInstance::SaveItemInfo()
 			if (Recovery)
 			{
 				ItemInfo.ItemDetailType = static_cast<int8>(Recovery->GetRecoveryType());
-				ItemInfo.ItemCount = GameMode->GetRecoveryItemCount(Recovery->GetRecoveryType());
+				ItemInfo.ItemCount = GameMode->RecoveryItemMap[Recovery->GetRecoveryType()];
 				ItemInfo.QuickSlotIndex = Recovery->GetQuickSlotIndex();
-				ItemInfo.bIsEquipped = ItemInfo.QuickSlotIndex == GameMode->GetActivatedQuickSlotNumber() ? true : false;
+				ItemInfo.bIsEquipped = ItemInfo.QuickSlotIndex == GameMode->ActivatedQuickSlotNumber ? true : false;
 			}
 		}
 

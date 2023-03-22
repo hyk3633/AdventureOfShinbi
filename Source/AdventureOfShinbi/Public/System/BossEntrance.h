@@ -55,8 +55,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* BlockingVolume;
 
+	UPROPERTY()
 	AEnemyBoss* Boss;
 
+	UPROPERTY()
 	AAOSCharacter* Player;
 
 	/** 보스 패배 델리게이트에 함수 바인딩 여부 */

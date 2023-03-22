@@ -60,6 +60,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Level Transition")
 	TSubclassOf<UUserWidget> LevelTrasnsitionSignClass;
 
+	UPROPERTY()
 	UUserWidget* LevelTrasnsitionSign;
 
 	UPROPERTY(EditAnywhere, Category = "Level Transition")

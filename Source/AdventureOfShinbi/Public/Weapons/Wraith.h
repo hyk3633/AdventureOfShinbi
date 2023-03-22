@@ -80,6 +80,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")
 	UParticleSystem* ScopeParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* ScopeParticleComp;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Aimed")

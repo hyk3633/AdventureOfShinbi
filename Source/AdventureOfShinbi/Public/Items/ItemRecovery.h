@@ -48,6 +48,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Item | Effect")
 	UParticleSystem* FieldParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* FieldParticleComp;
 
 	UPROPERTY(EditAnywhere, Category = "Item | Effect")

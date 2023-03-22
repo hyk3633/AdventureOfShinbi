@@ -10,6 +10,7 @@
  */
 
 class AProjectile;
+class UObjectPool;
 
 UCLASS()
 class ADVENTUREOFSHINBI_API ARangedProjectileWeapon : public ARangedWeapon
@@ -17,6 +18,10 @@ class ADVENTUREOFSHINBI_API ARangedProjectileWeapon : public ARangedWeapon
 	GENERATED_BODY()
 	
 public:
+
+	ARangedProjectileWeapon();
+
+	virtual void SetWeaponState(const EWeaponState State) override;
 
 	/** 발사 함수 */
 	virtual void Firing() override;
@@ -26,6 +31,8 @@ public:
 
 	/** 한 발만 발사 */
 	void SingleFiring(TSubclassOf<AProjectile> Projectile);
+
+	void SingleFiring();
 
 protected:
 
@@ -57,5 +64,11 @@ private:
 	/** 투사체 템플릿 클래스 */
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Projectile")
 	TSubclassOf<AProjectile> ProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Object Pooling")
+	UObjectPool* ObjectPooler;
+
+	UPROPERTY(EditAnywhere, Category = "Object Pooling")
+	float LifeSpan = 3.f;
 
 };

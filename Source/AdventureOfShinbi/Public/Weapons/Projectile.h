@@ -13,6 +13,8 @@ class URadialForceComponent;
 * 투사체 기본 클래스 
 */
 
+DECLARE_DELEGATE(DeactivatePooledObject)
+
 UCLASS()
 class ADVENTUREOFSHINBI_API AProjectile : public AActor
 {
@@ -24,6 +26,16 @@ public:
 
 	/** 발사하는 주체에서 데미지 설정 */
 	void SetDamage(float Value);
+
+	FORCEINLINE virtual void SetLifeSpan(float Life) override { LifeSpan = Life; };
+
+	virtual void Activate();
+
+	virtual void Deactivate();
+
+	FORCEINLINE bool GetIsActive() const { return bIsActive; }
+
+	DeactivatePooledObject DDeactivatePooledObject;
 
 protected:
 
@@ -41,6 +53,11 @@ protected:
 	/** 투사체의 움직임을 담당하는 컴포넌트 */
 	UPROPERTY(VisibleAnywhere)
 	UProjectileMovementComponent* ProjectileMovementComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Projectile")
+	float LifeSpan = 1.f;
+
+	FTimerHandle LifeTimer;
 
 	/** true 일 경우 RadialDamage를 적용 */
 	UPROPERTY(EditAnywhere, Category = "Projectile | Setting")
@@ -66,10 +83,15 @@ protected:
 	float ExplosionRadius = 30.f;
 
 	/** 충돌을 무시할 액터 */
+	UPROPERTY()
 	TArray<AActor*> IgnoreActors;
 
 	/** 포스 작용 범위 */
 	UPROPERTY(EditAnywhere)
 	URadialForceComponent* RadialForce;
+
+private:
+
+	bool bIsActive;
 
 };

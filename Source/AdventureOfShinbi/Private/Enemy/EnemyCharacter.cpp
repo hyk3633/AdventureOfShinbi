@@ -11,6 +11,7 @@
 #include "Perception/AISenseConfig_Hearing.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "System/AOSGameModeBase.h"
+#include "System/AOSGameInstance.h"
 #include "Components/SphereComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -25,7 +26,7 @@
 #include "HUD/DamageAmount.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
-#include "DrawDebugHelpers.h"
+#include "Engine/AssetManager.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
@@ -98,6 +99,8 @@ AEnemyCharacter::AEnemyCharacter()
 
 	BoxTraceSize = FVector(20.f, 20.f, 20.f);
 
+	AssetName = TEXT("Melee_Core");
+
 	WeaponTraceStartSocketName = FName("Weapon1TraceStart");
 	WeaponTraceEndSocketName = FName("Weapon1TraceEnd");
 }
@@ -108,17 +111,15 @@ void AEnemyCharacter::BeginPlay()
 
 	OriginDamage = Damage;
 
-	PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyCharacter::OnDetected);
-
-	EnemyAnim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance());
-	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnAttackMontageEnded);
-	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnHitReactionMontageEnded);
-	EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnStunMontageEnded);
-
-	AttackRange->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlap);
-	AttackRange->OnComponentEndOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlapEnd);
-
-	OnTakePointDamage.AddDynamic(this, &AEnemyCharacter::TakePointDamage);
+	UAOSGameInstance* GInstance = GetWorld()->GetGameInstance<UAOSGameInstance>();
+	if (GInstance)
+	{
+		RefPath.SetPath(GInstance->GetAssetReference(AssetName));
+		if (RefPath.GetAssetPathString().Len() > 0)
+		{
+			GInstance->AssetLoader.RequestAsyncLoad(RefPath, FStreamableDelegate::CreateUObject(this, &AEnemyCharacter::SetCharacterMesh));
+		}
+	}
 
 	PatrolPoint = GetActorLocation();
 
@@ -145,6 +146,27 @@ void AEnemyCharacter::BeginPlay()
 
 	InitialLocation = GetActorLocation();
 	InitialRotation = GetActorRotation();
+}
+
+void AEnemyCharacter::SetCharacterMesh()
+{
+	TSoftObjectPtr<USkeletalMesh> CharacterMesh(RefPath);
+	if (CharacterMesh.Get())
+	{
+		GetMesh()->SetSkeletalMesh(CharacterMesh.Get());
+
+		PerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &AEnemyCharacter::OnDetected);
+
+		EnemyAnim = Cast<UEnemyAnimInstance>(GetMesh()->GetAnimInstance());
+		EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnAttackMontageEnded);
+		EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnHitReactionMontageEnded);
+		EnemyAnim->OnMontageEnded.AddDynamic(this, &AEnemyCharacter::OnStunMontageEnded);
+
+		AttackRange->OnComponentBeginOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlap);
+		AttackRange->OnComponentEndOverlap.AddDynamic(this, &AEnemyCharacter::OnAttackRangeOverlapEnd);
+
+		OnTakePointDamage.AddDynamic(this, &AEnemyCharacter::TakePointDamage);
+	}
 }
 
 void AEnemyCharacter::Tick(float DeltaTime)
@@ -369,8 +391,8 @@ void AEnemyCharacter::OnAttackRangeOverlap(UPrimitiveComponent* OverlappedCompon
 void AEnemyCharacter::OnAttackRangeOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	// 플레이어가 공격 범위 밖으로 나가도 공격 도중이면 해당 bool 값을 false로 설정하지 않음 (공격 태스크가 중단되므로)
-	if (bIsAttacking)
-		return;
+	//if (bIsAttacking)
+	//	return;
 
 	AAOSCharacter* Cha = Cast<AAOSCharacter>(OtherActor);
 	if (Cha)

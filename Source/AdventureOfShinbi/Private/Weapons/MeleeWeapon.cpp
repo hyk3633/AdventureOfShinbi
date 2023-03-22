@@ -68,7 +68,7 @@ bool AMeleeWeapon::WeaponCapsuleTrace()
 				Result.ImpactPoint,
 				Result,
 				WeaponOwner->GetController(),
-				GetOwner(),
+				WeaponOwner,
 				UDamageType::StaticClass()
 			);
 

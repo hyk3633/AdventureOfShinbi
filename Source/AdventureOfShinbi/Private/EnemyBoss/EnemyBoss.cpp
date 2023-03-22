@@ -50,6 +50,8 @@ AEnemyBoss::AEnemyBoss()
 	Defense = 50.f;
 	DefaultValue = 2.f;
 	RandRangeValue = 10;
+
+	AssetName = TEXT("Glacial");
 }
 
 void AEnemyBoss::BeginPlay()
@@ -256,15 +258,13 @@ void AEnemyBoss::DetectAttack()
 	
 	// 타겟 플레이어의 무기 유형과 거리에 따라 다른 스킬을 발동
 	ARangedWeapon* RW = Cast<ARangedWeapon>(Target->GetCombatComp()->GetEquippedWeapon());
-	if (bPhase2 && RW && GetDistanceTo(Target) >= 500.f)
+	if (RW && GetDistanceTo(Target) >= 500.f && EvadeSkillNum == 0)
 	{
-		if(EvadeSkillNum == 0)
-			EvadeSkillNum = FMath::RandRange(1, 2);
+		EvadeSkillNum = bPhase2 ? 1 : FMath::RandRange(1, 2);
 	}
-	else if(GetDistanceTo(Target) < 500.f)
+	else if(GetDistanceTo(Target) < 500.f && EvadeSkillNum == 2)
 	{
-		if (EvadeSkillNum == 2)
-			EvadeSkillNum = FMath::RandRange(0, 1);
+		EvadeSkillNum = FMath::RandRange(0, 1);
 	}
 	else
 	{
@@ -448,15 +448,13 @@ void AEnemyBoss::RangedAttack()
 	// 타겟 플레이어와의 거리에 따라 다른 스킬 발동
 	RangedAttackNum = (RangedAttackNum + 1) % (bPhase2 ? 4 : 3);
 	const float DistToTarget = GetDistanceTo(Target);
-	if (DistToTarget > 800.f)
+	if (DistToTarget > 800.f && RangedAttackNum == 0)
 	{
-		if(RangedAttackNum == 0)
-			RangedAttackNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
+		RangedAttackNum = FMath::RandRange(1, bPhase2 ? 3 : 2);
 	}
-	else if(DistToTarget <= 400.f)
+	else if(DistToTarget <= 400.f && RangedAttackNum != 0)
 	{
-		if(RangedAttackNum != 0)
-			RangedAttackNum = 0;
+		RangedAttackNum = 0;
 	}
 
 	switch (RangedAttackNum)

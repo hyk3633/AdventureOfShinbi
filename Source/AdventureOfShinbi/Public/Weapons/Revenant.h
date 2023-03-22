@@ -100,11 +100,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
 	UParticleSystem* ChargingParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* ChargingParticleComp;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")
 	USoundCue* ChargingLoopSound;
 
+	UPROPERTY()
 	UAudioComponent* ChargingLoopSoundComp;
 
 	UPROPERTY(EditAnywhere, Category = "Ranged Weapon | Revenant | Charge Shot")

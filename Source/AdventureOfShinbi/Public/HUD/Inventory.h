@@ -76,6 +76,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UUniformGridPanel* InventoryGridPanel;
 
+	UPROPERTY()
 	TArray<UInventorySlot*> SlotArray;
 
 	/** 아이템 인벤토리 */
@@ -131,6 +132,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UUniformGridPanel* ItemInventoryGridPanel;
 
+	UPROPERTY()
 	TArray<UItemInventorySlot*> ItemSlotArray;
 
 	/** 위젯 애니메이션 */

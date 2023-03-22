@@ -112,6 +112,8 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	void SetCharacterMesh();
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual bool Weapon1BoxTrace();
@@ -240,6 +242,7 @@ protected:
 
 protected:
 
+	UPROPERTY()
 	AEnemyAIController* AIController;
 
 	UPROPERTY(VisibleAnywhere)
@@ -249,6 +252,9 @@ protected:
 	UEnemyAnimInstance* EnemyAnim;
 
 	FAiInfo AiInfo;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy | Async Loading")
+	FString AssetName;
 
 	FName WeaponTraceStartSocketName;
 	FName WeaponTraceEndSocketName;
@@ -320,8 +326,12 @@ protected:
 
 private:
 
+	FSoftObjectPath RefPath;
+
+	UPROPERTY()
 	UAISenseConfig_Sight* SightConfig;
 
+	UPROPERTY()
 	UAISenseConfig_Hearing* HearingConfig;
 
 	/** 근접 공격 범위 콜리전 (이 컴포넌트에 타겟이 오버랩되면 근접 공격)  */
@@ -427,6 +437,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Enemy | Buff")
 	UParticleSystem* BuffParticle;
 
+	UPROPERTY()
 	UParticleSystemComponent* BuffParticleComponent;
 
 public:

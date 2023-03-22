@@ -35,7 +35,6 @@ AWraith::AWraith()
 void AWraith::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void AWraith::Tick(float DeltaTime)

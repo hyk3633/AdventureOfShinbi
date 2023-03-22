@@ -29,6 +29,7 @@ protected:
 
 private:
 
+	UPROPERTY()
 	USceneComponent* SceneComp;
 
 	UPROPERTY(EditAnywhere)

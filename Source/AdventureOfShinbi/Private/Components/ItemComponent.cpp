@@ -43,9 +43,9 @@ void UItemComponent::RestartItemComp()
 	CharacterController = Character->GetController<AAOSController>();
 	if (GameMode && CharacterController)
 	{
-		for (int32 i = 0; i < GameMode->GetItemCount(); i++)
+		for (int32 i = 0; i < GameMode->ItemArray.Num(); i++)
 		{
-			if (GameMode->GetItem(i)->GetItemType() == EItemType::EIT_Recovery)
+			if (GameMode->ItemArray[i]->GetItemType() == EItemType::EIT_Recovery)
 			{
 				CharacterController->BindToItemSlot(i);
 			}
@@ -57,7 +57,7 @@ void UItemComponent::RestartItemComp()
 		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Health);
 		if (Idx != -1)
 		{
-			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->ItemArray[Idx]);
 			HealthRecoveryAmount = Recovery->GetRecoveryQuantity();
 		}
 	}
@@ -66,7 +66,7 @@ void UItemComponent::RestartItemComp()
 		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Mana);
 		if (Idx != -1)
 		{
-			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->ItemArray[Idx]);
 			ManaRecoveryAmount = Recovery->GetRecoveryQuantity();
 		}
 	}
@@ -75,7 +75,7 @@ void UItemComponent::RestartItemComp()
 		const int8 Idx = GameMode->GetRecoveryIndex(ERecoveryType::ERT_Stamina);
 		if (Idx != -1)
 		{
-			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->GetItem(Idx));
+			AItemRecovery* Recovery = Cast<AItemRecovery>(GameMode->ItemArray[Idx]);
 			StaminaRecoveryBoostAmount = Recovery->GetRecoveryQuantity();
 		}
 	}
@@ -98,9 +98,9 @@ void UItemComponent::AddItem(AItem* Item)
 
 void UItemComponent::UseActivatedQuickSlotItem()
 {
-	if (GameMode->GetQuickSlotItem(GameMode->GetActivatedQuickSlotNumber()))
+	if (GameMode->QuickSlotItemArray[GameMode->ActivatedQuickSlotNumber].QuickSlotItem)
 	{
-		UseItem(GameMode->GetQuickSlotItem(GameMode->GetActivatedQuickSlotNumber()));
+		UseItem(GameMode->QuickSlotItemArray[GameMode->ActivatedQuickSlotNumber].QuickSlotItem);
 	}
 }
 
@@ -109,14 +109,14 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 	AItemRecovery* Recovery = Cast<AItemRecovery>(Item);
 	Recovery->HandleItemAfterGain();
 
-	if (GameMode->GetRecoveryItemCount(Recovery->GetRecoveryType()) == 0)
+	if (GameMode->RecoveryItemMap[Recovery->GetRecoveryType()] == 0)
 	{
-		GameMode->AddItemToArr(Item);
+		GameMode->ItemArray.Add(Item);
 
-		GameMode->SetRecoveryIndex(Recovery->GetRecoveryType(), GameMode->GetItemCount() - 1);
+		GameMode->RecoveryIndexMap.Add(Recovery->GetRecoveryType(), GameMode->ItemArray.Num() - 1);
 
 		CharacterController->AddItemToSlot(Item);
-		CharacterController->BindToItemSlot(GameMode->GetItemCount() - 1);
+		CharacterController->BindToItemSlot(GameMode->ItemArray.Num() - 1);
 
 		if (Recovery->GetRecoveryType() == ERecoveryType::ERT_Health)
 		{
@@ -136,9 +136,9 @@ void UItemComponent::AddRecoveryItem(AItem* Item)
 		Item->Destroy();
 	}
 
-	GameMode->AddRecoveryItem(Recovery->GetRecoveryType(), 1);
+	GameMode->RecoveryItemMap[Recovery->GetRecoveryType()] += 1;
 
-	const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(Recovery->GetRecoveryType());
+	const int32 RecoveryItemCount = GameMode->RecoveryItemMap[Recovery->GetRecoveryType()];
 	CharacterController->SetItemSlotCountText(GameMode->GetRecoveryIndex(Recovery->GetRecoveryType()), RecoveryItemCount);
 	CharacterController->UpdateQuickSlotItemText(GameMode->GetRecoveryIndex(Recovery->GetRecoveryType()), RecoveryItemCount);
 }
@@ -149,23 +149,23 @@ void UItemComponent::AddAmmoItem(AItem* Item)
 	Ammo->HandleItemAfterGain();
 
 	// 탄약이 배열에 존재하면 탄약량만 추가
-	if (GameMode->IsAmmoTypeExist(Ammo->GetAmmoType()))
+	if (GameMode->AmmoQuantityMap.Contains(Ammo->GetAmmoType()))
 	{
-		GameMode->AddAmmoQuantity(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
+		GameMode->AmmoQuantityMap[Ammo->GetAmmoType()] += Ammo->GetAmmoQuantity();
 		Item->Destroy();
 	}
 	else // 탄약이 배열에 존재하지 않으면 탄약 아이템 슬롯에 추가
 	{
-		GameMode->AddItemToArr(Item);
-		GameMode->AddAmmoToAmmoMap(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
-		GameMode->SetAmmoIndex(Ammo->GetAmmoType(), GameMode->GetItemCount() - 1);
+		GameMode->ItemArray.Add(Item);
+		GameMode->AmmoQuantityMap.Add(Ammo->GetAmmoType(), Ammo->GetAmmoQuantity());
+		GameMode->AmmoIndexMap[Ammo->GetAmmoType()] = GameMode->ItemArray.Num() - 1;
 
 		CharacterController->AddItemToSlot(Item);
 		CharacterController->DisableItemSlotButton();
 	}
 
-	const int32 AmmoQuantity = GameMode->GetAmmoQuantity(Ammo->GetAmmoType());
-	const int32 AmmoIndex = GameMode->GetAmmoIndex(Ammo->GetAmmoType());
+	const int32 AmmoQuantity = GameMode->AmmoQuantityMap[Ammo->GetAmmoType()];
+	const int32 AmmoIndex = GameMode->AmmoIndexMap[Ammo->GetAmmoType()];
 	CharacterController->SetItemSlotCountText(AmmoIndex, AmmoQuantity);
 	
 	// 현재 장착된 무기가 원거리 무기고 무기의 탄약 타입과 획득한 탄약의 타입이 같으면 탄약 정보 HUD 갱신
@@ -216,7 +216,7 @@ void UItemComponent::UseItem(AItem* Item)
 // 아이템을 슬롯에서 제거
 void UItemComponent::DismountItem(AItem* Item)
 {
-	const int32 ItemIndex = GameMode->GetItemIndex(Item);
+	const int32 ItemIndex = GameMode->ItemArray.Find(Item);
 
 	CharacterController->SetHUDItemSlotDismount(ItemIndex);
 
@@ -232,7 +232,7 @@ void UItemComponent::DismountItem(AItem* Item)
 
 		CharacterController->DeactivateItemInventorySlotClick(ItemIndex);
 
-		if (GameMode->GetActivatedQuickSlotNumber() == QuickIdx)
+		if (GameMode->ActivatedQuickSlotNumber == QuickIdx)
 		{
 			CharacterController->ClearEquippedItemSlotHUD();
 		}
@@ -252,14 +252,14 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 	AItemRecovery* IR = Cast<AItemRecovery>(Item);
 	if(IR)
 	{
-		const int32 ItemIndex = GameMode->GetItemIndex(Item);
+		const int32 ItemIndex = GameMode->ItemArray.Find(Item);
 
 		IR->PlayUsingEffect(Character->GetActorLocation());
 
-		if (GameMode->GetRecoveryItemCount(IR->GetRecoveryType()) > 0)
+		if (GameMode->RecoveryItemMap[IR->GetRecoveryType()] > 0)
 		{
-			GameMode->AddRecoveryItem(IR->GetRecoveryType(), -1);
-			const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(IR->GetRecoveryType());
+			GameMode->RecoveryItemMap[IR->GetRecoveryType()] += -1;
+			const int32 RecoveryItemCount = GameMode->RecoveryItemMap[IR->GetRecoveryType()];
 
 			CharacterController->SetItemSlotCountText(ItemIndex, RecoveryItemCount);
 
@@ -268,9 +268,9 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 			if (QuickIdx != -1)
 			{
 				const FText RecoveryItemCountText = FText::FromString(FString::FromInt(RecoveryItemCount));
-				GameMode->SetQuickSlotCountText(QuickIdx, RecoveryItemCountText);
+				GameMode->QuickSlotItemArray[QuickIdx].QuickSlotItemCountText->SetText(RecoveryItemCountText);
 
-				if (GameMode->GetActivatedQuickSlotNumber() == QuickIdx)
+				if (GameMode->ActivatedQuickSlotNumber == QuickIdx)
 				{
 					CharacterController->SetEquippedItemSlotCountText(RecoveryItemCountText);
 				}
@@ -292,13 +292,13 @@ void UItemComponent::UseRecoveryItem(AItem* Item)
 		}
 
 		// 아이템을 모두 소모했다면 슬롯에서 아이템 제거
-		if (GameMode->GetRecoveryItemCount(IR->GetRecoveryType()) == 0)
+		if (GameMode->RecoveryItemMap[IR->GetRecoveryType()] == 0)
 		{
 			// 만일 퀵슬롯에 아이템이 장착되어 있으면 퀵슬롯 비우기
 			DismountItem(Item);
 
 			CharacterController->UpdateItemInventory(ItemIndex);
-			GameMode->RemoveItemFromArr(Item);
+			GameMode->ItemArray.Remove(Item);
 		}
 	}
 }
@@ -367,13 +367,13 @@ int32 UItemComponent::GetItemCount(AItem* Item)
 	if (Item->GetItemType() == EItemType::EIT_Recovery)
 	{
 		AItemRecovery* IR = Cast<AItemRecovery>(Item);
-		const int32 RecoveryItemCount = GameMode->GetRecoveryItemCount(IR->GetRecoveryType());
+		const int32 RecoveryItemCount = GameMode->RecoveryItemMap[IR->GetRecoveryType()];
 		return RecoveryItemCount;
 	}
 	else if (Item->GetItemType() == EItemType::EIT_Ammo)
 	{
 		AItemAmmo* IA = Cast<AItemAmmo>(Item);
-		const int32 AmmoQuantity = GameMode->GetAmmoQuantity(IA->GetAmmoType());
+		const int32 AmmoQuantity = GameMode->AmmoQuantityMap[IA->GetAmmoType()];
 		return AmmoQuantity;
 	}
 	else

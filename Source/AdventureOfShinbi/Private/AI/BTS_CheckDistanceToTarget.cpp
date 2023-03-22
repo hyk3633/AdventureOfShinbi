@@ -12,13 +12,13 @@
 
 UBTS_CheckDistanceToTarget::UBTS_CheckDistanceToTarget()
 {
-	NodeName = TEXT("Check Distance to Target");
-	Interval = 1.f;
+    NodeName = TEXT("Check Distance to Target");
+    Interval = 1.f;
 }
 
 void UBTS_CheckDistanceToTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+    Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
     AEnemyRangedSiege* ControllingEnemy = Cast<AEnemyRangedSiege>(OwnerComp.GetAIOwner()->GetPawn());
     if (nullptr == ControllingEnemy)

@@ -28,6 +28,7 @@ protected:
 
 private:
 
+	UPROPERTY()
 	AAOSCharacter* Target;
 
 	/** 플레이어 속도 감소 타이머 */

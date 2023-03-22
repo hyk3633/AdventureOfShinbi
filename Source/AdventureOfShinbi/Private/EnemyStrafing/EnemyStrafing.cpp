@@ -20,6 +20,8 @@ AEnemyStrafing::AEnemyStrafing()
 	Defense = 40.f;
 	DefaultValue = 3.f;
 	RandRangeValue = 50;
+
+	AssetName = TEXT("Aurora_2");
 }
 
 void AEnemyStrafing::StartStrafing()

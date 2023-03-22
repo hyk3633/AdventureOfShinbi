@@ -40,11 +40,6 @@ void AWeapon::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitive
 	ItemMesh->SetNotifyRigidBodyCollision(false);
 }
 
-void AWeapon::SetWeaponOwner(AAOSCharacter* OwnerToSet)
-{
-	WeaponOwner = OwnerToSet;
-}
-
 EWeaponType AWeapon::GetWeaponType() const
 {
 	return WeaponType;
@@ -88,6 +83,9 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		
 		Widget->SetVisibility(false);
 
+		if(GetOwner())
+			WeaponOwner = Cast<AAOSCharacter>(GetOwner());
+
 		break;
 
 	case EWeaponState::EWS_Equipped:
@@ -102,6 +100,9 @@ void AWeapon::SetWeaponState(const EWeaponState State)
 		OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 
 		PlayGainEffect();
+
+		if (GetOwner())
+			WeaponOwner = Cast<AAOSCharacter>(GetOwner());
 
 		break;
 	}

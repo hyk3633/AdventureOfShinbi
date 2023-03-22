@@ -4,6 +4,7 @@
 #include "Player/AOSController.h"
 #include "Player/AOSAnimInstance.h"
 #include "System/AOSGameModeBase.h"
+#include "System/AOSGameInstance.h"
 #include "Enemy/EnemyCharacter.h"
 #include "EnemyBoss/EnemyBoss.h"
 #include "AdventureOfShinbi/AdventureOfShinbi.h"
@@ -16,6 +17,7 @@
 #include "Weapons/Projectile.h"
 #include "Weapons/ProjectileBullet.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Engine/AssetManager.h"
 #include "Components/CombatComponent.h"
 #include "Components/ItemComponent.h"
 #include "Components/WidgetComponent.h"
@@ -26,7 +28,6 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
-#include "DrawDebugHelpers.h"
 
 AAOSCharacter::AAOSCharacter()
 {
@@ -94,7 +95,6 @@ void AAOSCharacter::RestartPlayerCharacter()
 void AAOSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-
 	if (CombatComp)
 	{
 		CombatComp->Character = this;
@@ -111,15 +111,43 @@ void AAOSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CharacterController = Cast<AAOSController>(GetController());
-
 	AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
 	AnimInstance->OnMontageEnded.AddDynamic(this, &AAOSCharacter::DashMontageEnded);
 
 	OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
 	OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
 
+	CombatComp->SetAnimInstance();
 	CombatComp->PlayerDeathDelegate.AddDynamic(this, &AAOSCharacter::HandlePlayerDeath);
+
+	/*UAOSGameInstance* GInstance = GetWorld()->GetGameInstance<UAOSGameInstance>();
+	if (GInstance)
+	{
+		RefPath.SetPath(GInstance->GetAssetReference(TEXT("Shinbi")));
+		if (RefPath.GetAssetPathString().Len() > 0)
+		{
+			GInstance->AssetLoader.RequestAsyncLoad(RefPath, FStreamableDelegate::CreateUObject(this, &AAOSCharacter::SetCharacterMesh));
+		}
+	}*/
+	CharacterController = Cast<AAOSController>(GetController());
+}
+
+void AAOSCharacter::SetCharacterMesh()
+{
+	TSoftObjectPtr<USkeletalMesh> CharacterMesh(RefPath);
+	if (CharacterMesh.Get())
+	{
+		GetMesh()->SetSkeletalMesh(CharacterMesh.Get());
+
+		AnimInstance = Cast<UAOSAnimInstance>(GetMesh()->GetAnimInstance());
+		AnimInstance->OnMontageEnded.AddDynamic(this, &AAOSCharacter::DashMontageEnded);
+
+		OnTakePointDamage.AddDynamic(this, &AAOSCharacter::TakePointDamage);
+		OnTakeRadialDamage.AddDynamic(this, &AAOSCharacter::TakeRadialDamage);
+
+		CombatComp->SetAnimInstance();
+		CombatComp->PlayerDeathDelegate.AddDynamic(this, &AAOSCharacter::HandlePlayerDeath);
+	}
 }
 
 void AAOSCharacter::Tick(float DeltaTime)
@@ -207,7 +235,7 @@ void AAOSCharacter::TakePointDamage(AActor* DamagedActor, float DamageReceived, 
 	PlayHitEffect(HitLocation, ShotFromDirection.Rotation());
 }
 
-FName AAOSCharacter::DistinguishHitDirection(FVector TargetLocation)
+FName AAOSCharacter::DistinguishDirection(FVector TargetLocation)
 {
 	// 내적 계산
 	FVector ToTarget = TargetLocation - GetActorLocation();
@@ -260,7 +288,7 @@ void AAOSCharacter::PlayHitReaction(USoundCue* Voice, AActor* DamageCauser)
 	{
 		UGameplayStatics::PlaySound2D(this, Voice);
 	}
-	CombatComp->PlayHitReactMontage(DistinguishHitDirection(DamageCauser->GetActorLocation()));
+	CombatComp->PlayHitReactMontage(DistinguishDirection(DamageCauser->GetActorLocation()));
 }
 
 void AAOSCharacter::PlayHitEffect(FVector HitLocation, FRotator HitRotation)
@@ -723,34 +751,32 @@ void AAOSCharacter::SetLockOnTarget()
 
 void AAOSCharacter::UpdateControlRotation()
 {
-	if (bCameraLockOn && (CharacterController == nullptr || CombatComp->EquippedWeapon == nullptr))
+	if (bCameraLockOn == false)
+		return;
+
+	if (CharacterController == nullptr || CombatComp->EquippedWeapon == nullptr)
 	{
-		bCameraLockOn = false;
-		LockOnTarget = nullptr;
-		if (LockOnParticleComp)
-		{
-			LockOnParticleComp->DestroyComponent();
-		}
+		DeactivateLockOn();
 		return;
 	}
-
-	if (bCameraLockOn)
+	if ((LockOnTarget && LockOnTarget->GetIsDead()) || IsValid(LockOnTarget) == false)
 	{
-		if ((LockOnTarget && LockOnTarget->GetIsDead())|| IsValid(LockOnTarget) == false)
-		{
-			if (LockOnParticleComp)
-			{
-				LockOnParticleComp->SetVisibility(false);
-				LockOnParticleComp->DestroyComponent();
-			}
-			LockOnTarget = nullptr;
-			SetLockOnTarget();
-		}
-		else
-		{
-			const FRotator LookRotation = CalculateRotation(LockOnTarget);
-			CharacterController->SetControlRotation(LookRotation);
-		}
+		DeactivateLockOn();
+		SetLockOnTarget();
+	}
+
+	const FRotator LookRotation = CalculateRotation(LockOnTarget);
+	CharacterController->SetControlRotation(LookRotation);
+}
+
+void AAOSCharacter::DeactivateLockOn()
+{
+	bCameraLockOn = false;
+	LockOnTarget = nullptr;
+	if (LockOnParticleComp)
+	{
+		LockOnParticleComp->SetVisibility(false);
+		LockOnParticleComp->DestroyComponent();
 	}
 }
 
@@ -774,7 +800,7 @@ AActor* AAOSCharacter::FindTarget()
 			continue;
 
 		if (
-			DistinguishHitDirection(Target->GetActorLocation()) != FName("F") || 
+			DistinguishDirection(Target->GetActorLocation()) != FName("F") || 
 			Cast<AEnemyCharacter>(Target)->GetIsDead()
 			)
 			continue;

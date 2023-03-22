@@ -190,6 +190,7 @@ private:
 	USoundCue* TeleportSound;
 
 	/** 캐릭터로 부터 가장 멀리 있는 미니언 */
+	UPROPERTY()
 	AActor* FarestMinion = nullptr;
 
 	/** 텔레포트 시킬 위치와 로테이션 */

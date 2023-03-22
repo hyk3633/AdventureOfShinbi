@@ -17,52 +17,52 @@ UBTS_CheckDistanceForStrafing::UBTS_CheckDistanceForStrafing()
 
 void UBTS_CheckDistanceForStrafing::OnSearchStart(FBehaviorTreeSearchData& SearchData)
 {
-    Super::OnSearchStart(SearchData);
+	Super::OnSearchStart(SearchData);
 
 }
 
 void UBTS_CheckDistanceForStrafing::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
-    Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
+	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-    AEnemyStrafing* ControllingEnemy = Cast<AEnemyStrafing>(OwnerComp.GetAIOwner()->GetPawn());
-    if (ControllingEnemy == nullptr) 
-        return;
+	AEnemyStrafing* ControllingEnemy = Cast<AEnemyStrafing>(OwnerComp.GetAIOwner()->GetPawn());
+	if (ControllingEnemy == nullptr) 
+		return;
 
-    UWorld* World = ControllingEnemy->GetWorld();
+	UWorld* World = ControllingEnemy->GetWorld();
 
-    if (World == nullptr) 
-        return;
+	if (World == nullptr) 
+		return;
 
-    AActor* TargetActor = ControllingEnemy->GetAiInfo().TargetPlayer;
-    if (TargetActor == nullptr)
-        return;
-    
-    AAOSCharacter* Cha = Cast<AAOSCharacter>(TargetActor);
-    if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
-    {
-        const float Distance = ControllingEnemy->GetDistanceTo(Cha);
+	AActor* TargetActor = ControllingEnemy->GetAiInfo().TargetPlayer;
+	if (TargetActor == nullptr)
+		return;
+	
+	AAOSCharacter* Cha = Cast<AAOSCharacter>(TargetActor);
+	if (Cha && !OwnerComp.GetBlackboardComponent()->GetValueAsBool(FName("SightStimulusExpired")))
+	{
+		const float Distance = ControllingEnemy->GetDistanceTo(Cha);
 
-        if (Distance <= 900.f && ControllingEnemy->GetIsAttacking() == false)
-        {
-            KeepingTime += DeltaSeconds;
-            if (KeepingTime >= 1.f)
-            {
-                OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
-                KeepingTime = 0.f;
-            }
-        }
-        else
-        {
-            KeepingTime = 0.f;
-            OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
-            ControllingEnemy->OnStrafingEnd.Broadcast();
-        }
-    }
-    else
-    {
-        KeepingTime = 0.f;
-        OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
-        ControllingEnemy->OnStrafingEnd.Broadcast();
-    }
+		if (Distance <= 900.f && ControllingEnemy->GetIsAttacking() == false)
+		{
+			KeepingTime += DeltaSeconds;
+			if (KeepingTime >= 1.f)
+			{
+				OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), true);
+				KeepingTime = 0.f;
+			}
+		}
+		else
+		{
+			KeepingTime = 0.f;
+			OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
+			ControllingEnemy->OnStrafingEnd.Broadcast();
+		}
+	}
+	else
+	{
+		KeepingTime = 0.f;
+		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName("Strafing"), false);
+		ControllingEnemy->OnStrafingEnd.Broadcast();
+	}
 }

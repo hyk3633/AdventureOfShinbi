@@ -23,6 +23,8 @@ AEnemyRangedSiege::AEnemyRangedSiege()
 	Defense = 45.f;
 	DefaultValue = 5.f;
 	RandRangeValue = 10;
+
+	AssetName = TEXT("Siege_Core");
 }
 
 void AEnemyRangedSiege::BeginPlay()

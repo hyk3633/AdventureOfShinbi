@@ -18,6 +18,8 @@
 class UAOSGameInstance;
 class AAOSCharacter;
 class AAOSController;
+class UItemComponent;
+class UCombatComponent;
 class APlayerStart;
 class UTexture2D;
 class AWeapon;
@@ -62,6 +64,14 @@ class ADVENTUREOFSHINBI_API AAOSGameModeBase : public AGameModeBase
 	
 public:
 
+	friend AAOSController;
+
+	friend UItemComponent;
+
+	friend UCombatComponent;
+
+	friend UAOSGameInstance;
+
 	AAOSGameModeBase();
 
 	void RespawnPlayer();
@@ -72,77 +82,15 @@ public:
 
 	void BindBossDefeatEvent();
 
-	/** 무기 데이터 처리 함수 */
-
-	void AddWeaponToArr(AWeapon* Weapon);
-
-	void RemoveWeaponFromArr(AWeapon* Weapon);
-
-	void KeepEquippedWeapon(AWeapon* Weapon);
-
-	void KeepQuickSlot1Weapon(AWeapon* Weapon);
-
-	void KeepQuickSlot2Weapon(AWeapon* Weapon);
-
-	int32 GetWeaponCount() const;
-
-	AWeapon* GetWeaponItem(int32 Index) const;
-
-	AWeapon* GetEquippedWeapon();
-	AWeapon* GetQuickSlot1Weapon();
-	AWeapon* GetQuickSlot2Weapon();
-
-	/** 아이템 데이터 처리 함수 */
-
 	void InitializeTMap();
 
 	void InitializeQuickSlotItemArray();
 
-	AItem* GetItem(int32 Index) const;
-
-	void AddItemToArr(AItem* Item);
-
-	void RemoveItemFromArr(AItem* Item);
-
-	int32 GetItemIndex(AItem* Item) const;
-
-	int32 GetItemCount() const;
-
-	int32 GetRecoveryItemCount(ERecoveryType Type) const;
-
-	void AddRecoveryItem(ERecoveryType Type, int32 Quantity);
-
 	int8 GetRecoveryIndex(ERecoveryType Type) const;
-
-	void SetRecoveryIndex(ERecoveryType Type, int8 Index);
-
-	void AddAmmoToAmmoMap(EAmmoType Type, int32 AmmoQuantity);
-
-	void AddAmmoQuantity(EAmmoType Type, int32 AmmoQuantity);
-
-	int32 GetAmmoQuantity(EAmmoType Type) const;
-
-	bool IsAmmoTypeExist(EAmmoType Type);
-
-	int32 GetAmmoIndex(EAmmoType Type) const;
-
-	void SetAmmoIndex(EAmmoType Type, int32 Count);
-
-	AItem* GetQuickSlotItem(int8 Index);
 
 	void SetQuickSlotItem(int32 Index, AItem* Item, UImage* Icon, UTextBlock* CountText);
 
-	void SetQuickSlotCountText(int32 Index, FText Text);
-
 	void ClearQuickSlot(int32 Index);
-
-	int32 GetQuickSlotItemArrLength() const;
-
-	FQuickSlotItem GetQuickSlotItemArr(int32 Index);
-
-	int8 GetActivatedQuickSlotNumber() const;
-
-	void SetActivatedQuickSlotNumber(int8 Number);
 
 	void SetPlayerStart(APlayerStart* RespawnPoint);
 
@@ -170,24 +118,33 @@ protected:
 
 private:
 
+	UPROPERTY()
 	UAOSGameInstance* GI;
 
+	UPROPERTY()
 	AAOSCharacter* Character;
 
+	UPROPERTY()
 	AAOSController* CharacterController;
 
 	/** 플레이어가 리스폰 될 플레이어 스타트 */
+	UPROPERTY()
 	APlayerStart* PlayerStart;
 
 	/** 플레이어 데이터를 저장한 변수들 */
 
+	UPROPERTY()
 	AWeapon* EquippedWeapon = nullptr;
 
+	UPROPERTY()
 	AWeapon* QuickSlot1Weapon = nullptr;
+	UPROPERTY()
 	AWeapon* QuickSlot2Weapon = nullptr;
 
+	UPROPERTY()
 	TArray<AWeapon*> AcquiredWeapons;
 
+	UPROPERTY()
 	TArray<AItem*> ItemArray;
 
 	TMap<ERecoveryType, int32> RecoveryItemMap;
@@ -244,6 +201,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Player Death")
 	TSubclassOf<UUserWidget> DeathSignWidgetClass;
 
+	UPROPERTY()
 	UUserWidget* DeathSignWidget;
 
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Player Death")
@@ -256,6 +214,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Boss Defeated")
 	TSubclassOf<UUserWidget> BossDefeatedSignWidgetClass;
 
+	UPROPERTY()
 	UUserWidget* BossDefeatedSignWidget;
 
 	UPROPERTY(EditAnywhere, Category = "Game Mode | Boss Defeated")

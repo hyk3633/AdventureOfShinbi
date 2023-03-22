@@ -132,7 +132,7 @@ void AShinbiSword::CirclingWolvesOn(float DeltaTime)
 	// Wolf 투사체 Location, Rotation 업데이트
 	if (CirclingWolvesArr.Num() > 0)
 	{
-		const FVector Loc = GetOwner()->GetActorLocation();
+		const FVector Loc = WeaponOwner->GetActorLocation();
 		for (int8 i = 0; i < 5; i++)
 		{
 			const FVector RotatedLocValue = 
@@ -158,7 +158,7 @@ void AShinbiSword::WolfAttack()
 {
 	if (WolfProjClass == nullptr)
 		return;
-
+	
 	if (WeaponOwner == nullptr)
 	{
 		WeaponOwner = Cast<AAOSCharacter>(GetOwner());
@@ -198,10 +198,9 @@ void AShinbiSword::CirclingWolves()
 	SpawnParams.Owner = WeaponOwner;
 	SpawnParams.Instigator = WeaponOwner;
 
-	ProjAngle = 0.f;
-
 	PlayCirclingWolvesEffect();
-	
+
+	ProjAngle = 0.f;
 	FRotator FirstRot(0.f, -18.f, 0.f);
 
 	// Wolf 투사체 스폰 위치 계산 후 스폰

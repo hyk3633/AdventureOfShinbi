@@ -54,7 +54,7 @@ void AProjectileHoming::BeginPlay()
 
 	GetWorldTimerManager().SetTimer(NoHitTimer, this, &AProjectileHoming::PlayNoHitParticle, LifeSpan - 2.f);
 
-	SetLifeSpan(LifeSpan);
+	//SetLifeSpan(LifeSpan);
 }
 
 void AProjectileHoming::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
